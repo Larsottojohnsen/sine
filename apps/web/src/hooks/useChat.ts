@@ -3,8 +3,8 @@ import { useApp } from '@/store/AppContext'
 import type { SineModel } from '@/types'
 
 const MODEL_MAP: Record<SineModel, string> = {
-  'sine-1': 'claude-3-5-haiku-20241022',
-  'sine-pro': 'claude-3-7-sonnet-20250219',
+  'sine-1': 'claude-haiku-4-5-20251001',
+  'sine-pro': 'claude-sonnet-4-6',
 }
 
 const SYSTEM_PROMPT = `Du er Sine, en norsk AI-assistent. Du er hjelpsom, presis og vennlig. 
