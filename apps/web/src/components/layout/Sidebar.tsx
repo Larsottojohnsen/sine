@@ -17,7 +17,12 @@ function getConvIcon(title: string) {
   return '○'
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  onNavigate?: (page: string) => void
+  currentPage?: string
+}
+
+export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
   const {
     conversations,
     activeConversationId,
@@ -110,20 +115,10 @@ export function Sidebar() {
 
       {/* Main nav */}
       <div className="px-2 pb-1 space-y-0.5">
-        <NavItem icon={<Plus size={15} />} label={t.app.newChat} onClick={handleNewChat} />
-        <NavItem
-          icon={<Bot size={15} />}
-          label={t.app.agents}
-          onClick={() => {}}
-          badge="Ny"
-        />
-        <NavItem
-          icon={<Search size={15} />}
-          label={t.app.search}
-          onClick={() => {}}
-          hint="⌘K"
-        />
-        <NavItem icon={<BookOpen size={15} />} label={t.app.library} onClick={() => {}} />
+        <NavItem icon={<Plus size={15} />} label={t.app.newChat} onClick={handleNewChat} active={currentPage === 'chat' && !activeConversationId} />
+        <NavItem icon={<Bot size={15} />} label={t.app.agents} onClick={() => onNavigate?.('agents')} active={currentPage === 'agents'} badge="Ny" />
+        <NavItem icon={<Search size={15} />} label={t.app.search} onClick={() => onNavigate?.('search')} active={currentPage === 'search'} hint="⌘K" />
+        <NavItem icon={<BookOpen size={15} />} label={t.app.library} onClick={() => onNavigate?.('library')} active={currentPage === 'library'} />
       </div>
 
       {/* Projects */}
