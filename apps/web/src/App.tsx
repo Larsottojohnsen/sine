@@ -6,9 +6,9 @@ import { SettingsModal } from './components/settings/SettingsModal'
 
 function AppLayout() {
   return (
-    <div className="flex h-full" style={{ background: '#272727' }}>
+    <div className="flex h-full" style={{ background: '#1C1C1C' }}>
       <Sidebar />
-      <div className="flex flex-col flex-1 min-w-0">
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Header />
         <main className="flex-1 overflow-hidden">
           <ChatView />

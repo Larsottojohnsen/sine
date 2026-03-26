@@ -1,4 +1,7 @@
-import { Presentation, Globe, BarChart3, FileText } from 'lucide-react'
+import {
+  Presentation, Globe,
+  Code2, Palette, MoreHorizontal
+} from 'lucide-react'
 import { getTranslations } from '@/i18n'
 
 interface WelcomeScreenProps {
@@ -6,41 +9,37 @@ interface WelcomeScreenProps {
   onSuggestion: (text: string) => void
 }
 
-const suggestionIcons = [
-  <Presentation size={16} />,
-  <Globe size={16} />,
-  <BarChart3 size={16} />,
-  <FileText size={16} />,
+const quickActions = [
+  { icon: <Presentation size={14} />, label: 'Lag presentasjon', prompt: 'Lag en presentasjon om' },
+  { icon: <Globe size={14} />, label: 'Bygg nettside', prompt: 'Bygg en nettside for' },
+  { icon: <Code2 size={14} />, label: 'Skriv kode', prompt: 'Skriv kode for' },
+  { icon: <Palette size={14} />, label: 'Design', prompt: 'Design et' },
+  { icon: <MoreHorizontal size={14} />, label: 'Mer', prompt: '' },
 ]
 
 export function WelcomeScreen({ language, onSuggestion }: WelcomeScreenProps) {
   const t = getTranslations(language)
 
   return (
-    <div className="flex flex-col items-center justify-center flex-1 px-4 pb-8">
-      {/* Logo */}
-      <div className="mb-8">
-        <img src="/sine/sine-logo.webp" alt="Sine" className="h-12 w-auto opacity-60" />
-      </div>
-
+    <div className="flex flex-col items-center justify-center flex-1 px-6 pb-4 animate-fade-in">
       {/* Title */}
-      <h1 className="text-3xl font-light text-[#DADADA] mb-2 text-center tracking-tight">
+      <h1
+        className="text-[32px] font-light text-center mb-8 tracking-tight"
+        style={{ color: '#E5E5E5', letterSpacing: '-0.02em' }}
+      >
         {t.chat.welcome.title}
       </h1>
 
-      {/* Suggestions */}
-      <div className="flex flex-wrap gap-2 justify-center mt-8 max-w-lg">
-        {t.chat.suggestions.map((suggestion, i) => (
+      {/* Quick action chips */}
+      <div className="flex flex-wrap items-center justify-center gap-2 max-w-2xl">
+        {quickActions.map((action, i) => (
           <button
-            key={suggestion}
-            onClick={() => onSuggestion(suggestion)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-[#DADADA] transition-colors"
-            style={{ background: '#343434', border: '1px solid #3a3a3a' }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#3e3e3e')}
-            onMouseLeave={e => (e.currentTarget.style.background = '#343434')}
+            key={i}
+            onClick={() => action.prompt && onSuggestion(action.prompt)}
+            className="quick-action"
           >
-            <span className="text-[#7F7F7F]">{suggestionIcons[i]}</span>
-            <span>{suggestion}</span>
+            <span className="opacity-70">{action.icon}</span>
+            <span>{action.label}</span>
           </button>
         ))}
       </div>

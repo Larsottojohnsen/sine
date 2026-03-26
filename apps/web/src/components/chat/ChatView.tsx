@@ -10,7 +10,6 @@ export function ChatView() {
   const { sendMessage, stopStreaming, isStreaming } = useChat()
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  // Auto-scroll to bottom on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [activeConversation?.messages])
@@ -32,14 +31,31 @@ export function ChatView() {
     }
   }
 
+  const hasMessages = activeConversation && activeConversation.messages.length > 0
+
   return (
-    <div className="flex flex-col h-full" style={{ background: '#272727' }}>
+    <div className="flex flex-col h-full" style={{ background: '#1C1C1C' }}>
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto">
-        {!activeConversation || activeConversation.messages.length === 0 ? (
-          <WelcomeScreen language={settings.language} onSuggestion={handleSuggestion} />
+        {!hasMessages ? (
+          <div className="flex flex-col h-full">
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <WelcomeScreen language={settings.language} onSuggestion={handleSuggestion} />
+            </div>
+            {/* Input centered on welcome screen */}
+            <div className="w-full max-w-2xl mx-auto px-4 pb-6">
+              <ChatInput
+                onSend={handleSend}
+                onStop={stopStreaming}
+                isStreaming={isStreaming}
+                model={settings.model}
+                onModelChange={m => updateSettings({ model: m })}
+                language={settings.language}
+              />
+            </div>
+          </div>
         ) : (
-          <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+          <div className="max-w-3xl mx-auto py-4">
             {activeConversation.messages.map((msg, i) => (
               <ChatMessage
                 key={msg.id}
@@ -48,22 +64,24 @@ export function ChatView() {
                 onRegenerate={i === activeConversation.messages.length - 1 ? handleRegenerate : undefined}
               />
             ))}
-            <div ref={bottomRef} />
+            <div ref={bottomRef} className="h-4" />
           </div>
         )}
       </div>
 
-      {/* Input */}
-      <div className="max-w-3xl mx-auto w-full">
-        <ChatInput
-          onSend={handleSend}
-          onStop={stopStreaming}
-          isStreaming={isStreaming}
-          model={settings.model}
-          onModelChange={m => updateSettings({ model: m })}
-          language={settings.language}
-        />
-      </div>
+      {/* Input at bottom when in conversation */}
+      {hasMessages && (
+        <div className="w-full max-w-3xl mx-auto">
+          <ChatInput
+            onSend={handleSend}
+            onStop={stopStreaming}
+            isStreaming={isStreaming}
+            model={settings.model}
+            onModelChange={m => updateSettings({ model: m })}
+            language={settings.language}
+          />
+        </div>
+      )}
     </div>
   )
 }
