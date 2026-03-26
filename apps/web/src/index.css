@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@theme {
+  --color-sine-bg: #272727;
+  --color-sine-sidebar: #212121;
+  --color-sine-selected: #343434;
+  --color-sine-dropdown: #1F1F1F;
+  --color-sine-input: #363538;
+  --color-sine-brand: #1A93FE;
+  --color-sine-text: #DADADA;
+  --color-sine-muted: #7F7F7F;
+  --color-sine-border: #3a3a3a;
+  --color-sine-hover: #2e2e2e;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #272727;
+  color: #DADADA;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #4a4a4a; }
+::selection { background: rgba(26, 147, 254, 0.3); }
+:focus-visible { outline: 2px solid #1A93FE; outline-offset: 2px; }
+
+.prose { color: #DADADA; max-width: none; }
+.prose h1, .prose h2, .prose h3, .prose h4 { color: #DADADA; font-weight: 600; margin-top: 1.5em; margin-bottom: 0.5em; }
+.prose p { margin-bottom: 0.75em; line-height: 1.7; }
+.prose code { background: #1F1F1F; border: 1px solid #3a3a3a; border-radius: 4px; padding: 0.15em 0.4em; font-size: 0.875em; color: #e2e8f0; }
+.prose pre { background: #1A1A1A !important; border: 1px solid #3a3a3a; border-radius: 8px; padding: 1rem; overflow-x: auto; margin: 1em 0; }
+.prose pre code { background: transparent; border: none; padding: 0; font-size: 0.875em; }
+.prose ul, .prose ol { padding-left: 1.5em; margin-bottom: 0.75em; }
+.prose li { margin-bottom: 0.25em; line-height: 1.7; }
+.prose blockquote { border-left: 3px solid #1A93FE; padding-left: 1em; color: #7F7F7F; margin: 1em 0; }
+.prose a { color: #1A93FE; text-decoration: underline; text-underline-offset: 2px; }
+.prose table { width: 100%; border-collapse: collapse; margin: 1em 0; }
+.prose th, .prose td { border: 1px solid #3a3a3a; padding: 0.5em 0.75em; text-align: left; }
+.prose th { background: #1F1F1F; font-weight: 600; }
+.prose hr { border-color: #3a3a3a; margin: 1.5em 0; }
+
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+.streaming-cursor::after { content: '▋'; animation: blink 0.8s infinite; color: #1A93FE; margin-left: 1px; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fade-in { animation: fadeIn 0.2s ease-out; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.animate-spin-slow { animation: spin 1.5s linear infinite; }

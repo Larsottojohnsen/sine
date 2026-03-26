@@ -1,0 +1,15 @@
+{
+  "name": "sine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sine AI – Norsk AI-plattform med chat og agentmodus",
+  "scripts": {
+    "dev": "pnpm --filter @sine/web dev",
+    "build": "pnpm --filter @sine/web build",
+    "lint": "pnpm -r lint"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}
