@@ -95,7 +95,6 @@ export function ChatInput({
               <button
                 onClick={onStop}
                 className="send-btn"
-                style={{ background: '#D0D0D0' }}
                 title={t.chat.stop}
               >
                 <Square size={11} fill="#1C1C1C" style={{ color: '#1C1C1C' }} />
@@ -105,10 +104,9 @@ export function ChatInput({
                 onClick={handleSend}
                 disabled={!canSend}
                 className="send-btn"
-                style={{ background: canSend ? '#1A93FE' : '#2A2A2A' }}
                 title={t.chat.send}
               >
-                <ArrowUp size={14} style={{ color: canSend ? '#fff' : '#4A4A4A' }} strokeWidth={2.5} />
+                <ArrowUp size={14} strokeWidth={2.5} />
               </button>
             )}
           </div>
@@ -146,22 +144,20 @@ function ModelSelector({ model, onModelChange }: { model: SineModel; onModelChan
             style={{ position: 'fixed', inset: 0, zIndex: 40 }}
             onClick={() => setOpen(false)}
           />
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '100%',
-              marginBottom: 8,
-              left: 0,
-              borderRadius: 10,
-              overflow: 'hidden',
-              zIndex: 50,
-              minWidth: 180,
-              background: '#1A1A1A',
-              border: '1px solid #2E2E2E',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
-              padding: '4px 0',
-            }}
-          >
+          <div style={{
+            position: 'absolute',
+            bottom: '100%',
+            marginBottom: 8,
+            right: 0,
+            borderRadius: 10,
+            overflow: 'hidden',
+            zIndex: 50,
+            minWidth: 200,
+            background: '#1A1A1A',
+            border: '1px solid #2E2E2E',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
+            padding: '4px 0',
+          }}>
             {(['sine-1', 'sine-pro'] as SineModel[]).map(m => (
               <button
                 key={m}
@@ -169,7 +165,7 @@ function ModelSelector({ model, onModelChange }: { model: SineModel; onModelChan
                 style={{
                   width: '100%',
                   textAlign: 'left',
-                  padding: '8px 12px',
+                  padding: '9px 14px',
                   background: model === m ? '#242424' : 'transparent',
                   border: 'none',
                   cursor: 'pointer',
@@ -182,14 +178,14 @@ function ModelSelector({ model, onModelChange }: { model: SineModel; onModelChan
                 onMouseEnter={e => { if (model !== m) e.currentTarget.style.background = '#1E1E1E' }}
                 onMouseLeave={e => { if (model !== m) e.currentTarget.style.background = 'transparent' }}
               >
-                <span style={{ color: model === m ? '#1A93FE' : '#4A4A4A' }}>
+                <span style={{ color: model === m ? '#1A93FE' : '#5A5A5A' }}>
                   {labels[m].icon}
                 </span>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: model === m ? '#1A93FE' : '#D0D0D0' }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: model === m ? '#E5E5E5' : '#C0C0C0' }}>
                     {labels[m].name}
                   </div>
-                  <div style={{ fontSize: 11, color: '#4A4A4A' }}>{labels[m].desc}</div>
+                  <div style={{ fontSize: 11, color: '#5A5A5A', marginTop: 1 }}>{labels[m].desc}</div>
                 </div>
               </button>
             ))}
