@@ -57,15 +57,18 @@ export function ChatInput({
   const canSend = value.trim().length > 0 && !disabled
 
   return (
-    <div className="px-4 pb-4 pt-1 flex-shrink-0">
+    <div className="px-4 pb-5 pt-1 flex-shrink-0">
       {/* Main input container */}
       <div
-        className="relative rounded-2xl transition-all"
         style={{
-          background: '#242424',
-          border: '1px solid #3A3A3A',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+          background: '#222222',
+          border: '1px solid #2E2E2E',
+          borderRadius: 16,
+          boxShadow: '0 2px 16px rgba(0,0,0,0.35)',
+          transition: 'border-color 150ms',
         }}
+        onFocusCapture={e => (e.currentTarget.style.borderColor = '#3A3A3A')}
+        onBlurCapture={e => (e.currentTarget.style.borderColor = '#2E2E2E')}
       >
         {/* Textarea */}
         <textarea
@@ -77,15 +80,18 @@ export function ChatInput({
           disabled={disabled}
           rows={1}
           className={cn(
-            'w-full resize-none bg-transparent px-4 pt-3.5 pb-2 text-[14px] text-[#E5E5E5] placeholder-[#555]',
-            'focus:outline-none leading-relaxed',
+            'w-full resize-none bg-transparent px-4 pt-3.5 pb-2 text-[14px] leading-relaxed focus:outline-none',
             disabled && 'opacity-50 cursor-not-allowed'
           )}
-          style={{ maxHeight: 200, minHeight: 46 }}
+          style={{
+            color: '#D0D0D0',
+            maxHeight: 200,
+            minHeight: 46,
+          }}
         />
 
         {/* Bottom toolbar */}
-        <div className="flex items-center justify-between px-3 pb-2.5">
+        <div className="flex items-center justify-between px-3 pb-2.5 pt-0.5">
           {/* Left tools */}
           <div className="flex items-center gap-0.5">
             <ToolButton icon={<Plus size={16} />} title={t.chat.uploadFile} />
@@ -101,26 +107,24 @@ export function ChatInput({
             {isStreaming ? (
               <button
                 onClick={onStop}
-                className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:opacity-80"
-                style={{ background: '#E5E5E5' }}
+                className="w-7 h-7 rounded-full flex items-center justify-center transition-all hover:opacity-80"
+                style={{ background: '#D0D0D0' }}
                 title={t.chat.stop}
               >
-                <Square size={12} fill="#1C1C1C" className="text-[#1C1C1C]" />
+                <Square size={11} fill="#1C1C1C" style={{ color: '#1C1C1C' }} />
               </button>
             ) : (
               <button
                 onClick={handleSend}
                 disabled={!canSend}
                 className={cn(
-                  'w-8 h-8 rounded-full flex items-center justify-center transition-all',
-                  canSend
-                    ? 'hover:opacity-85 cursor-pointer'
-                    : 'opacity-25 cursor-not-allowed'
+                  'w-7 h-7 rounded-full flex items-center justify-center transition-all',
+                  canSend ? 'hover:opacity-85 cursor-pointer' : 'cursor-not-allowed'
                 )}
-                style={{ background: canSend ? '#E5E5E5' : '#3A3A3A' }}
+                style={{ background: canSend ? '#D0D0D0' : '#2A2A2A' }}
                 title={t.chat.send}
               >
-                <ArrowUp size={15} className="text-[#1C1C1C]" strokeWidth={2.5} />
+                <ArrowUp size={14} style={{ color: '#1C1C1C', opacity: canSend ? 1 : 0.3 }} strokeWidth={2.5} />
               </button>
             )}
           </div>
@@ -128,7 +132,7 @@ export function ChatInput({
       </div>
 
       {/* Disclaimer */}
-      <p className="text-center text-[11px] text-[#3A3A3A] mt-2">
+      <p className="text-center mt-2" style={{ fontSize: 11, color: '#2E2E2E' }}>
         Sine kan gjøre feil. Sjekk viktig informasjon.
       </p>
     </div>
@@ -140,7 +144,10 @@ function ToolButton({ icon, title, onClick }: { icon: React.ReactNode; title: st
     <button
       onClick={onClick}
       title={title}
-      className="p-1.5 rounded-lg text-[#555] hover:text-[#8A8A8A] hover:bg-[#2E2E2E] transition-colors"
+      className="p-1.5 rounded-lg transition-colors"
+      style={{ color: '#4A4A4A' }}
+      onMouseEnter={e => (e.currentTarget.style.color = '#8A8A8A')}
+      onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}
     >
       {icon}
     </button>
@@ -159,7 +166,10 @@ function ModelSelector({ model, onModelChange }: { model: SineModel; onModelChan
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1 px-2 py-1 rounded-lg text-[12px] text-[#555] hover:text-[#8A8A8A] hover:bg-[#2E2E2E] transition-colors"
+        className="flex items-center gap-1 px-2 py-1 rounded-lg text-[12px] transition-colors"
+        style={{ color: '#4A4A4A' }}
+        onMouseEnter={e => (e.currentTarget.style.color = '#8A8A8A')}
+        onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}
       >
         <span>{labels[model].name}</span>
         <ChevronDown size={10} />
@@ -170,27 +180,32 @@ function ModelSelector({ model, onModelChange }: { model: SineModel; onModelChan
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div
             className="absolute bottom-full mb-2 left-0 rounded-xl overflow-hidden z-50 py-1 min-w-[180px]"
-            style={{ background: '#1A1A1A', border: '1px solid #3A3A3A', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}
+            style={{
+              background: '#1A1A1A',
+              border: '1px solid #2E2E2E',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+            }}
           >
             {(['sine-1', 'sine-pro'] as SineModel[]).map(m => (
               <button
                 key={m}
                 onClick={() => { onModelChange(m); setOpen(false) }}
-                className={cn(
-                  'w-full text-left px-3 py-2.5 transition-colors flex items-center gap-2.5',
-                  model === m
-                    ? 'bg-[#2A2A2A]'
-                    : 'hover:bg-[#242424]'
-                )}
+                className="w-full text-left px-3 py-2.5 transition-colors flex items-center gap-2.5"
+                style={{ background: model === m ? '#242424' : 'transparent' }}
+                onMouseEnter={e => { if (model !== m) e.currentTarget.style.background = '#1E1E1E' }}
+                onMouseLeave={e => { if (model !== m) e.currentTarget.style.background = 'transparent' }}
               >
-                <span className={model === m ? 'text-[#1A93FE]' : 'text-[#555]'}>
+                <span style={{ color: model === m ? '#1A93FE' : '#4A4A4A' }}>
                   {labels[m].icon}
                 </span>
                 <div>
-                  <div className={cn('text-[13px] font-medium', model === m ? 'text-[#1A93FE]' : 'text-[#E5E5E5]')}>
+                  <div
+                    className="text-[13px] font-medium"
+                    style={{ color: model === m ? '#1A93FE' : '#D0D0D0' }}
+                  >
                     {labels[m].name}
                   </div>
-                  <div className="text-[11px] text-[#555]">{labels[m].desc}</div>
+                  <div className="text-[11px]" style={{ color: '#4A4A4A' }}>{labels[m].desc}</div>
                 </div>
               </button>
             ))}

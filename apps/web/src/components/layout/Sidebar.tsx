@@ -40,6 +40,7 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
 
   const handleNewChat = () => {
     createConversation()
+    onNavigate?.('chat')
   }
 
   const groupedConversations = () => {
@@ -65,30 +66,27 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
   if (!sidebarOpen) {
     return (
       <div
-        className="flex flex-col items-center py-3 px-1.5 gap-1.5 h-full flex-shrink-0"
-        style={{ background: '#171717', width: 52, borderRight: '1px solid #2A2A2A' }}
+        className="flex flex-col items-center py-3 px-1.5 gap-1 h-full flex-shrink-0"
+        style={{ background: '#171717', width: 52, borderRight: '1px solid #252525' }}
       >
         <button
           onClick={() => setSidebarOpen(true)}
-          className="p-2 rounded-lg hover:bg-[#2E2E2E] transition-colors text-[#555] hover:text-[#8A8A8A]"
+          className="p-2 rounded-lg hover:bg-[#2A2A2A] transition-colors text-[#4A4A4A] hover:text-[#8A8A8A]"
           title="Åpne meny"
         >
           <PanelLeftOpen size={16} />
         </button>
-        <button
-          onClick={handleNewChat}
-          className="p-2 rounded-lg hover:bg-[#2E2E2E] transition-colors text-[#555] hover:text-[#8A8A8A]"
-          title={t.app.newChat}
-        >
+        <div className="w-full h-px my-1" style={{ background: '#252525' }} />
+        <button onClick={handleNewChat} className="p-2 rounded-lg hover:bg-[#2A2A2A] transition-colors text-[#4A4A4A] hover:text-[#8A8A8A]" title={t.app.newChat}>
           <Plus size={16} />
         </button>
-        <button className="p-2 rounded-lg hover:bg-[#2E2E2E] transition-colors text-[#555] hover:text-[#8A8A8A]" title={t.app.agents}>
+        <button onClick={() => onNavigate?.('agents')} className="p-2 rounded-lg hover:bg-[#2A2A2A] transition-colors text-[#4A4A4A] hover:text-[#8A8A8A]" title={t.app.agents}>
           <Bot size={16} />
         </button>
-        <button className="p-2 rounded-lg hover:bg-[#2E2E2E] transition-colors text-[#555] hover:text-[#8A8A8A]" title={t.app.search}>
+        <button onClick={() => onNavigate?.('search')} className="p-2 rounded-lg hover:bg-[#2A2A2A] transition-colors text-[#4A4A4A] hover:text-[#8A8A8A]" title={t.app.search}>
           <Search size={16} />
         </button>
-        <button className="p-2 rounded-lg hover:bg-[#2E2E2E] transition-colors text-[#555] hover:text-[#8A8A8A]" title={t.app.library}>
+        <button onClick={() => onNavigate?.('library')} className="p-2 rounded-lg hover:bg-[#2A2A2A] transition-colors text-[#4A4A4A] hover:text-[#8A8A8A]" title={t.app.library}>
           <BookOpen size={16} />
         </button>
       </div>
@@ -98,16 +96,24 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
   return (
     <div
       className="flex flex-col h-full flex-shrink-0"
-      style={{ background: '#171717', width: 220, borderRight: '1px solid #2A2A2A' }}
+      style={{ background: '#171717', width: 220, borderRight: '1px solid #252525' }}
     >
       {/* Logo + collapse */}
-      <div className="flex items-center justify-between px-3 pt-3 pb-2">
-        <div className="flex items-center gap-2">
-          <img src="./Sine.webp" alt="Sine" className="h-5 w-auto opacity-75" />
+      <div className="flex items-center justify-between px-3 pt-3.5 pb-2.5">
+        <div className="flex items-center gap-2 pl-1">
+          <img
+            src="/sine/sine-logo.webp"
+            alt="Sine"
+            className="h-[18px] w-auto"
+            style={{ opacity: 0.7 }}
+          />
         </div>
         <button
           onClick={() => setSidebarOpen(false)}
-          className="p-1.5 rounded-md hover:bg-[#2A2A2A] transition-colors text-[#444] hover:text-[#8A8A8A]"
+          className="p-1.5 rounded-md hover:bg-[#2A2A2A] transition-colors"
+          style={{ color: '#3A3A3A' }}
+          onMouseEnter={e => (e.currentTarget.style.color = '#8A8A8A')}
+          onMouseLeave={e => (e.currentTarget.style.color = '#3A3A3A')}
         >
           <PanelLeftClose size={15} />
         </button>
@@ -115,19 +121,49 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
 
       {/* Main nav */}
       <div className="px-2 pb-1 space-y-0.5">
-        <NavItem icon={<Plus size={15} />} label={t.app.newChat} onClick={handleNewChat} active={currentPage === 'chat' && !activeConversationId} />
-        <NavItem icon={<Bot size={15} />} label={t.app.agents} onClick={() => onNavigate?.('agents')} active={currentPage === 'agents'} badge="Ny" />
-        <NavItem icon={<Search size={15} />} label={t.app.search} onClick={() => onNavigate?.('search')} active={currentPage === 'search'} hint="⌘K" />
-        <NavItem icon={<BookOpen size={15} />} label={t.app.library} onClick={() => onNavigate?.('library')} active={currentPage === 'library'} />
+        <NavItem
+          icon={<Plus size={15} />}
+          label={t.app.newChat}
+          onClick={handleNewChat}
+          active={currentPage === 'chat' && !activeConversationId}
+        />
+        <NavItem
+          icon={<Bot size={15} />}
+          label={t.app.agents}
+          onClick={() => onNavigate?.('agents')}
+          active={currentPage === 'agents'}
+          badge="Ny"
+        />
+        <NavItem
+          icon={<Search size={15} />}
+          label={t.app.search}
+          onClick={() => onNavigate?.('search')}
+          active={currentPage === 'search'}
+          hint="⌘K"
+        />
+        <NavItem
+          icon={<BookOpen size={15} />}
+          label={t.app.library}
+          onClick={() => onNavigate?.('library')}
+          active={currentPage === 'library'}
+        />
       </div>
 
+      {/* Divider */}
+      <div className="mx-3 my-1.5" style={{ height: 1, background: '#252525' }} />
+
       {/* Projects */}
-      <div className="px-2 pb-1 mt-1">
-        <div className="flex items-center justify-between px-2 py-1">
-          <span className="text-[11px] font-medium text-[#444] uppercase tracking-wider">
+      <div className="px-2 pb-1">
+        <div className="flex items-center justify-between px-2 py-1.5">
+          <span className="text-[10.5px] font-semibold tracking-wider uppercase" style={{ color: '#3A3A3A' }}>
             {t.app.projects}
           </span>
-          <button className="text-[#444] hover:text-[#8A8A8A] transition-colors rounded p-0.5">
+          <button
+            className="rounded p-0.5 transition-colors"
+            style={{ color: '#3A3A3A' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#8A8A8A')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#3A3A3A')}
+          >
             <Plus size={12} />
           </button>
         </div>
@@ -135,20 +171,29 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
       </div>
 
       {/* Conversations list */}
-      <div className="flex-1 overflow-y-auto px-1 pb-2 mt-1">
-        <div className="flex items-center justify-between px-3 py-1">
-          <span className="text-[11px] font-medium text-[#444] uppercase tracking-wider">
+      <div className="flex-1 overflow-y-auto px-1 pb-2">
+        <div className="flex items-center justify-between px-3 py-1.5">
+          <span className="text-[10.5px] font-semibold tracking-wider uppercase" style={{ color: '#3A3A3A' }}>
             {t.app.allTasks}
           </span>
-          <button className="text-[#444] hover:text-[#8A8A8A] transition-colors rounded p-0.5">
+          <button
+            className="rounded p-0.5 transition-colors"
+            style={{ color: '#3A3A3A' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#8A8A8A')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#3A3A3A')}
+          >
             <SlidersHorizontal size={11} />
           </button>
         </div>
 
         {conversations.length === 0 ? (
-          <p className="text-[12px] text-[#444] px-3 py-4 text-center leading-relaxed">
-            Ingen samtaler ennå.<br />
-            <span className="text-[#1A93FE] cursor-pointer hover:underline" onClick={handleNewChat}>
+          <p className="text-[12px] px-3 py-3 text-center leading-relaxed" style={{ color: '#3A3A3A' }}>
+            Ingen samtaler ennå.{' '}
+            <span
+              className="cursor-pointer hover:underline"
+              style={{ color: '#1A93FE' }}
+              onClick={handleNewChat}
+            >
               Start en ny samtale
             </span>
           </p>
@@ -163,38 +208,54 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
       </div>
 
       {/* Bottom */}
-      <div style={{ borderTop: '1px solid #2A2A2A' }}>
+      <div style={{ borderTop: '1px solid #252525' }}>
         {/* Referral banner */}
-        <div className="mx-2 my-2 flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-[#1E1E1E] transition-all group" style={{ background: '#1A1A1A', border: '1px solid #2A2A2A' }}>
-          <Zap size={13} className="text-[#1A93FE] flex-shrink-0" />
+        <div
+          className="mx-2 my-2 flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all group"
+          style={{ background: '#1A1A1A', border: '1px solid #252525' }}
+          onMouseEnter={e => (e.currentTarget.style.background = '#1E1E1E')}
+          onMouseLeave={e => (e.currentTarget.style.background = '#1A1A1A')}
+        >
+          <Zap size={13} style={{ color: '#1A93FE', flexShrink: 0 }} />
           <div className="flex-1 min-w-0">
-            <div className="text-[12px] font-medium text-[#B0B0B0] truncate">Del Sine med en venn</div>
-            <div className="text-[11px] text-[#444]">Få 500 kreditter hver</div>
+            <div className="text-[12px] font-medium truncate" style={{ color: '#9A9A9A' }}>Del Sine med en venn</div>
+            <div className="text-[11px]" style={{ color: '#3A3A3A' }}>Få 500 kreditter hver</div>
           </div>
-          <ChevronRight size={12} className="text-[#444] group-hover:text-[#8A8A8A] transition-colors flex-shrink-0" />
+          <ChevronRight size={12} style={{ color: '#3A3A3A', flexShrink: 0 }} />
         </div>
 
         {/* Icon row */}
         <div className="flex items-center justify-between px-3 pb-3 pt-0.5">
           <div className="flex items-center gap-0.5">
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className="p-1.5 rounded-md text-[#444] hover:text-[#8A8A8A] hover:bg-[#2A2A2A] transition-all"
-              title="Innstillinger"
-            >
+            <IconBtn onClick={() => setSettingsOpen(true)} title="Innstillinger">
               <LayoutGrid size={14} />
-            </button>
-            <button className="p-1.5 rounded-md text-[#444] hover:text-[#8A8A8A] hover:bg-[#2A2A2A] transition-all" title="Visning">
+            </IconBtn>
+            <IconBtn title="Visning">
               <Monitor size={14} />
-            </button>
-            <button className="p-1.5 rounded-md text-[#444] hover:text-[#8A8A8A] hover:bg-[#2A2A2A] transition-all" title="Terminal">
+            </IconBtn>
+            <IconBtn title="Terminal">
               <Terminal size={14} />
-            </button>
+            </IconBtn>
           </div>
-          <span className="text-[10px] text-[#333]">fra Sine AI</span>
+          <span className="text-[10px]" style={{ color: '#2A2A2A' }}>fra Sine AI</span>
         </div>
       </div>
     </div>
+  )
+}
+
+function IconBtn({ children, onClick, title }: { children: React.ReactNode; onClick?: () => void; title?: string }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className="p-1.5 rounded-md transition-all"
+      style={{ color: '#3A3A3A' }}
+      onMouseEnter={e => { e.currentTarget.style.color = '#8A8A8A'; e.currentTarget.style.background = '#2A2A2A' }}
+      onMouseLeave={e => { e.currentTarget.style.color = '#3A3A3A'; e.currentTarget.style.background = 'transparent' }}
+    >
+      {children}
+    </button>
   )
 }
 
@@ -212,21 +273,21 @@ function NavItem({
     <button
       onClick={onClick}
       className={cn(
-        'flex items-center gap-2.5 w-full px-2 py-[7px] rounded-lg text-[13.5px] transition-all',
+        'flex items-center gap-2.5 w-full px-2 py-[7px] rounded-lg text-[13.5px] transition-all text-left',
         active
-          ? 'bg-[#333333] text-[#E5E5E5]'
-          : 'text-[#8A8A8A] hover:bg-[#2E2E2E] hover:text-[#E5E5E5]'
+          ? 'bg-[#2A2A2A] text-[#E5E5E5]'
+          : 'text-[#6A6A6A] hover:bg-[#222222] hover:text-[#C0C0C0]'
       )}
     >
-      <span className="flex-shrink-0 opacity-80">{icon}</span>
-      <span className="truncate flex-1 text-left">{label}</span>
+      <span className="flex-shrink-0">{icon}</span>
+      <span className="truncate flex-1">{label}</span>
       {badge && (
-        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[#1A93FE] text-white leading-none">
+        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full leading-none" style={{ background: '#1A93FE', color: '#fff' }}>
           {badge}
         </span>
       )}
       {hint && (
-        <span className="text-[11px] text-[#444] font-medium">{hint}</span>
+        <span className="text-[11px] font-medium" style={{ color: '#3A3A3A' }}>{hint}</span>
       )}
     </button>
   )
@@ -245,27 +306,30 @@ function ConvGroup({
 }) {
   if (conversations.length === 0) return null
   return (
-    <div className="mt-1.5">
-      <p className="text-[11px] text-[#444] px-3 py-1 font-medium uppercase tracking-wider">{label}</p>
+    <div className="mt-2">
+      <p className="text-[10.5px] font-semibold px-3 py-1 uppercase tracking-wider" style={{ color: '#3A3A3A' }}>{label}</p>
       {conversations.map(conv => (
         <div
           key={conv.id}
           className={cn(
             'group relative flex items-center gap-2 mx-1 px-2 py-[7px] rounded-lg cursor-pointer transition-all text-[13px]',
             activeId === conv.id
-              ? 'bg-[#333333] text-[#E5E5E5]'
-              : 'text-[#8A8A8A] hover:bg-[#2E2E2E] hover:text-[#E5E5E5]'
+              ? 'bg-[#2A2A2A] text-[#E5E5E5]'
+              : 'text-[#6A6A6A] hover:bg-[#222222] hover:text-[#C0C0C0]'
           )}
           onClick={() => onSelect(conv.id)}
           onMouseEnter={() => onHover(conv.id)}
           onMouseLeave={() => onHover(null)}
         >
-          <span className="flex-shrink-0 text-[11px] opacity-50">{getConvIcon(conv.title)}</span>
+          <span className="flex-shrink-0 text-[11px]" style={{ opacity: 0.4 }}>{getConvIcon(conv.title)}</span>
           <span className="truncate flex-1">{truncate(conv.title, 26)}</span>
           {hoveredId === conv.id && (
             <button
               onClick={e => { e.stopPropagation(); onDelete(conv.id) }}
-              className="absolute right-1.5 p-1 rounded hover:bg-[#3A3A3A] text-[#555] hover:text-red-400 transition-colors"
+              className="absolute right-1.5 p-1 rounded transition-colors"
+              style={{ color: '#4A4A4A' }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}
             >
               <Trash2 size={11} />
             </button>
