@@ -1,19 +1,23 @@
 import { useState, useRef, useCallback, type KeyboardEvent } from 'react'
 import {
   Plus, GitBranch, MessageSquare, Mic, ArrowUp, Square,
-  ChevronDown, Globe, Cpu
+  ChevronDown, Globe, Cpu, Shield, ShieldOff
 } from 'lucide-react'
 import type { SineModel } from '@/types'
 import { getTranslations } from '@/i18n'
+import type { AgentMode } from '@/hooks/useAgent'
 
 interface ChatInputProps {
-  onSend: (message: string) => void
+  onSend: (message: string, mode?: AgentMode) => void
   onStop?: () => void
   isStreaming?: boolean
   model: SineModel
   onModelChange: (model: SineModel) => void
   language: 'no' | 'en'
   disabled?: boolean
+  agentMode?: AgentMode
+  onAgentModeChange?: (mode: AgentMode) => void
+  isAgentActive?: boolean
 }
 
 export function ChatInput({
@@ -24,10 +28,14 @@ export function ChatInput({
   onModelChange,
   language,
   disabled,
+  agentMode = 'safe',
+  onAgentModeChange,
+  isAgentActive,
 }: ChatInputProps) {
   const [value, setValue] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const t = getTranslations(language)
+  const isSafeMode = agentMode === 'safe'
 
   const adjustHeight = useCallback(() => {
     const ta = textareaRef.current
@@ -39,7 +47,7 @@ export function ChatInput({
   const handleSend = useCallback(() => {
     const trimmed = value.trim()
     if (!trimmed || isStreaming || disabled) return
-    onSend(trimmed)
+    onSend(trimmed, agentMode)
     setValue('')
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
@@ -64,7 +72,7 @@ export function ChatInput({
           value={value}
           onChange={e => { setValue(e.target.value); adjustHeight() }}
           onKeyDown={handleKeyDown}
-          placeholder={t.app.placeholder}
+          placeholder={isAgentActive ? 'Gi agenten en ny oppgave...' : t.app.placeholder}
           disabled={disabled}
           rows={1}
           className="chat-textarea"
@@ -83,6 +91,36 @@ export function ChatInput({
             <button className="toolbar-btn" title="Kontekst">
               <MessageSquare size={18} />
             </button>
+
+            {/* Safe Mode toggle */}
+            {onAgentModeChange && (
+              <button
+                className="toolbar-btn"
+                onClick={() => onAgentModeChange(isSafeMode ? 'power' : 'safe')}
+                title={isSafeMode ? 'Safe Mode: PÅ – klikk for å slå av' : 'Safe Mode: AV – klikk for å slå på'}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  background: isSafeMode
+                    ? 'rgba(34,197,94,0.12)'
+                    : 'rgba(239,68,68,0.12)',
+                  border: `1px solid ${isSafeMode ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`,
+                  color: isSafeMode ? '#4ADE80' : '#F87171',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {isSafeMode ? <Shield size={12} /> : <ShieldOff size={12} />}
+                <span style={{ fontSize: '11px' }}>
+                  {isSafeMode ? 'Safe' : 'Power'}
+                </span>
+              </button>
+            )}
           </div>
 
           <div className="chat-toolbar-right">

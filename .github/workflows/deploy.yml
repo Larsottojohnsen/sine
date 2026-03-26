@@ -39,6 +39,7 @@ jobs:
         working-directory: apps/web
         env:
           VITE_CLAUDE_API_KEY: ${{ secrets.VITE_CLAUDE_API_KEY }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
         run: pnpm build
 
       - name: Setup Pages
