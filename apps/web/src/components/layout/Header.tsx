@@ -21,14 +21,14 @@ export function Header() {
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <button className="header-model-btn">
           <span>{currentModel}</span>
-          <ChevronDown size={13} style={{ color: '#5A5A5A', flexShrink: 0 }} />
+          <ChevronDown size={15} style={{ color: '#5A5A5A', flexShrink: 0 }} />
         </button>
       </div>
 
       {/* Right: actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <button className="header-icon-btn" title="Varsler">
-          <Bell size={15} />
+          <Bell size={18} />
         </button>
 
         <button
@@ -47,15 +47,15 @@ export function Header() {
           <>
             <div style={{ width: 1, height: 16, background: '#252525', margin: '0 2px' }} />
             <button className="header-action-btn">
-              <Users size={13} />
+              <Users size={16} />
               <span>{t.app.collaborate}</span>
             </button>
             <button className="header-action-btn">
-              <Share2 size={13} />
+              <Share2 size={16} />
               <span>{t.app.share}</span>
             </button>
             <button className="header-icon-btn" title="Mer">
-              <MoreHorizontal size={15} />
+              <MoreHorizontal size={18} />
             </button>
           </>
         )}

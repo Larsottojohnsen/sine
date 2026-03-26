@@ -65,20 +65,20 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
     return (
       <div className="sidebar-collapsed">
         <button className="icon-btn" onClick={() => setSidebarOpen(true)} title="Åpne meny">
-          <PanelLeftOpen size={16} />
+          <PanelLeftOpen size={18} />
         </button>
         <div style={{ width: '100%', height: 1, background: '#252525', margin: '4px 0' }} />
         <button className="icon-btn" onClick={handleNewChat} title={t.app.newChat}>
-          <Plus size={16} />
+          <Plus size={18} />
         </button>
         <button className="icon-btn" onClick={() => onNavigate?.('agents')} title={t.app.agents}>
-          <Bot size={16} />
+          <Bot size={18} />
         </button>
         <button className="icon-btn" onClick={() => onNavigate?.('search')} title={t.app.search}>
-          <Search size={16} />
+          <Search size={18} />
         </button>
         <button className="icon-btn" onClick={() => onNavigate?.('library')} title={t.app.library}>
-          <BookOpen size={16} />
+          <BookOpen size={18} />
         </button>
       </div>
     )
@@ -92,7 +92,7 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
           <img
             src="/sine/sine-logo.webp"
             alt="Sine"
-            style={{ height: 18, width: 'auto', opacity: 0.75 }}
+            style={{ height: 22, width: 'auto', opacity: 0.85 }}
           />
         </div>
         <button
@@ -100,7 +100,7 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
           onClick={() => setSidebarOpen(false)}
           title="Lukk sidebar"
         >
-          <PanelLeftClose size={15} />
+          <PanelLeftClose size={18} />
         </button>
       </div>
 
@@ -110,14 +110,14 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
           className={`nav-item highlight`}
           onClick={handleNewChat}
         >
-          <Plus size={15} style={{ flexShrink: 0 }} />
+          <Plus size={18} style={{ flexShrink: 0 }} />
           <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.app.newChat}</span>
         </button>
         <button
           className={`nav-item${currentPage === 'agents' ? ' active' : ''}`}
           onClick={() => onNavigate?.('agents')}
         >
-          <Bot size={15} style={{ flexShrink: 0 }} />
+          <Bot size={18} style={{ flexShrink: 0 }} />
           <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.app.agents}</span>
           <span style={{
             fontSize: 10, fontWeight: 700, padding: '1px 5px', borderRadius: 4,
@@ -128,7 +128,7 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
           className={`nav-item${currentPage === 'search' ? ' active' : ''}`}
           onClick={() => onNavigate?.('search')}
         >
-          <Search size={15} style={{ flexShrink: 0 }} />
+          <Search size={18} style={{ flexShrink: 0 }} />
           <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.app.search}</span>
           <span style={{ fontSize: 11, color: '#3A3A3A', flexShrink: 0 }}>⌘K</span>
         </button>
@@ -136,7 +136,7 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
           className={`nav-item${currentPage === 'library' ? ' active' : ''}`}
           onClick={() => onNavigate?.('library')}
         >
-          <BookOpen size={15} style={{ flexShrink: 0 }} />
+          <BookOpen size={18} style={{ flexShrink: 0 }} />
           <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.app.library}</span>
         </button>
       </div>
@@ -153,7 +153,7 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
           </button>
         </div>
         <button className="nav-item" onClick={() => {}}>
-          <FolderPlus size={14} style={{ flexShrink: 0 }} />
+          <FolderPlus size={18} style={{ flexShrink: 0 }} />
           <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.app.newProject}</span>
         </button>
       </div>
@@ -213,13 +213,13 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
         <div className="sidebar-icon-row">
           <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <button className="icon-btn" onClick={() => setSettingsOpen(true)} title="Innstillinger">
-              <LayoutGrid size={14} />
+              <LayoutGrid size={18} />
             </button>
             <button className="icon-btn" title="Visning">
-              <Monitor size={14} />
+              <Monitor size={18} />
             </button>
             <button className="icon-btn" title="Terminal">
-              <Terminal size={14} />
+              <Terminal size={18} />
             </button>
           </div>
           <span style={{ fontSize: 10, color: '#2A2A2A' }}>fra Sine AI</span>

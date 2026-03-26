@@ -41,7 +41,7 @@ export function ChatMessage({ message, onRegenerate, isLast }: ChatMessageProps)
         <img
           src="/sine/sine-logo.webp"
           alt="Sine"
-          style={{ width: 14, height: 14, objectFit: 'contain', opacity: 0.85 }}
+          style={{ width: 20, height: 20, objectFit: 'contain', opacity: 0.9 }}
         />
       </div>
 

@@ -75,20 +75,20 @@ export function ChatInput({
         <div className="chat-toolbar">
           <div className="chat-toolbar-left">
             <button className="toolbar-btn" title={t.chat.uploadFile}>
-              <Plus size={16} />
+              <Plus size={18} />
             </button>
             <button className="toolbar-btn" title="GitHub">
-              <GitBranch size={16} />
+              <GitBranch size={18} />
             </button>
             <button className="toolbar-btn" title="Kontekst">
-              <MessageSquare size={16} />
+              <MessageSquare size={18} />
             </button>
           </div>
 
           <div className="chat-toolbar-right">
             <ModelSelector model={model} onModelChange={onModelChange} />
             <button className="mic-btn" title={t.chat.voiceInput}>
-              <Mic size={15} />
+              <Mic size={18} />
             </button>
 
             {isStreaming ? (
@@ -97,7 +97,7 @@ export function ChatInput({
                 className="send-btn"
                 title={t.chat.stop}
               >
-                <Square size={11} fill="#1C1C1C" style={{ color: '#1C1C1C' }} />
+                <Square size={12} fill="#1C1C1C" style={{ color: '#1C1C1C' }} />
               </button>
             ) : (
               <button
@@ -106,7 +106,7 @@ export function ChatInput({
                 className="send-btn"
                 title={t.chat.send}
               >
-                <ArrowUp size={14} strokeWidth={2.5} />
+                <ArrowUp size={16} strokeWidth={2.5} />
               </button>
             )}
           </div>
