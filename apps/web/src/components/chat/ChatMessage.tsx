@@ -5,7 +5,6 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { Copy, Check, RefreshCw, ThumbsUp, ThumbsDown } from 'lucide-react'
 import type { Message } from '@/types'
-import { cn } from '@/lib/utils'
 
 interface ChatMessageProps {
   message: Message
@@ -27,11 +26,8 @@ export function ChatMessage({ message, onRegenerate, isLast }: ChatMessageProps)
 
   if (isUser) {
     return (
-      <div className="flex justify-end animate-fade-in px-4 py-2">
-        <div
-          className="max-w-[75%] px-4 py-2.5 rounded-2xl rounded-tr-sm text-[14px] leading-relaxed"
-          style={{ background: '#2A2A2A', color: '#E5E5E5' }}
-        >
+      <div className="message-user animate-fade-in">
+        <div className="message-user-bubble">
           {message.content}
         </div>
       </div>
@@ -39,36 +35,24 @@ export function ChatMessage({ message, onRegenerate, isLast }: ChatMessageProps)
   }
 
   return (
-    <div className="group animate-fade-in px-4 py-3">
-      {/* Sine header */}
-      <div className="flex items-center gap-2 mb-2.5">
-        <div
-          className="w-[22px] h-[22px] rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
-          style={{ background: '#1A1A1A', border: '1px solid #2A2A2A' }}
-        >
-          <img
-            src="/sine/sine-logo.webp"
-            alt="Sine"
-            style={{ width: 13, height: 13, objectFit: 'contain', opacity: 0.85 }}
-          />
-        </div>
-        <span className="text-[13px] font-semibold" style={{ color: '#9A9A9A' }}>sine</span>
-        <span
-          className="text-[10px] px-1.5 py-0.5 rounded font-medium"
-          style={{ background: '#222222', color: '#5A5A5A', border: '1px solid #2A2A2A' }}
-        >
-          1.0
-        </span>
+    <div className="message-assistant animate-fade-in">
+      {/* Avatar */}
+      <div className="message-avatar">
+        <img
+          src="/sine/sine-logo.webp"
+          alt="Sine"
+          style={{ width: 14, height: 14, objectFit: 'contain', opacity: 0.85 }}
+        />
       </div>
 
-      {/* Message content */}
-      <div className="pl-8">
-        <div
-          className={cn(
-            'prose text-[14px]',
-            message.isStreaming && !message.content && 'streaming-cursor'
-          )}
-        >
+      {/* Content */}
+      <div className="message-body">
+        <div className="message-header">
+          <span className="message-name">sine</span>
+          <span className="message-badge">1.0</span>
+        </div>
+
+        <div className={`prose${message.isStreaming && !message.content ? ' streaming-cursor' : ''}`}>
           {message.isStreaming && !message.content ? (
             <span className="streaming-cursor" />
           ) : (
@@ -96,60 +80,44 @@ export function ChatMessage({ message, onRegenerate, isLast }: ChatMessageProps)
 
         {/* Action buttons */}
         {!message.isStreaming && message.content && (
-          <div className="flex items-center gap-0.5 mt-2.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            <ActionButton
+          <div className="message-actions">
+            <button
+              className="message-action-btn"
               onClick={handleCopy}
-              icon={copied ? <Check size={13} /> : <Copy size={13} />}
-              label={copied ? 'Kopiert!' : 'Kopier'}
-              active={copied}
-            />
-            <ActionButton
+              title={copied ? 'Kopiert!' : 'Kopier'}
+              style={{ color: copied ? '#1A93FE' : undefined }}
+            >
+              {copied ? <Check size={13} /> : <Copy size={13} />}
+            </button>
+            <button
+              className="message-action-btn"
               onClick={() => setLiked(true)}
-              icon={<ThumbsUp size={13} />}
-              label="Bra svar"
-              active={liked === true}
-            />
-            <ActionButton
+              title="Bra svar"
+              style={{ color: liked === true ? '#1A93FE' : undefined }}
+            >
+              <ThumbsUp size={13} />
+            </button>
+            <button
+              className="message-action-btn"
               onClick={() => setLiked(false)}
-              icon={<ThumbsDown size={13} />}
-              label="Dårlig svar"
-              active={liked === false}
-            />
+              title="Dårlig svar"
+              style={{ color: liked === false ? '#ef4444' : undefined }}
+            >
+              <ThumbsDown size={13} />
+            </button>
             {isLast && onRegenerate && (
-              <ActionButton
+              <button
+                className="message-action-btn"
                 onClick={onRegenerate}
-                icon={<RefreshCw size={13} />}
-                label="Generer på nytt"
-              />
+                title="Generer på nytt"
+              >
+                <RefreshCw size={13} />
+              </button>
             )}
           </div>
         )}
       </div>
     </div>
-  )
-}
-
-function ActionButton({
-  onClick, icon, label, active,
-}: {
-  onClick: () => void
-  icon: React.ReactNode
-  label: string
-  active?: boolean
-}) {
-  return (
-    <button
-      onClick={onClick}
-      title={label}
-      className={cn(
-        'flex items-center gap-1 p-1.5 rounded-md text-[12px] transition-colors',
-        active
-          ? 'text-[#1A93FE]'
-          : 'text-[#3A3A3A] hover:text-[#8A8A8A] hover:bg-[#242424]'
-      )}
-    >
-      {icon}
-    </button>
   )
 }
 
@@ -163,7 +131,7 @@ function CodeBlock({ language, code }: { language: string; code: string }) {
   }
 
   return (
-    <div className="rounded-xl overflow-hidden my-3" style={{ border: '1px solid #2A2A2A' }}>
+    <div className="code-block-wrapper">
       <div className="code-block-header">
         <span className="code-block-lang">{language}</span>
         <button onClick={handleCopy} className="code-block-copy">

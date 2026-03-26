@@ -4,7 +4,6 @@ import {
   Bot, PanelLeftClose, PanelLeftOpen,
   LayoutGrid, Monitor, Terminal, ChevronRight, Zap, SlidersHorizontal
 } from 'lucide-react'
-import { cn, truncate } from '@/lib/utils'
 import { useApp } from '@/store/AppContext'
 import { getTranslations } from '@/i18n'
 
@@ -49,7 +48,6 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
     const week: typeof conversations = []
     const older: typeof conversations = []
     const now = new Date()
-
     for (const c of conversations) {
       const diff = now.getTime() - c.updatedAt.getTime()
       const days = diff / (1000 * 60 * 60 * 24)
@@ -65,28 +63,21 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
 
   if (!sidebarOpen) {
     return (
-      <div
-        className="flex flex-col items-center py-3 px-1.5 gap-1 h-full flex-shrink-0"
-        style={{ background: '#171717', width: 52, borderRight: '1px solid #252525' }}
-      >
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="p-2 rounded-lg hover:bg-[#2A2A2A] transition-colors text-[#4A4A4A] hover:text-[#8A8A8A]"
-          title="Åpne meny"
-        >
+      <div className="sidebar-collapsed">
+        <button className="icon-btn" onClick={() => setSidebarOpen(true)} title="Åpne meny">
           <PanelLeftOpen size={16} />
         </button>
-        <div className="w-full h-px my-1" style={{ background: '#252525' }} />
-        <button onClick={handleNewChat} className="p-2 rounded-lg hover:bg-[#2A2A2A] transition-colors text-[#4A4A4A] hover:text-[#8A8A8A]" title={t.app.newChat}>
+        <div style={{ width: '100%', height: 1, background: '#252525', margin: '4px 0' }} />
+        <button className="icon-btn" onClick={handleNewChat} title={t.app.newChat}>
           <Plus size={16} />
         </button>
-        <button onClick={() => onNavigate?.('agents')} className="p-2 rounded-lg hover:bg-[#2A2A2A] transition-colors text-[#4A4A4A] hover:text-[#8A8A8A]" title={t.app.agents}>
+        <button className="icon-btn" onClick={() => onNavigate?.('agents')} title={t.app.agents}>
           <Bot size={16} />
         </button>
-        <button onClick={() => onNavigate?.('search')} className="p-2 rounded-lg hover:bg-[#2A2A2A] transition-colors text-[#4A4A4A] hover:text-[#8A8A8A]" title={t.app.search}>
+        <button className="icon-btn" onClick={() => onNavigate?.('search')} title={t.app.search}>
           <Search size={16} />
         </button>
-        <button onClick={() => onNavigate?.('library')} className="p-2 rounded-lg hover:bg-[#2A2A2A] transition-colors text-[#4A4A4A] hover:text-[#8A8A8A]" title={t.app.library}>
+        <button className="icon-btn" onClick={() => onNavigate?.('library')} title={t.app.library}>
           <BookOpen size={16} />
         </button>
       </div>
@@ -94,107 +85,98 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
   }
 
   return (
-    <div
-      className="flex flex-col h-full flex-shrink-0"
-      style={{ background: '#171717', width: 220, borderRight: '1px solid #252525' }}
-    >
+    <div className="sidebar">
       {/* Logo + collapse */}
-      <div className="flex items-center justify-between px-3 pt-3.5 pb-2.5">
-        <div className="flex items-center gap-2 pl-1">
+      <div className="sidebar-logo">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 4 }}>
           <img
             src="/sine/sine-logo.webp"
             alt="Sine"
-            className="h-[18px] w-auto"
-            style={{ opacity: 0.7 }}
+            style={{ height: 18, width: 'auto', opacity: 0.75 }}
           />
         </div>
         <button
+          className="icon-btn"
           onClick={() => setSidebarOpen(false)}
-          className="p-1.5 rounded-md hover:bg-[#2A2A2A] transition-colors"
-          style={{ color: '#3A3A3A' }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#8A8A8A')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#3A3A3A')}
+          title="Lukk sidebar"
         >
           <PanelLeftClose size={15} />
         </button>
       </div>
 
       {/* Main nav */}
-      <div className="px-2 pb-1 space-y-0.5">
-        <NavItem
-          icon={<Plus size={15} />}
-          label={t.app.newChat}
+      <div className="sidebar-nav" style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <button
+          className={`nav-item highlight`}
           onClick={handleNewChat}
-          active={currentPage === 'chat' && !activeConversationId}
-        />
-        <NavItem
-          icon={<Bot size={15} />}
-          label={t.app.agents}
+        >
+          <Plus size={15} style={{ flexShrink: 0 }} />
+          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.app.newChat}</span>
+        </button>
+        <button
+          className={`nav-item${currentPage === 'agents' ? ' active' : ''}`}
           onClick={() => onNavigate?.('agents')}
-          active={currentPage === 'agents'}
-          badge="Ny"
-        />
-        <NavItem
-          icon={<Search size={15} />}
-          label={t.app.search}
+        >
+          <Bot size={15} style={{ flexShrink: 0 }} />
+          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.app.agents}</span>
+          <span style={{
+            fontSize: 10, fontWeight: 700, padding: '1px 5px', borderRadius: 4,
+            background: '#1A93FE', color: '#fff', flexShrink: 0
+          }}>Ny</span>
+        </button>
+        <button
+          className={`nav-item${currentPage === 'search' ? ' active' : ''}`}
           onClick={() => onNavigate?.('search')}
-          active={currentPage === 'search'}
-          hint="⌘K"
-        />
-        <NavItem
-          icon={<BookOpen size={15} />}
-          label={t.app.library}
+        >
+          <Search size={15} style={{ flexShrink: 0 }} />
+          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.app.search}</span>
+          <span style={{ fontSize: 11, color: '#3A3A3A', flexShrink: 0 }}>⌘K</span>
+        </button>
+        <button
+          className={`nav-item${currentPage === 'library' ? ' active' : ''}`}
           onClick={() => onNavigate?.('library')}
-          active={currentPage === 'library'}
-        />
+        >
+          <BookOpen size={15} style={{ flexShrink: 0 }} />
+          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.app.library}</span>
+        </button>
       </div>
 
       {/* Divider */}
-      <div className="mx-3 my-1.5" style={{ height: 1, background: '#252525' }} />
+      <div className="sidebar-divider" />
 
       {/* Projects */}
-      <div className="px-2 pb-1">
-        <div className="flex items-center justify-between px-2 py-1.5">
-          <span className="text-[10.5px] font-semibold tracking-wider uppercase" style={{ color: '#3A3A3A' }}>
-            {t.app.projects}
-          </span>
-          <button
-            className="rounded p-0.5 transition-colors"
-            style={{ color: '#3A3A3A' }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#8A8A8A')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#3A3A3A')}
-          >
+      <div className="sidebar-section">
+        <div className="sidebar-section-header">
+          <span className="sidebar-section-label">{t.app.projects}</span>
+          <button className="icon-btn" style={{ width: 20, height: 20 }}>
             <Plus size={12} />
           </button>
         </div>
-        <NavItem icon={<FolderPlus size={14} />} label={t.app.newProject} onClick={() => {}} />
+        <button className="nav-item" onClick={() => {}}>
+          <FolderPlus size={14} style={{ flexShrink: 0 }} />
+          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.app.newProject}</span>
+        </button>
       </div>
 
-      {/* Conversations list */}
-      <div className="flex-1 overflow-y-auto px-1 pb-2">
-        <div className="flex items-center justify-between px-3 py-1.5">
-          <span className="text-[10.5px] font-semibold tracking-wider uppercase" style={{ color: '#3A3A3A' }}>
-            {t.app.allTasks}
-          </span>
-          <button
-            className="rounded p-0.5 transition-colors"
-            style={{ color: '#3A3A3A' }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#8A8A8A')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#3A3A3A')}
-          >
+      {/* Conversations */}
+      <div style={{ padding: '4px 8px 0', flexShrink: 0 }}>
+        <div className="sidebar-section-header">
+          <span className="sidebar-section-label">{t.app.allTasks}</span>
+          <button className="icon-btn" style={{ width: 20, height: 20 }}>
             <SlidersHorizontal size={11} />
           </button>
         </div>
+      </div>
 
+      <div className="sidebar-conversations">
         {conversations.length === 0 ? (
-          <p className="text-[12px] px-3 py-3 text-center leading-relaxed" style={{ color: '#3A3A3A' }}>
+          <p style={{ fontSize: 12, padding: '12px 8px', textAlign: 'center', color: '#3A3A3A', lineHeight: 1.5 }}>
             Ingen samtaler ennå.{' '}
             <span
-              className="cursor-pointer hover:underline"
-              style={{ color: '#1A93FE' }}
+              style={{ color: '#1A93FE', cursor: 'pointer' }}
               onClick={handleNewChat}
             >
-              Start en ny samtale
+              Start en ny
             </span>
           </p>
         ) : (
@@ -208,88 +190,42 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
       </div>
 
       {/* Bottom */}
-      <div style={{ borderTop: '1px solid #252525' }}>
+      <div className="sidebar-bottom">
         {/* Referral banner */}
-        <div
-          className="mx-2 my-2 flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all group"
-          style={{ background: '#1A1A1A', border: '1px solid #252525' }}
-          onMouseEnter={e => (e.currentTarget.style.background = '#1E1E1E')}
-          onMouseLeave={e => (e.currentTarget.style.background = '#1A1A1A')}
-        >
-          <Zap size={13} style={{ color: '#1A93FE', flexShrink: 0 }} />
-          <div className="flex-1 min-w-0">
-            <div className="text-[12px] font-medium truncate" style={{ color: '#9A9A9A' }}>Del Sine med en venn</div>
-            <div className="text-[11px]" style={{ color: '#3A3A3A' }}>Få 500 kreditter hver</div>
+        <div className="referral-banner">
+          <div style={{
+            width: 28, height: 28, borderRadius: 6,
+            background: 'linear-gradient(135deg,#1a93fe,#0066cc)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+          }}>
+            <Zap size={13} color="white" />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#9A9A9A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              Del Sine med en venn
+            </div>
+            <div style={{ fontSize: 11, color: '#3A3A3A' }}>Få 500 kreditter hver</div>
           </div>
           <ChevronRight size={12} style={{ color: '#3A3A3A', flexShrink: 0 }} />
         </div>
 
         {/* Icon row */}
-        <div className="flex items-center justify-between px-3 pb-3 pt-0.5">
-          <div className="flex items-center gap-0.5">
-            <IconBtn onClick={() => setSettingsOpen(true)} title="Innstillinger">
+        <div className="sidebar-icon-row">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <button className="icon-btn" onClick={() => setSettingsOpen(true)} title="Innstillinger">
               <LayoutGrid size={14} />
-            </IconBtn>
-            <IconBtn title="Visning">
+            </button>
+            <button className="icon-btn" title="Visning">
               <Monitor size={14} />
-            </IconBtn>
-            <IconBtn title="Terminal">
+            </button>
+            <button className="icon-btn" title="Terminal">
               <Terminal size={14} />
-            </IconBtn>
+            </button>
           </div>
-          <span className="text-[10px]" style={{ color: '#2A2A2A' }}>fra Sine AI</span>
+          <span style={{ fontSize: 10, color: '#2A2A2A' }}>fra Sine AI</span>
         </div>
       </div>
     </div>
-  )
-}
-
-function IconBtn({ children, onClick, title }: { children: React.ReactNode; onClick?: () => void; title?: string }) {
-  return (
-    <button
-      onClick={onClick}
-      title={title}
-      className="p-1.5 rounded-md transition-all"
-      style={{ color: '#3A3A3A' }}
-      onMouseEnter={e => { e.currentTarget.style.color = '#8A8A8A'; e.currentTarget.style.background = '#2A2A2A' }}
-      onMouseLeave={e => { e.currentTarget.style.color = '#3A3A3A'; e.currentTarget.style.background = 'transparent' }}
-    >
-      {children}
-    </button>
-  )
-}
-
-function NavItem({
-  icon, label, onClick, active, badge, hint,
-}: {
-  icon: React.ReactNode
-  label: string
-  onClick: () => void
-  active?: boolean
-  badge?: string
-  hint?: string
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'flex items-center gap-2.5 w-full px-2 py-[7px] rounded-lg text-[13.5px] transition-all text-left',
-        active
-          ? 'bg-[#2A2A2A] text-[#E5E5E5]'
-          : 'text-[#6A6A6A] hover:bg-[#222222] hover:text-[#C0C0C0]'
-      )}
-    >
-      <span className="flex-shrink-0">{icon}</span>
-      <span className="truncate flex-1">{label}</span>
-      {badge && (
-        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full leading-none" style={{ background: '#1A93FE', color: '#fff' }}>
-          {badge}
-        </span>
-      )}
-      {hint && (
-        <span className="text-[11px] font-medium" style={{ color: '#3A3A3A' }}>{hint}</span>
-      )}
-    </button>
   )
 }
 
@@ -306,35 +242,35 @@ function ConvGroup({
 }) {
   if (conversations.length === 0) return null
   return (
-    <div className="mt-2">
-      <p className="text-[10.5px] font-semibold px-3 py-1 uppercase tracking-wider" style={{ color: '#3A3A3A' }}>{label}</p>
+    <div style={{ marginBottom: 4 }}>
+      <p className="conv-group-label">{label}</p>
       {conversations.map(conv => (
-        <div
+        <button
           key={conv.id}
-          className={cn(
-            'group relative flex items-center gap-2 mx-1 px-2 py-[7px] rounded-lg cursor-pointer transition-all text-[13px]',
-            activeId === conv.id
-              ? 'bg-[#2A2A2A] text-[#E5E5E5]'
-              : 'text-[#6A6A6A] hover:bg-[#222222] hover:text-[#C0C0C0]'
-          )}
+          className={`conv-item${activeId === conv.id ? ' active' : ''}`}
           onClick={() => onSelect(conv.id)}
           onMouseEnter={() => onHover(conv.id)}
           onMouseLeave={() => onHover(null)}
         >
-          <span className="flex-shrink-0 text-[11px]" style={{ opacity: 0.4 }}>{getConvIcon(conv.title)}</span>
-          <span className="truncate flex-1">{truncate(conv.title, 26)}</span>
+          <span style={{ flexShrink: 0, fontSize: 11, opacity: 0.4 }}>{getConvIcon(conv.title)}</span>
+          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {conv.title.length > 26 ? conv.title.slice(0, 26) + '…' : conv.title}
+          </span>
           {hoveredId === conv.id && (
             <button
               onClick={e => { e.stopPropagation(); onDelete(conv.id) }}
-              className="absolute right-1.5 p-1 rounded transition-colors"
-              style={{ color: '#4A4A4A' }}
+              style={{
+                position: 'absolute', right: 6,
+                width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                borderRadius: 5, border: 'none', background: 'transparent', color: '#4A4A4A', cursor: 'pointer'
+              }}
               onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
               onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}
             >
               <Trash2 size={11} />
             </button>
           )}
-        </div>
+        </button>
       ))}
     </div>
   )

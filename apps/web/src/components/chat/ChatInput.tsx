@@ -3,7 +3,6 @@ import {
   Plus, GitBranch, MessageSquare, Mic, ArrowUp, Square,
   ChevronDown, Globe, Cpu
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import type { SineModel } from '@/types'
 import { getTranslations } from '@/i18n'
 
@@ -57,19 +56,8 @@ export function ChatInput({
   const canSend = value.trim().length > 0 && !disabled
 
   return (
-    <div className="px-4 pb-5 pt-1 flex-shrink-0">
-      {/* Main input container */}
-      <div
-        style={{
-          background: '#222222',
-          border: '1px solid #2E2E2E',
-          borderRadius: 16,
-          boxShadow: '0 2px 16px rgba(0,0,0,0.35)',
-          transition: 'border-color 150ms',
-        }}
-        onFocusCapture={e => (e.currentTarget.style.borderColor = '#3A3A3A')}
-        onBlurCapture={e => (e.currentTarget.style.borderColor = '#2E2E2E')}
-      >
+    <div className="chat-input-area">
+      <div className="chat-input-box">
         {/* Textarea */}
         <textarea
           ref={textareaRef}
@@ -79,35 +67,34 @@ export function ChatInput({
           placeholder={t.app.placeholder}
           disabled={disabled}
           rows={1}
-          className={cn(
-            'w-full resize-none bg-transparent px-4 pt-3.5 pb-2 text-[14px] leading-relaxed focus:outline-none',
-            disabled && 'opacity-50 cursor-not-allowed'
-          )}
-          style={{
-            color: '#D0D0D0',
-            maxHeight: 200,
-            minHeight: 46,
-          }}
+          className="chat-textarea"
+          style={{ opacity: disabled ? 0.5 : 1, cursor: disabled ? 'not-allowed' : 'text' }}
         />
 
         {/* Bottom toolbar */}
-        <div className="flex items-center justify-between px-3 pb-2.5 pt-0.5">
-          {/* Left tools */}
-          <div className="flex items-center gap-0.5">
-            <ToolButton icon={<Plus size={16} />} title={t.chat.uploadFile} />
-            <ToolButton icon={<GitBranch size={16} />} title="GitHub" />
-            <ToolButton icon={<MessageSquare size={16} />} title="Kontekst" />
+        <div className="chat-toolbar">
+          <div className="chat-toolbar-left">
+            <button className="toolbar-btn" title={t.chat.uploadFile}>
+              <Plus size={16} />
+            </button>
+            <button className="toolbar-btn" title="GitHub">
+              <GitBranch size={16} />
+            </button>
+            <button className="toolbar-btn" title="Kontekst">
+              <MessageSquare size={16} />
+            </button>
           </div>
 
-          {/* Right: model + mic + send */}
-          <div className="flex items-center gap-1.5">
+          <div className="chat-toolbar-right">
             <ModelSelector model={model} onModelChange={onModelChange} />
-            <ToolButton icon={<Mic size={16} />} title={t.chat.voiceInput} />
+            <button className="mic-btn" title={t.chat.voiceInput}>
+              <Mic size={15} />
+            </button>
 
             {isStreaming ? (
               <button
                 onClick={onStop}
-                className="w-7 h-7 rounded-full flex items-center justify-center transition-all hover:opacity-80"
+                className="send-btn"
                 style={{ background: '#D0D0D0' }}
                 title={t.chat.stop}
               >
@@ -117,40 +104,21 @@ export function ChatInput({
               <button
                 onClick={handleSend}
                 disabled={!canSend}
-                className={cn(
-                  'w-7 h-7 rounded-full flex items-center justify-center transition-all',
-                  canSend ? 'hover:opacity-85 cursor-pointer' : 'cursor-not-allowed'
-                )}
-                style={{ background: canSend ? '#D0D0D0' : '#2A2A2A' }}
+                className="send-btn"
+                style={{ background: canSend ? '#1A93FE' : '#2A2A2A' }}
                 title={t.chat.send}
               >
-                <ArrowUp size={14} style={{ color: '#1C1C1C', opacity: canSend ? 1 : 0.3 }} strokeWidth={2.5} />
+                <ArrowUp size={14} style={{ color: canSend ? '#fff' : '#4A4A4A' }} strokeWidth={2.5} />
               </button>
             )}
           </div>
         </div>
       </div>
 
-      {/* Disclaimer */}
-      <p className="text-center mt-2" style={{ fontSize: 11, color: '#2E2E2E' }}>
+      <p className="chat-disclaimer">
         Sine kan gjøre feil. Sjekk viktig informasjon.
       </p>
     </div>
-  )
-}
-
-function ToolButton({ icon, title, onClick }: { icon: React.ReactNode; title: string; onClick?: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      title={title}
-      className="p-1.5 rounded-lg transition-colors"
-      style={{ color: '#4A4A4A' }}
-      onMouseEnter={e => (e.currentTarget.style.color = '#8A8A8A')}
-      onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}
-    >
-      {icon}
-    </button>
   )
 }
 
@@ -163,13 +131,10 @@ function ModelSelector({ model, onModelChange }: { model: SineModel; onModelChan
   }
 
   return (
-    <div className="relative">
+    <div style={{ position: 'relative' }}>
       <button
+        className="model-select-btn"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1 px-2 py-1 rounded-lg text-[12px] transition-colors"
-        style={{ color: '#4A4A4A' }}
-        onMouseEnter={e => (e.currentTarget.style.color = '#8A8A8A')}
-        onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}
       >
         <span>{labels[model].name}</span>
         <ChevronDown size={10} />
@@ -177,21 +142,43 @@ function ModelSelector({ model, onModelChange }: { model: SineModel; onModelChan
 
       {open && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div
-            className="absolute bottom-full mb-2 left-0 rounded-xl overflow-hidden z-50 py-1 min-w-[180px]"
+            style={{ position: 'fixed', inset: 0, zIndex: 40 }}
+            onClick={() => setOpen(false)}
+          />
+          <div
             style={{
+              position: 'absolute',
+              bottom: '100%',
+              marginBottom: 8,
+              left: 0,
+              borderRadius: 10,
+              overflow: 'hidden',
+              zIndex: 50,
+              minWidth: 180,
               background: '#1A1A1A',
               border: '1px solid #2E2E2E',
               boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+              padding: '4px 0',
             }}
           >
             {(['sine-1', 'sine-pro'] as SineModel[]).map(m => (
               <button
                 key={m}
                 onClick={() => { onModelChange(m); setOpen(false) }}
-                className="w-full text-left px-3 py-2.5 transition-colors flex items-center gap-2.5"
-                style={{ background: model === m ? '#242424' : 'transparent' }}
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '8px 12px',
+                  background: model === m ? '#242424' : 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  fontFamily: 'inherit',
+                  transition: 'background 0.1s',
+                }}
                 onMouseEnter={e => { if (model !== m) e.currentTarget.style.background = '#1E1E1E' }}
                 onMouseLeave={e => { if (model !== m) e.currentTarget.style.background = 'transparent' }}
               >
@@ -199,13 +186,10 @@ function ModelSelector({ model, onModelChange }: { model: SineModel; onModelChan
                   {labels[m].icon}
                 </span>
                 <div>
-                  <div
-                    className="text-[13px] font-medium"
-                    style={{ color: model === m ? '#1A93FE' : '#D0D0D0' }}
-                  >
+                  <div style={{ fontSize: 13, fontWeight: 500, color: model === m ? '#1A93FE' : '#D0D0D0' }}>
                     {labels[m].name}
                   </div>
-                  <div className="text-[11px]" style={{ color: '#4A4A4A' }}>{labels[m].desc}</div>
+                  <div style={{ fontSize: 11, color: '#4A4A4A' }}>{labels[m].desc}</div>
                 </div>
               </button>
             ))}

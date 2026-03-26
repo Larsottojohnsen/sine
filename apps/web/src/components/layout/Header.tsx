@@ -1,4 +1,4 @@
-import { ChevronDown, Share2, MoreHorizontal, Bell, Users, Coins } from 'lucide-react'
+import { ChevronDown, Share2, MoreHorizontal, Bell, Users } from 'lucide-react'
 import { useApp } from '@/store/AppContext'
 import { getTranslations } from '@/i18n'
 
@@ -16,101 +16,59 @@ export function Header() {
     : 'Sine 1.0'
 
   return (
-    <header
-      className="flex items-center justify-between flex-shrink-0"
-      style={{
-        height: 48,
-        paddingLeft: 16,
-        paddingRight: 16,
-        borderBottom: '1px solid #202020',
-        background: '#1C1C1C',
-      }}
-    >
+    <header className="header">
       {/* Left: model selector */}
-      <div className="flex items-center">
-        <button
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all"
-          style={{ color: '#D0D0D0', fontSize: 14, fontWeight: 500 }}
-          onMouseEnter={e => (e.currentTarget.style.background = '#242424')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-        >
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <button className="header-model-btn">
           <span>{currentModel}</span>
-          <ChevronDown size={13} style={{ color: '#5A5A5A' }} />
+          <ChevronDown size={13} style={{ color: '#5A5A5A', flexShrink: 0 }} />
         </button>
       </div>
 
       {/* Right: actions */}
-      <div className="flex items-center gap-0.5">
-        {/* Notifications */}
-        <HeaderBtn title="Varsler">
-          <Bell size={16} />
-        </HeaderBtn>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <button className="header-icon-btn" title="Varsler">
+          <Bell size={15} />
+        </button>
 
-        {/* Credits */}
         <button
+          className="header-credits-btn"
           onClick={() => setSettingsOpen(true)}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all"
-          style={{ fontSize: 13, color: '#6A6A6A' }}
           title="Kreditter"
-          onMouseEnter={e => { e.currentTarget.style.background = '#242424'; e.currentTarget.style.color = '#D0D0D0' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#6A6A6A' }}
         >
-          <Coins size={14} style={{ color: '#1A93FE' }} />
-          <span className="font-medium">1 000</span>
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="6.5" stroke="#1A93FE" strokeWidth="1.5"/>
+            <path d="M8 5v3l2 1.5" stroke="#1A93FE" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+          <span style={{ fontWeight: 500 }}>1 000</span>
         </button>
 
         {activeConversation && (
           <>
-            <div style={{ width: 1, height: 16, background: '#252525', margin: '0 4px' }} />
-            <button
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all"
-              style={{ fontSize: 13, color: '#6A6A6A' }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#242424'; e.currentTarget.style.color = '#D0D0D0' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#6A6A6A' }}
-            >
-              <Users size={14} />
+            <div style={{ width: 1, height: 16, background: '#252525', margin: '0 2px' }} />
+            <button className="header-action-btn">
+              <Users size={13} />
               <span>{t.app.collaborate}</span>
             </button>
-            <button
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all"
-              style={{ fontSize: 13, color: '#6A6A6A' }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#242424'; e.currentTarget.style.color = '#D0D0D0' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#6A6A6A' }}
-            >
-              <Share2 size={14} />
+            <button className="header-action-btn">
+              <Share2 size={13} />
               <span>{t.app.share}</span>
             </button>
-            <HeaderBtn title="Mer">
-              <MoreHorizontal size={16} />
-            </HeaderBtn>
+            <button className="header-icon-btn" title="Mer">
+              <MoreHorizontal size={15} />
+            </button>
           </>
         )}
 
-        {/* User avatar */}
         <button
+          className="header-avatar"
           onClick={() => setSettingsOpen(true)}
-          className="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-semibold ml-1.5 cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0"
-          style={{ background: 'linear-gradient(135deg, #1A93FE, #0066CC)', color: '#fff' }}
           title="Profil og innstillinger"
+          style={{ marginLeft: 4 }}
         >
           S
         </button>
       </div>
     </header>
-  )
-}
-
-function HeaderBtn({ children, title, onClick }: { children: React.ReactNode; title?: string; onClick?: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      title={title}
-      className="p-2 rounded-lg transition-all"
-      style={{ color: '#4A4A4A' }}
-      onMouseEnter={e => { e.currentTarget.style.color = '#8A8A8A'; e.currentTarget.style.background = '#242424' }}
-      onMouseLeave={e => { e.currentTarget.style.color = '#4A4A4A'; e.currentTarget.style.background = 'transparent' }}
-    >
-      {children}
-    </button>
   )
 }
