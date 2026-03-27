@@ -1,12 +1,13 @@
 import { useState, useRef, useCallback, type KeyboardEvent, useEffect } from 'react'
 import {
   GitBranch, Monitor, Mic, ArrowUp, Square,
-  ChevronDown, Globe, Cpu, Shield, ShieldOff, Bot, BotOff,
+  ChevronDown, Globe, Cpu, Bot, BotOff,
   Plus, Settings2, Paperclip, ChevronRight
 } from 'lucide-react'
 import type { SineModel } from '@/types'
 import { getTranslations } from '@/i18n'
 import type { AgentMode, AgentState } from '@/hooks/useAgent'
+import { AgentSettingsPopover, type AgentSettings } from './AgentSettingsPopover'
 
 interface ChatInputProps {
   onSend: (message: string, mode?: AgentMode) => void
@@ -21,11 +22,12 @@ interface ChatInputProps {
   isAgentActive?: boolean
   useAgentMode?: boolean
   onToggleAgentMode?: () => void
-  // Når true, fjernes padding (brukt i sentrert velkomst-layout)
   compact?: boolean
-  // Agent-state for live task-boks
   agentState?: AgentState
   onOpenTerminal?: () => void
+  // Ny: agent-innstillinger
+  agentSettings?: AgentSettings
+  onAgentSettingsChange?: (s: AgentSettings) => void
 }
 
 export function ChatInput({
@@ -44,6 +46,8 @@ export function ChatInput({
   compact = false,
   agentState,
   onOpenTerminal,
+  agentSettings,
+  onAgentSettingsChange,
 }: ChatInputProps) {
   const [value, setValue] = useState('')
   const [showPlusMenu, setShowPlusMenu] = useState(false)
@@ -51,7 +55,16 @@ export function ChatInput({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const plusMenuRef = useRef<HTMLDivElement>(null)
   const t = getTranslations(language)
-  const isSafeMode = agentMode === 'safe'
+
+  // Default agent settings
+  const effectiveAgentSettings: AgentSettings = agentSettings ?? {
+    agentType: 'code',
+    agentMode: agentMode,
+    outputLanguage: 'auto',
+    detailLevel: 'normal',
+    documentType: 'report',
+    autoSave: false,
+  }
 
   // Lukk plus-meny ved klikk utenfor
   useEffect(() => {
@@ -102,10 +115,11 @@ export function ChatInput({
   const placeholder = isAgentActive
     ? 'Gi agenten en ny oppgave...'
     : useAgentMode
-      ? 'Beskriv hva agenten skal gjøre...'
+      ? (effectiveAgentSettings.agentType === 'writing'
+        ? 'Beskriv hva du vil skrive...'
+        : 'Beskriv hva agenten skal gjøre...')
       : t.app.placeholder
 
-  // Live task-boks: vis når agent er aktiv (uavhengig av om tasks er lastet ennå)
   const showLiveTask = isAgentActive || (agentState && ['planning', 'running'].includes(agentState.status))
   const lastTask = agentState?.liveTasks?.slice(-1)[0]
   const totalTasks = agentState?.liveTasks?.length ?? 0
@@ -117,10 +131,9 @@ export function ChatInput({
       className="chat-input-area"
       style={compact ? { padding: 0, margin: 0 } : undefined}
     >
-      {/* ── Live task-boks (vises over input når agent er aktiv) ── */}
+      {/* ── Live task-boks ── */}
       {showLiveTask && !compact && (
         <div className="live-task-bar" onClick={onOpenTerminal}>
-          {/* Thumbnail / terminal-preview */}
           <div className="live-task-thumb">
             <div className="live-task-thumb-inner">
               {agentState?.logs.slice(-3).map((log, i) => (
@@ -141,9 +154,7 @@ export function ChatInput({
             </div>
           </div>
 
-          {/* Oppgave-tekst */}
           <div className="live-task-content">
-            {/* Tittel-rad med pulserende dot */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{
                 width: 8, height: 8, borderRadius: '50%',
@@ -154,7 +165,6 @@ export function ChatInput({
                 {currentTaskLabel}
               </span>
             </div>
-            {/* Sublabel: siste log-melding */}
             {agentState?.logs && agentState.logs.length > 0 && (
               <span className="live-task-sublabel">
                 {agentState.logs[agentState.logs.length - 1].message.slice(0, 60)}
@@ -162,7 +172,6 @@ export function ChatInput({
             )}
           </div>
 
-          {/* Teller + pil */}
           <div className="live-task-right">
             {totalTasks > 0 && (
               <span className="live-task-counter">{doneTasks}/{totalTasks}</span>
@@ -172,11 +181,8 @@ export function ChatInput({
         </div>
       )}
 
-      {/* ── Hoved input-boks ─────────────────────────────────── */}
-      <div
-        className={`chat-input-box${useAgentMode ? ' agent-mode' : ''}`}
-      >
-        {/* Textarea */}
+      {/* ── Hoved input-boks ── */}
+      <div className={`chat-input-box${useAgentMode ? ' agent-mode' : ''}`}>
         <textarea
           ref={textareaRef}
           value={value}
@@ -189,11 +195,10 @@ export function ChatInput({
           style={{ opacity: disabled ? 0.5 : 1, cursor: disabled ? 'not-allowed' : 'text' }}
         />
 
-        {/* Bottom toolbar */}
         <div className="chat-toolbar">
           <div className="chat-toolbar-left">
 
-            {/* ── Plus-knapp med dropdown ── */}
+            {/* Plus-knapp */}
             <div style={{ position: 'relative' }} ref={plusMenuRef}>
               <button
                 className="toolbar-btn"
@@ -207,15 +212,11 @@ export function ChatInput({
                 <Plus size={18} />
               </button>
 
-              {/* Plus-meny */}
               {showPlusMenu && (
                 <div className="plus-menu">
                   <button
                     className="plus-menu-item"
-                    onClick={() => {
-                      setShowPlusMenu(false)
-                      // Skills er en fremtidig funksjon
-                    }}
+                    onClick={() => setShowPlusMenu(false)}
                   >
                     <Settings2 size={14} className="plus-menu-icon" />
                     <span>Bruk Skills</span>
@@ -232,7 +233,6 @@ export function ChatInput({
               )}
             </div>
 
-            {/* Skjult fil-input */}
             <input
               ref={fileInputRef}
               type="file"
@@ -246,7 +246,6 @@ export function ChatInput({
               <GitBranch size={18} />
             </button>
 
-            {/* Terminal-knapp */}
             <button
               className="toolbar-btn"
               title="Terminal"
@@ -272,16 +271,15 @@ export function ChatInput({
               </button>
             )}
 
-            {/* Safe Mode – kun i agent-modus */}
-            {useAgentMode && onAgentModeChange && (
-              <button
-                className={`toolbar-mode-btn${isSafeMode ? ' safe' : ' power'}`}
-                onClick={() => onAgentModeChange(isSafeMode ? 'power' : 'safe')}
-                title={isSafeMode ? 'Safe Mode PÅ' : 'Power Mode'}
-              >
-                {isSafeMode ? <Shield size={12} /> : <ShieldOff size={12} />}
-                <span>{isSafeMode ? 'Safe' : 'Power'}</span>
-              </button>
+            {/* Agent-innstillinger (erstatter Safe-knappen) */}
+            {useAgentMode && onAgentSettingsChange && (
+              <AgentSettingsPopover
+                settings={effectiveAgentSettings}
+                onSettingsChange={(s) => {
+                  onAgentSettingsChange(s)
+                  onAgentModeChange?.(s.agentMode)
+                }}
+              />
             )}
           </div>
 

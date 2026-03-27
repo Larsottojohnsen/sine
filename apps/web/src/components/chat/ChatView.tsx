@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { ChatMessage } from './ChatMessage'
 import { ChatInput } from './ChatInput'
 import { AgentChatMessage, FilePopup } from './AgentChatMessage'
@@ -12,6 +12,8 @@ import type { AgentFile } from '@/types'
 import {
   Globe, Code2, FileText, BarChart3, Zap, Bot
 } from 'lucide-react'
+import { HyperspeedCanvas } from './HyperspeedCanvas'
+import { type AgentSettings, type AgentType } from './AgentSettingsPopover'
 
 // ─── Velkomst-forslag ─────────────────────────────────────────
 const CHAT_SUGGESTIONS = [
@@ -31,6 +33,38 @@ const AGENT_SUGGESTIONS = [
   { icon: <Code2 size={13} />, label: 'Kjør skript' },
 ]
 
+const WRITING_SUGGESTIONS = [
+  { icon: '📄', label: 'Skriv en rapport' },
+  { icon: '📚', label: 'Skriv et kapittel' },
+  { icon: '🎓', label: 'Hjelp med eksamen' },
+  { icon: '✍️', label: 'Skriv en artikkel' },
+  { icon: '📖', label: 'Start en bok' },
+]
+
+// ─── Blob-bakgrunner ──────────────────────────────────────────
+function WelcomeBlobs({ fadingOut }: { fadingOut: boolean }) {
+  return (
+    <>
+      <div className={`welcome-blob welcome-blob-blue${fadingOut ? ' fading-out' : ''}`} />
+      <div className={`welcome-blob welcome-blob-purple${fadingOut ? ' fading-out' : ''}`} />
+    </>
+  )
+}
+
+// ─── Rainbow border agent-badge ───────────────────────────────
+function AgentBadge({ agentType }: { agentType: AgentType }) {
+  return (
+    <div className="agent-rainbow-wrap">
+      <div className="agent-rainbow-border">
+        <div className="agent-rainbow-inner">
+          <Bot size={13} />
+          <span>{agentType === 'writing' ? 'Skrive-agent' : 'Agent-modus'}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Velkomst-layout ──────────────────────────────────────────
 function WelcomeLayout({
   title,
@@ -38,14 +72,22 @@ function WelcomeLayout({
   suggestions,
   onSuggestion,
   isAgent,
+  agentType,
   chatInputProps,
+  blobFadingOut,
+  showHyperspeed,
+  onHyperspeedComplete,
 }: {
   title: string
   subtitle?: string
   suggestions: { icon: React.ReactNode | string; label: string }[]
   onSuggestion: (text: string) => void
   isAgent: boolean
+  agentType: AgentType
   chatInputProps: Parameters<typeof ChatInput>[0]
+  blobFadingOut: boolean
+  showHyperspeed: boolean
+  onHyperspeedComplete: () => void
 }) {
   return (
     <div style={{
@@ -56,29 +98,28 @@ function WelcomeLayout({
       justifyContent: 'center',
       padding: '0 24px 24px',
       minHeight: 0,
+      position: 'relative',
+      overflow: 'hidden',
     }}>
-      {/* Agent-badge */}
+      {/* Blob-bakgrunner */}
+      {!isAgent && <WelcomeBlobs fadingOut={blobFadingOut} />}
+
+      {/* Hyperspeed canvas (agent-modus) */}
       {isAgent && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '4px 12px',
-          background: 'rgba(99,102,241,0.12)',
-          border: '1px solid rgba(99,102,241,0.25)',
-          borderRadius: 20,
-          marginBottom: 20,
-          fontSize: 12,
-          color: '#818CF8',
-          fontWeight: 500,
-        }}>
-          <Bot size={13} />
-          Agent-modus
+        <HyperspeedCanvas active={showHyperspeed} onFadeComplete={onHyperspeedComplete} />
+      )}
+
+      {/* Agent-badge med rainbow border */}
+      {isAgent && (
+        <div style={{ position: 'relative', zIndex: 2, marginBottom: 20 }}>
+          <AgentBadge agentType={agentType} />
         </div>
       )}
 
       {/* Tittel */}
       <h1 style={{
+        position: 'relative',
+        zIndex: 2,
         fontSize: 'clamp(24px, 4vw, 36px)',
         fontWeight: 300,
         color: '#E5E5E5',
@@ -92,6 +133,8 @@ function WelcomeLayout({
 
       {subtitle && (
         <p style={{
+          position: 'relative',
+          zIndex: 2,
           fontSize: 14,
           color: '#6B7280',
           textAlign: 'center',
@@ -102,12 +145,14 @@ function WelcomeLayout({
       )}
 
       {/* Chat-input */}
-      <div style={{ width: '100%', maxWidth: 680 }}>
+      <div style={{ width: '100%', maxWidth: 680, position: 'relative', zIndex: 2 }}>
         <ChatInput {...chatInputProps} compact />
       </div>
 
       {/* Forslag */}
       <div style={{
+        position: 'relative',
+        zIndex: 2,
         display: 'flex',
         flexWrap: 'wrap',
         gap: 8,
@@ -167,6 +212,28 @@ export function ChatView() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const { pendingAgentTask, setPendingAgentTask } = useNav()
 
+  // Blob fade state
+  const [blobFadingOut, setBlobFadingOut] = useState(false)
+
+  // Hyperspeed state
+  const [showHyperspeed, setShowHyperspeed] = useState(false)
+  const [_hyperspeedDone, setHyperspeedDone] = useState(false)
+
+  // Agent settings
+  const [agentSettings, setAgentSettings] = useState<AgentSettings>({
+    agentType: 'code',
+    agentMode: 'safe',
+    outputLanguage: 'auto',
+    detailLevel: 'normal',
+    documentType: 'report',
+    autoSave: false,
+  })
+
+  // Sync agentMode from settings
+  useEffect(() => {
+    setAgentMode(agentSettings.agentMode)
+  }, [agentSettings.agentMode])
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [activeConversation?.messages, agentState.liveTasks.length])
@@ -179,7 +246,7 @@ export function ChatView() {
     }
   }, [pendingAgentTask, setPendingAgentTask])
 
-  // Lytt på agent-complete event for å oppdatere meldingen med filer og forslag
+  // Lytt på agent-complete event
   useEffect(() => {
     const handler = (e: Event) => {
       const ev = e as CustomEvent<{
@@ -201,21 +268,32 @@ export function ChatView() {
     return () => window.removeEventListener('agent-complete', handler)
   }, [updateAgentMessage])
 
-  const handleSend = (text: string, mode?: AgentMode) => {
+  const handleSend = useCallback((text: string, mode?: AgentMode) => {
     if (useAgentMode) {
+      // Start blob fade-out
+      setBlobFadingOut(true)
+      // Start hyperspeed
+      setShowHyperspeed(true)
+      setHyperspeedDone(false)
       startAgent(text, mode || agentMode)
     } else {
+      // Fade out blobs
+      setBlobFadingOut(true)
       sendMessage(text)
     }
-  }
+  }, [useAgentMode, agentMode, startAgent, sendMessage])
 
-  const handleSuggestion = (text: string) => {
+  const handleSuggestion = useCallback((text: string) => {
     if (useAgentMode) {
+      setBlobFadingOut(true)
+      setShowHyperspeed(true)
+      setHyperspeedDone(false)
       startAgent(text, agentMode)
     } else {
+      setBlobFadingOut(true)
       sendMessage(text)
     }
-  }
+  }, [useAgentMode, agentMode, startAgent, sendMessage])
 
   const handleRegenerate = () => {
     if (!activeConversation) return
@@ -223,17 +301,14 @@ export function ChatView() {
     if (lastUserMsg) sendMessage(lastUserMsg.content)
   }
 
-  // Åpne fil-popup og last innhold fra backend
+  // Åpne fil-popup
   const handleOpenFile = async (file: AgentFile, allFiles?: AgentFile[]) => {
     let fileWithContent = file
-    // Last innhold hvis ikke allerede tilgjengelig
     if (!file.content && file.path) {
-      // Bruk runId fra filen, eller fra agentState
       const runId = file.runId ?? agentState.runId ?? undefined
       const content = await fetchFileContent(file.path, runId)
       fileWithContent = { ...file, content: content || undefined }
     }
-    // Last alle filer med innhold
     const allWithContent = await Promise.all(
       (allFiles ?? []).map(async (f) => {
         if (f.content) return f
@@ -248,7 +323,6 @@ export function ChatView() {
     setShowSidePanel(false)
   }
 
-  // Nedlasting via downloadUrl eller innhold
   const handleDownloadFile = (file: AgentFile) => {
     if (file.downloadUrl) {
       const a = document.createElement('a')
@@ -269,6 +343,10 @@ export function ChatView() {
   const isAgentActive = ['planning', 'running', 'waiting_approval'].includes(agentState.status)
   const hasMessages = activeConversation && activeConversation.messages.length > 0
 
+  const suggestions = useAgentMode
+    ? (agentSettings.agentType === 'writing' ? WRITING_SUGGESTIONS : AGENT_SUGGESTIONS)
+    : CHAT_SUGGESTIONS
+
   const chatInputProps = {
     onSend: handleSend,
     onStop: stopStreaming,
@@ -277,25 +355,37 @@ export function ChatView() {
     onModelChange: (m: typeof settings.model) => updateSettings({ model: m }),
     language: settings.language,
     agentMode,
-    onAgentModeChange: setAgentMode,
+    onAgentModeChange: (m: AgentMode) => setAgentSettings(s => ({ ...s, agentMode: m })),
     isAgentActive,
     useAgentMode,
     onToggleAgentMode: () => setUseAgentMode(v => !v),
     agentState,
     onOpenTerminal: () => setShowSidePanel(true),
+    agentSettings,
+    onAgentSettingsChange: setAgentSettings,
   }
 
   // ── Velkomstskjerm ────────────────────────────────────────
   if (!hasMessages) {
     return (
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
         <WelcomeLayout
-          title={useAgentMode ? 'Hva skal agenten gjøre?' : 'Hva kan jeg gjøre for deg?'}
-          subtitle={useAgentMode ? 'Agenten planlegger, kjører kode og leverer resultater' : undefined}
-          suggestions={useAgentMode ? AGENT_SUGGESTIONS : CHAT_SUGGESTIONS}
+          title={useAgentMode
+            ? (agentSettings.agentType === 'writing' ? 'Hva skal jeg skrive?' : 'Hva skal agenten gjøre?')
+            : 'Hva kan jeg gjøre for deg?'}
+          subtitle={useAgentMode
+            ? (agentSettings.agentType === 'writing'
+              ? 'Skrive-agenten hjelper deg med dokumenter, rapporter og bøker'
+              : 'Agenten planlegger, kjører kode og leverer resultater')
+            : undefined}
+          suggestions={suggestions}
           onSuggestion={handleSuggestion}
           isAgent={useAgentMode}
+          agentType={agentSettings.agentType}
           chatInputProps={chatInputProps}
+          blobFadingOut={blobFadingOut}
+          showHyperspeed={showHyperspeed}
+          onHyperspeedComplete={() => setHyperspeedDone(true)}
         />
         {showSidePanel && (
           <AgentSidePanel
@@ -320,7 +410,6 @@ export function ChatView() {
   return (
     <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
       <div className="chat-view" style={{ flex: 1 }}>
-        {/* Agent-status-boks over meldingene når agent er aktiv */}
         {isAgentActive && (
           <div style={{ padding: '12px 24px 0', maxWidth: 720, margin: '0 auto', width: '100%' }}>
             <AgentTerminalPanel
@@ -336,9 +425,7 @@ export function ChatView() {
             {activeConversation.messages.map((msg, i) => {
               const isLast = i === activeConversation.messages.length - 1
 
-              // Agent-melding
               if (msg.isAgentMessage || msg.role === 'agent') {
-                // Bruk live-data fra agentState hvis dette er den aktive agent-meldingen
                 const isActiveAgentMsg = msg.id === agentState.agentMessageId
                 const tasks = isActiveAgentMsg ? agentState.liveTasks : (msg.agentTasks ?? [])
                 const files = isActiveAgentMsg ? agentState.liveFiles : (msg.agentFiles ?? [])
@@ -349,8 +436,7 @@ export function ChatView() {
                     : 'running')
                   : (msg.agentStatus ?? 'completed')
 
-                // Bruk backend-genererte forslag hvis tilgjengelig, ellers tom liste
-                const suggestions = status === 'completed'
+                const agentSuggestions = status === 'completed'
                   ? (msg.agentSuggestions && msg.agentSuggestions.length > 0
                     ? msg.agentSuggestions
                     : (isActiveAgentMsg && agentState.suggestions ? agentState.suggestions : []))
@@ -364,7 +450,7 @@ export function ChatView() {
                       agentTasks: tasks,
                       agentFiles: files,
                       agentStatus: status as 'running' | 'completed' | 'failed' | 'stopped',
-                      agentSuggestions: suggestions,
+                      agentSuggestions: agentSuggestions,
                     }}
                     onOpenFile={handleOpenFile}
                     onSuggestion={(text) => startAgent(text, agentMode)}
@@ -372,7 +458,6 @@ export function ChatView() {
                 )
               }
 
-              // Vanlig chat-melding
               return (
                 <ChatMessage
                   key={msg.id}
@@ -413,6 +498,7 @@ export function ChatView() {
                 style={{
                   padding: '6px 12px', borderRadius: 7, border: '1px solid #3A3A3A',
                   background: 'transparent', color: '#9A9A9A', fontSize: 12, cursor: 'pointer',
+                  fontFamily: 'inherit',
                 }}
               >
                 Avslå
@@ -421,7 +507,8 @@ export function ChatView() {
                 onClick={() => approveAction(true)}
                 style={{
                   padding: '6px 12px', borderRadius: 7, border: 'none',
-                  background: '#F59E0B', color: '#141414', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  background: '#F59E0B', color: '#000', fontSize: 12, cursor: 'pointer',
+                  fontWeight: 600, fontFamily: 'inherit',
                 }}
               >
                 Godkjenn
@@ -430,7 +517,23 @@ export function ChatView() {
           </div>
         )}
 
-        <ChatInput {...chatInputProps} />
+        <ChatInput
+          onSend={handleSend}
+          onStop={stopStreaming}
+          isStreaming={isStreaming}
+          model={settings.model}
+          onModelChange={(m) => updateSettings({ model: m })}
+          language={settings.language}
+          agentMode={agentMode}
+          onAgentModeChange={(m) => setAgentSettings(s => ({ ...s, agentMode: m }))}
+          isAgentActive={isAgentActive}
+          useAgentMode={useAgentMode}
+          onToggleAgentMode={() => setUseAgentMode(v => !v)}
+          agentState={agentState}
+          onOpenTerminal={() => setShowSidePanel(true)}
+          agentSettings={agentSettings}
+          onAgentSettingsChange={setAgentSettings}
+        />
       </div>
 
       {showSidePanel && (
@@ -440,7 +543,6 @@ export function ChatView() {
           onFetchFile={fetchFileContent}
         />
       )}
-
       {openFile && (
         <FilePopup
           file={openFile}
