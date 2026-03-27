@@ -2,8 +2,7 @@ import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
-  CheckCircle2, XCircle, Download, FileText, FileCode,
-  Archive, Image, File, ExternalLink, ChevronRight,
+  CheckCircle2, XCircle, Download, File, Archive, ExternalLink, ChevronRight,
   Terminal, Globe, Code2, BarChart3, FileEdit, Zap,
   MessageSquare
 } from 'lucide-react'
@@ -16,14 +15,24 @@ interface AgentChatMessageProps {
 }
 
 // ─── Fil-ikon basert på type ───────────────────────────────────
-function getFileIcon(type: AgentFile['type'], size = 16) {
-  switch (type) {
-    case 'markdown': return <FileText size={size} style={{ color: '#60A5FA' }} />
-    case 'code': return <FileCode size={size} style={{ color: '#A78BFA' }} />
-    case 'archive': return <Archive size={size} style={{ color: '#F59E0B' }} />
-    case 'image': return <Image size={size} style={{ color: '#34D399' }} />
-    default: return <File size={size} style={{ color: '#9CA3AF' }} />
+function getFileIcon(type: AgentFile['type']) {
+  if (type === 'archive') {
+    return (
+      <img
+        src="/sine/fil.svg"
+        alt="Arkiv"
+        style={{ width: 32, height: 32, objectFit: 'contain', flexShrink: 0 }}
+      />
+    )
   }
+  // markdown, code, text, other → dokument-ikon
+  return (
+    <img
+      src="/sine/dokument.svg"
+      alt="Dokument"
+      style={{ width: 32, height: 32, objectFit: 'contain', flexShrink: 0 }}
+    />
+  )
 }
 
 // ─── Fil-type fra filnavn ──────────────────────────────────────
@@ -112,6 +121,12 @@ function FileCard({
 }) {
   const [hovered, setHovered] = useState(false)
 
+  const typeLabel =
+    file.type === 'archive' ? 'Archive' :
+    file.type === 'markdown' ? 'Markdown' :
+    file.type === 'code' ? 'Code' :
+    file.type === 'image' ? 'Image' : 'Document'
+
   return (
     <div
       className="manus-file-card"
@@ -120,16 +135,12 @@ function FileCard({
       onMouseLeave={() => setHovered(false)}
     >
       <div className="manus-file-icon">
-        {getFileIcon(file.type, 20)}
+        {getFileIcon(file.type)}
       </div>
       <div className="manus-file-info">
         <div className="manus-file-name">{file.name}</div>
         <div className="manus-file-meta">
-          {file.type === 'archive' ? 'Arkiv' :
-            file.type === 'markdown' ? 'Markdown' :
-            file.type === 'code' ? 'Kode' :
-            file.type === 'image' ? 'Bilde' : 'Fil'}
-          {file.size ? ` · ${file.size}` : ''}
+          {typeLabel}{file.size ? ` · ${file.size}` : ''}
         </div>
       </div>
       {hovered && onDownload && (
@@ -216,7 +227,7 @@ export function AgentChatMessage({ message, onOpenFile, onSuggestion }: AgentCha
       {/* Avatar – full logo (ikon + tekst) + badge i samme rad */}
       <div className="message-avatar-row">
         <img
-          src="/sine/sine-logo.webp"
+          src="/sine/Sinev5.svg"
           alt="Sine"
           className="message-logo-img"
         />
@@ -454,7 +465,7 @@ export function FilePopup({ file, allFiles = [], onClose, onDownload }: FilePopu
         {/* Header */}
         <div className="file-popup-header">
           <div className="file-popup-title">
-            {getFileIcon(selectedFile.type, 15)}
+            {getFileIcon(selectedFile.type)}
             <span>{selectedFile.name}</span>
           </div>
           <div className="file-popup-actions">
@@ -504,7 +515,7 @@ export function FilePopup({ file, allFiles = [], onClose, onDownload }: FilePopu
                   className={`file-popup-tree-item${f.path === selectedFile.path ? ' active' : ''}`}
                   onClick={() => setSelectedFile(f)}
                 >
-                  {getFileIcon(f.type, 12)}
+                  {getFileIcon(f.type)}
                   <span>{f.name}</span>
                 </div>
               ))}

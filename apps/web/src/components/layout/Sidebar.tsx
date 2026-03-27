@@ -85,9 +85,9 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId }: 
         <div className="sidebar-logo">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 4 }}>
             <img
-              src="/sine/Sinev4.webp"
+              src="/sine/Sinev5.svg"
               alt="Sine"
-              style={{ height: 22, width: 'auto', opacity: 0.9 }}
+              style={{ height: 22, width: 'auto', opacity: 1 }}
             />
           </div>
           <button className="icon-btn" onClick={() => setSidebarOpen(false)} title="Lukk sidebar">

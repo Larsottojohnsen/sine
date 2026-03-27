@@ -39,7 +39,7 @@ export function ChatMessage({ message, onRegenerate, isLast }: ChatMessageProps)
       {/* Avatar – full logo (ikon + tekst) + badge i samme rad */}
       <div className="message-avatar-row">
         <img
-          src="/sine/sine-logo.webp"
+          src="/sine/Sinev5.svg"
           alt="Sine"
           className="message-logo-img"
         />
