@@ -14,6 +14,7 @@ import {
   Globe, Code2, FileText, BarChart3, Zap, Bot
 } from 'lucide-react'
 import { HyperspeedCanvas } from './HyperspeedCanvas'
+import { AuroraBackground } from '../auth/AuroraBackground'
 import { type AgentSettings, type AgentType } from './AgentSettingsPopover'
 
 // ─── Velkomst-forslag ─────────────────────────────────────────
@@ -42,13 +43,21 @@ const WRITING_SUGGESTIONS = [
   { icon: '📖', label: 'Start en bok' },
 ]
 
-// ─── Blob-bakgrunner ──────────────────────────────────────────
+// ─── Aurora-bakgrunn for chat ─────────────────────────────────
 function WelcomeBlobs({ fadingOut }: { fadingOut: boolean }) {
   return (
-    <>
-      <div className={`welcome-blob welcome-blob-blue${fadingOut ? ' fading-out' : ''}`} />
-      <div className={`welcome-blob welcome-blob-purple${fadingOut ? ' fading-out' : ''}`} />
-    </>
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        opacity: fadingOut ? 0 : 1,
+        transition: 'opacity 0.8s ease',
+        pointerEvents: 'none',
+        zIndex: 0,
+      }}
+    >
+      <AuroraBackground variant="chat" />
+    </div>
   )
 }
 
@@ -102,7 +111,7 @@ function WelcomeLayout({
       position: 'relative',
       overflow: 'hidden',
     }}>
-      {/* Blob-bakgrunner */}
+      {/* Aurora-bakgrunn (chat-modus) */}
       {!isAgent && <WelcomeBlobs fadingOut={blobFadingOut} />}
 
       {/* Hyperspeed canvas (agent-modus) */}

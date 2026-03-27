@@ -50,7 +50,7 @@
 .aurora-dot-grid {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(circle, rgba(255,255,255,0.18) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(255,255,255,0.10) 1px, transparent 1px);
   background-size: 28px 28px;
   z-index: 1;
 }
@@ -393,6 +393,23 @@
 
 .login-footer-link:hover {
   color: #888;
+}
+
+/* ---- Johnsen Technology branding ---- */
+.login-bottom-brand {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  font-size: 11px;
+  color: rgba(255,255,255,0.22);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
 }
 
 /* ---- Responsive ---- */

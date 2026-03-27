@@ -1,12 +1,29 @@
 import { useState } from 'react'
 import { AuroraBackground } from './AuroraBackground'
 import { getSupabase } from '../../hooks/useAuth'
-const sineLogo = '/sine/Sinev5.svg'
 
 type LoginStep = 'main' | 'email-password' | 'email-sent' | 'create-account'
 
 interface LoginPageProps {
   onLogin?: (user: { email: string; name?: string }) => void
+}
+
+// Sine-logo SVG – to avrundede piller (favicon-ikonet)
+function SineIcon({ size = 40 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 384 384"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      {/* Øvre pille */}
+      <rect x="80" y="60" width="224" height="100" rx="50" fill="#dadada" opacity="0.92" />
+      {/* Nedre pille – litt smalere */}
+      <rect x="80" y="186" width="200" height="88" rx="44" fill="#dadada" opacity="0.70" />
+    </svg>
+  )
 }
 
 export function LoginPage({ onLogin }: LoginPageProps) {
@@ -29,7 +46,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         }
       })
       if (error) setError(error.message)
-    } catch (e: unknown) {
+    } catch {
       setError('Google-innlogging feilet. Prøv igjen.')
     } finally {
       setLoading(false)
@@ -48,7 +65,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         }
       })
       if (error) setError(error.message)
-    } catch (e: unknown) {
+    } catch {
       setError('GitHub-innlogging feilet. Prøv igjen.')
     } finally {
       setLoading(false)
@@ -76,7 +93,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       } else {
         setStep('email-sent')
       }
-    } catch (e: unknown) {
+    } catch {
       setError('Noe gikk galt. Prøv igjen.')
     } finally {
       setLoading(false)
@@ -105,7 +122,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       } else if (data.user) {
         onLogin?.({ email: data.user.email || email, name: data.user.user_metadata?.name })
       }
-    } catch (e: unknown) {
+    } catch {
       setError('Innlogging feilet. Prøv igjen.')
     } finally {
       setLoading(false)
@@ -114,31 +131,20 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
   return (
     <div className="login-page">
-      <AuroraBackground />
+      <AuroraBackground variant="login" />
 
       {/* Logo øverst til venstre */}
       <div className="login-logo">
-        <img src={sineLogo} alt="Sine" className="login-logo-img" />
+        <img src="/sine/Sinev5.svg" alt="Sine" className="login-logo-img" />
       </div>
 
       {/* Innloggingskort */}
       <div className="login-card-wrapper">
         <div className="login-card">
 
-          {/* Ikon */}
+          {/* Sine-ikon – to piller */}
           <div className="login-icon">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-              {/* Nordlys-inspirert ikon – to overlappende buer */}
-              <defs>
-                <linearGradient id="aurora-icon" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#00ff9f" />
-                  <stop offset="50%" stopColor="#00d4ff" />
-                  <stop offset="100%" stopColor="#a855f7" />
-                </linearGradient>
-              </defs>
-              <rect x="6" y="16" width="36" height="8" rx="4" fill="url(#aurora-icon)" opacity="0.9" />
-              <rect x="10" y="26" width="28" height="6" rx="3" fill="url(#aurora-icon)" opacity="0.6" />
-            </svg>
+            <SineIcon size={44} />
           </div>
 
           {step === 'main' && (
@@ -298,7 +304,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   onClick={handlePasswordLogin}
                   disabled={loading || !password.trim()}
                 >
-                  {loading ? <span className="login-spinner" /> : 'Fortsett'}
+                  {loading ? <span className="login-spinner" /> : 'Opprett konto'}
                 </button>
 
                 <button className="login-back-btn" onClick={() => setStep('main')}>Tilbake</button>
@@ -332,11 +338,16 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           )}
         </div>
 
-        {/* Footer */}
+        {/* Lenker */}
         <div className="login-footer">
           <a href="#" className="login-footer-link">Vilkår for bruk</a>
           <a href="#" className="login-footer-link">Personvern</a>
         </div>
+      </div>
+
+      {/* Johnsen Technology – bunn av siden */}
+      <div className="login-bottom-brand">
+        Johnsen Technology
       </div>
     </div>
   )
