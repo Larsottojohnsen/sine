@@ -155,13 +155,14 @@ function WelcomeLayout({
 
 // ─── Hoved ChatView ───────────────────────────────────────────
 export function ChatView() {
-  const { activeConversation, settings, updateSettings } = useApp()
+  const { activeConversation, settings, updateSettings, updateAgentMessage } = useApp()
   const { sendMessage, stopStreaming, isStreaming } = useChat()
   const { state: agentState, startAgent, approveAction, fetchFileContent } = useAgent()
   const [agentMode, setAgentMode] = useState<AgentMode>('safe')
   const [showSidePanel, setShowSidePanel] = useState(false)
   const [useAgentMode, setUseAgentMode] = useState(false)
   const [openFile, setOpenFile] = useState<AgentFile | null>(null)
+  const [openFileAllFiles, setOpenFileAllFiles] = useState<AgentFile[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
   const { pendingAgentTask, setPendingAgentTask } = useNav()
 
@@ -176,6 +177,28 @@ export function ChatView() {
       setPendingAgentTask(null)
     }
   }, [pendingAgentTask, setPendingAgentTask])
+
+  // Lytt på agent-complete event for å oppdatere meldingen med filer og forslag
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ev = e as CustomEvent<{
+        convId: string
+        msgId: string
+        files: AgentFile[]
+        suggestions: string[]
+        message: string
+      }>
+      const { convId, msgId, files, suggestions, message } = ev.detail
+      updateAgentMessage(convId, msgId, {
+        agentStatus: 'completed',
+        agentFiles: files,
+        agentSuggestions: suggestions,
+        content: message || '',
+      })
+    }
+    window.addEventListener('agent-complete', handler)
+    return () => window.removeEventListener('agent-complete', handler)
+  }, [updateAgentMessage])
 
   const handleSend = (text: string, mode?: AgentMode) => {
     if (useAgentMode) {
@@ -197,6 +220,49 @@ export function ChatView() {
     if (!activeConversation) return
     const lastUserMsg = [...activeConversation.messages].reverse().find(m => m.role === 'user')
     if (lastUserMsg) sendMessage(lastUserMsg.content)
+  }
+
+  // Åpne fil-popup og last innhold fra backend
+  const handleOpenFile = async (file: AgentFile, allFiles?: AgentFile[]) => {
+    let fileWithContent = file
+    // Last innhold hvis ikke allerede tilgjengelig
+    if (!file.content && file.path) {
+      // Bruk runId fra filen, eller fra agentState
+      const runId = file.runId ?? agentState.runId ?? undefined
+      const content = await fetchFileContent(file.path, runId)
+      fileWithContent = { ...file, content: content || undefined }
+    }
+    // Last alle filer med innhold
+    const allWithContent = await Promise.all(
+      (allFiles ?? []).map(async (f) => {
+        if (f.content) return f
+        if (!f.path) return f
+        const runId = f.runId ?? agentState.runId ?? undefined
+        const content = await fetchFileContent(f.path, runId)
+        return { ...f, content: content || undefined }
+      })
+    )
+    setOpenFile(fileWithContent)
+    setOpenFileAllFiles(allWithContent.length > 0 ? allWithContent : [fileWithContent])
+    setShowSidePanel(false)
+  }
+
+  // Nedlasting via downloadUrl eller innhold
+  const handleDownloadFile = (file: AgentFile) => {
+    if (file.downloadUrl) {
+      const a = document.createElement('a')
+      a.href = file.downloadUrl
+      a.download = file.name
+      a.click()
+    } else if (file.content) {
+      const blob = new Blob([file.content], { type: 'text/plain' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = file.name
+      a.click()
+      URL.revokeObjectURL(url)
+    }
   }
 
   const isAgentActive = ['planning', 'running', 'waiting_approval'].includes(agentState.status)
@@ -238,8 +304,9 @@ export function ChatView() {
         {openFile && (
           <FilePopup
             file={openFile}
-            allFiles={agentState.liveFiles}
+            allFiles={openFileAllFiles}
             onClose={() => setOpenFile(null)}
+            onDownload={handleDownloadFile}
           />
         )}
       </div>
@@ -268,7 +335,12 @@ export function ChatView() {
                     : 'running')
                   : (msg.agentStatus ?? 'completed')
 
-                const suggestions = status === 'completed' ? AGENT_SUGGESTIONS.slice(0, 3).map(s => typeof s.label === 'string' ? s.label : '') : []
+                // Bruk backend-genererte forslag hvis tilgjengelig, ellers tom liste
+                const suggestions = status === 'completed'
+                  ? (msg.agentSuggestions && msg.agentSuggestions.length > 0
+                    ? msg.agentSuggestions
+                    : (isActiveAgentMsg && agentState.suggestions ? agentState.suggestions : []))
+                  : []
 
                 return (
                   <AgentChatMessage
@@ -280,10 +352,7 @@ export function ChatView() {
                       agentStatus: status as 'running' | 'completed' | 'failed' | 'stopped',
                       agentSuggestions: suggestions,
                     }}
-                    onOpenFile={(file) => {
-                      setOpenFile(file)
-                      setShowSidePanel(true)
-                    }}
+                    onOpenFile={handleOpenFile}
                     onSuggestion={(text) => startAgent(text, agentMode)}
                   />
                 )
@@ -361,8 +430,9 @@ export function ChatView() {
       {openFile && (
         <FilePopup
           file={openFile}
-          allFiles={agentState.liveFiles}
+          allFiles={openFileAllFiles}
           onClose={() => setOpenFile(null)}
+          onDownload={handleDownloadFile}
         />
       )}
     </div>

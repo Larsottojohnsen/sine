@@ -14,6 +14,8 @@ export interface AgentFile {
   size?: string
   type: 'markdown' | 'code' | 'archive' | 'image' | 'text' | 'other'
   content?: string
+  downloadUrl?: string
+  runId?: string
 }
 
 export interface Message {

@@ -13,7 +13,7 @@ import uuid
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 
 from agent.orchestrator import SineOrchestrator
 from schemas.agent import AgentMode, ApprovalResponse, StartAgentRequest
@@ -88,8 +88,8 @@ async def agent_websocket(websocket: WebSocket, run_id: str):
         except Exception:
             pass
     finally:
-        # Rydd opp etter 5 minutter
-        asyncio.create_task(_cleanup_run(run_id, delay=300))
+        # Rydd opp etter 30 minutter (gir tid til fil-preview og nedlasting)
+        asyncio.create_task(_cleanup_run(run_id, delay=1800))
 
     try:
         await websocket.close()
@@ -157,6 +157,24 @@ async def get_file(run_id: str, file_path: str):
         return {"path": file_path, "content": content}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{run_id}/download/{file_path:path}")
+async def download_file(run_id: str, file_path: str):
+    """Last ned en fil fra agent-workspace"""
+    orchestrator = active_runs.get(run_id)
+    if not orchestrator:
+        raise HTTPException(status_code=404, detail="Kjøring ikke funnet")
+
+    full_path = orchestrator.workspace / file_path
+    if not full_path.exists() or not full_path.is_file():
+        raise HTTPException(status_code=404, detail="Fil ikke funnet")
+
+    return FileResponse(
+        path=str(full_path),
+        filename=full_path.name,
+        media_type="application/octet-stream"
+    )
 
 
 async def _cleanup_run(run_id: str, delay: int = 300):

@@ -32,6 +32,7 @@ export interface AgentState {
   liveTasks: AgentTask[];
   liveFiles: AgentFile[];
   agentMessageId: string | null;
+  suggestions: string[];
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://sineapi-production.up.railway.app';
@@ -72,6 +73,7 @@ export function useAgent() {
     liveTasks: [],
     liveFiles: [],
     agentMessageId: null,
+    suggestions: [],
   });
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -126,6 +128,7 @@ export function useAgent() {
       liveTasks: [],
       liveFiles: [],
       agentMessageId: agentMsgId,
+      suggestions: [],
     });
 
     try {
@@ -268,15 +271,51 @@ export function useAgent() {
         }));
         break;
 
-      case 'complete':
+      case 'complete': {
+        // Hent leveransefiler fra backend (med innhold og downloadUrl)
+        const deliveryFiles = data.files as Array<{
+          name: string; path: string; type: string; size: string; content?: string;
+        }> | undefined;
+        const suggestions = data.suggestions as string[] | undefined;
+        const runId = runIdRef.current;
+
+        const agentFiles: AgentFile[] = (deliveryFiles ?? []).map(f => ({
+          name: f.name,
+          path: f.path,
+          type: f.type as AgentFile['type'],
+          size: f.size,
+          content: f.content,
+          downloadUrl: runId ? `${API_BASE}/api/agent/${runId}/download/${f.path}` : undefined,
+          runId: runId ?? undefined,
+        }));
+
         setState(prev => ({
           ...prev,
           status: 'completed',
           pendingApproval: null,
           liveTasks: prev.liveTasks.map(t => t.status === 'running' ? { ...t, status: 'done' as const } : t),
+          liveFiles: agentFiles.length > 0 ? agentFiles : prev.liveFiles,
+          suggestions: suggestions ?? [],
         }));
         addLog({ type: 'log', message: (data.message as string) || 'Oppgave fullført!' });
+
+        // Oppdater agent-meldingen med filer og forslag
+        if (_convId && _agentMsgId) {
+          // Vi bruker updateMessage via AppContext for å lagre filer og forslag
+          // Dette gjøres via en custom event siden updateMessage kun støtter content
+          const event = new CustomEvent('agent-complete', {
+            detail: {
+              convId: _convId,
+              msgId: _agentMsgId,
+              files: agentFiles,
+              suggestions: suggestions ?? [],
+              message: data.message as string,
+            }
+          });
+          window.dispatchEvent(event);
+        }
         break;
+      }
 
       case 'error':
         setState(prev => ({ ...prev, status: 'failed' }));
@@ -301,12 +340,17 @@ export function useAgent() {
     setState(prev => ({ ...prev, status: 'stopped' }));
   }, []);
 
-  const fetchFileContent = useCallback(async (filePath: string): Promise<string> => {
-    if (!runIdRef.current) return '';
-    const res = await fetch(`${API_BASE}/api/agent/${runIdRef.current}/files/${filePath}`);
-    if (!res.ok) return '';
-    const { content } = await res.json();
-    return content;
+  const fetchFileContent = useCallback(async (filePath: string, runId?: string): Promise<string> => {
+    const rid = runId ?? runIdRef.current;
+    if (!rid) return '';
+    try {
+      const res = await fetch(`${API_BASE}/api/agent/${rid}/files/${encodeURIComponent(filePath)}`);
+      if (!res.ok) return '';
+      const data = await res.json();
+      return data.content ?? '';
+    } catch {
+      return '';
+    }
   }, []);
 
   useEffect(() => {

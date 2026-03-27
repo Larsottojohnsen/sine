@@ -8,6 +8,8 @@ import asyncio
 import json
 import os
 import uuid
+import zipfile
+import base64
 from pathlib import Path
 from typing import AsyncGenerator, Callable, Optional
 
@@ -36,15 +38,31 @@ Du jobber i en isolert workspace-mappe og kan:
 1. **Planlegg** – Del oppgaven inn i klare, konkrete steg
 2. **Utfør** – Bruk verktøy steg for steg, ett om gangen
 3. **Verifiser** – Sjekk at hvert steg fungerte før du går videre
-4. **Lever** – Oppsummer hva du har gjort og hva som ble laget
+4. **Pakk og lever** – Pakk ALLTID alle leveransefiler i en ZIP-fil for enkel nedlasting
+5. **Oppsummer** – Skriv en klar oppsummering på norsk av hva som ble laget
 
 ## Viktige regler
 - Alltid planlegg FØR du starter å kjøre kommandoer
 - Bruk norsk i all kommunikasjon med brukeren
-- Forklar hva du gjør og hvorfor
+- Forklar hva du gjør og hvorfor med korte setninger
 - Hvis noe feiler, prøv en alternativ tilnærming
 - Aldri anta at en kommando fungerte – verifiser alltid outputen
 - Lag filer med meningsfulle navn og god struktur
+- **ALLTID pakk leveransen som ZIP** – bruk terminal: zip -r leveranse.zip <mappe>/
+- Skriv alltid en README.md med installasjonsinstruksjoner
+
+## Leveranse-format
+Når du er ferdig, skriv en oppsummering som:
+- Forklarer hva som ble laget
+- Beskriver hvordan det brukes
+- Lister opp nøkkelfiler
+
+Avslutt alltid med 3 konkrete forslag til videre arbeid basert på DENNE SPESIFIKKE OPPGAVEN.
+Format forslagene slik (på slutten av svaret ditt):
+FORSLAG:
+1. <forslag basert på oppgaven>
+2. <forslag basert på oppgaven>
+3. <forslag basert på oppgaven>
 
 ## Safe Mode
 {safe_mode_instructions}
@@ -135,6 +153,78 @@ class SineOrchestrator:
         result = await tool.execute(**tool_args)
         return result
 
+    def _collect_delivery_files(self) -> list[dict]:
+        """Samle alle filer i workspace for leveranse"""
+        files = []
+        if not self.workspace.exists():
+            return files
+
+        # Prioriter ZIP-filer
+        zip_files = list(self.workspace.rglob("*.zip"))
+        other_files = [f for f in self.workspace.rglob("*") if f.is_file() and f.suffix != '.zip']
+
+        all_files = zip_files + other_files
+
+        for f in all_files[:10]:  # Maks 10 filer
+            try:
+                rel = str(f.relative_to(self.workspace))
+                size = f.stat().st_size
+                size_str = f"{size // 1024}KB" if size > 1024 else f"{size}B"
+
+                # Les innhold for tekstfiler (maks 50KB)
+                content = None
+                ext = f.suffix.lower()
+                text_exts = {'.js', '.ts', '.tsx', '.jsx', '.py', '.html', '.css',
+                             '.json', '.md', '.txt', '.yaml', '.yml', '.sh', '.bash',
+                             '.rs', '.go', '.java', '.rb', '.php', '.xml', '.csv'}
+                if ext in text_exts and size < 50 * 1024:
+                    try:
+                        content = f.read_text(encoding='utf-8', errors='replace')
+                    except Exception:
+                        content = None
+
+                # Bestem type
+                if ext == '.zip':
+                    ftype = 'archive'
+                elif ext in {'.md', '.mdx'}:
+                    ftype = 'markdown'
+                elif ext in {'.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp'}:
+                    ftype = 'image'
+                elif ext in text_exts:
+                    ftype = 'code'
+                else:
+                    ftype = 'other'
+
+                files.append({
+                    "name": f.name,
+                    "path": rel,
+                    "type": ftype,
+                    "size": size_str,
+                    "content": content,
+                })
+            except Exception:
+                continue
+
+        return files
+
+    def _parse_suggestions(self, text: str) -> tuple[str, list[str]]:
+        """Trekk ut FORSLAG-seksjonen fra agent-svaret"""
+        suggestions = []
+        clean_text = text
+
+        if "FORSLAG:" in text:
+            parts = text.split("FORSLAG:", 1)
+            clean_text = parts[0].strip()
+            suggestion_block = parts[1].strip()
+            for line in suggestion_block.split('\n'):
+                line = line.strip()
+                if line and line[0].isdigit() and '. ' in line:
+                    suggestion = line.split('. ', 1)[1].strip()
+                    if suggestion:
+                        suggestions.append(suggestion)
+
+        return clean_text, suggestions[:3]
+
     async def run(self, task: str) -> AsyncGenerator[AgentEvent, None]:
         """Kjør agenten og yield events"""
         self.state.status = AgentStatus.PLANNING
@@ -186,10 +276,18 @@ class SineOrchestrator:
                         final_text = block.text
                         break
 
-                await self._emit("log", {"message": final_text, "level": "info"})
+                # Parse ut forslag fra svaret
+                clean_text, suggestions = self._parse_suggestions(final_text)
+
+                # Samle leveransefiler
+                delivery_files = self._collect_delivery_files()
+
+                await self._emit("log", {"message": clean_text, "level": "info"})
                 await self._emit("complete", {
-                    "message": final_text,
-                    "files": list(self.state.files.keys())
+                    "message": clean_text,
+                    "files": delivery_files,
+                    "suggestions": suggestions,
+                    "file_paths": list(self.state.files.keys())
                 })
                 self.state.status = AgentStatus.COMPLETED
                 break

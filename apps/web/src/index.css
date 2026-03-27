@@ -1311,3 +1311,336 @@ button { font-family: inherit; }
   from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   MANUS-STIL AGENT CHAT – matcher AgentChatMessage.tsx klasser
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Narrativ tekst mellom oppgave-kort ─────────────────────── */
+.manus-narrative-text {
+  font-size: 13px;
+  color: #9A9A9A;
+  line-height: 1.5;
+  margin: 6px 0 2px;
+  padding: 0 2px;
+}
+
+/* ─── Agent intro-tekst ──────────────────────────────────────── */
+.manus-agent-text {
+  font-size: 14px;
+  color: #C5C5C5;
+  line-height: 1.6;
+  margin-bottom: 10px;
+  white-space: pre-wrap;
+}
+
+/* ─── Oppgave-strøm ──────────────────────────────────────────── */
+.manus-tasks-stream {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 6px 0;
+}
+
+/* ─── Oppgave-kort ───────────────────────────────────────────── */
+.manus-task-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid #252525;
+  background: #1A1A1A;
+  cursor: default;
+  transition: border-color 0.15s, background 0.15s;
+}
+.manus-task-card:hover { border-color: #333; }
+
+/* Running state */
+.manus-task-card.manus-task-running {
+  border-color: rgba(26,147,254,0.18);
+  background: #171C22;
+}
+
+/* Shimmer overlay */
+.manus-task-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(26,147,254,0.05) 40%,
+    rgba(26,147,254,0.10) 50%,
+    rgba(26,147,254,0.05) 60%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmerSweep 1.8s ease-in-out infinite;
+  pointer-events: none;
+  border-radius: 8px;
+}
+
+/* Error state */
+.manus-task-card.manus-task-error {
+  border-color: rgba(239,68,68,0.15);
+  background: rgba(239,68,68,0.03);
+}
+
+/* Inner layout */
+.manus-task-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Status-ikon */
+.manus-task-status {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Mini spinner */
+.manus-task-spinner {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  border-top-color: #1A93FE;
+  border-right-color: #1A93FE;
+  border-bottom-color: #1A93FE;
+  border-left-color: transparent;
+  animation: spin 0.9s linear infinite;
+}
+
+/* Label */
+.manus-task-label {
+  flex: 1;
+  font-size: 13px;
+  color: #B0B0B0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.manus-task-running .manus-task-label { color: #E5E5E5; }
+
+/* Tool-badge */
+.manus-task-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #202020;
+  border: 1px solid #2A2A2A;
+  font-family: 'SF Mono', Menlo, monospace;
+  flex-shrink: 0;
+}
+
+/* Pil */
+.manus-task-arrow {
+  color: #3A3A3A;
+  flex-shrink: 0;
+  transition: color 0.1s;
+}
+.manus-task-card:hover .manus-task-arrow { color: #9A9A9A; }
+
+/* ─── Leveranse-seksjon ──────────────────────────────────────── */
+.manus-delivery-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #222;
+}
+
+/* ─── Fil-grid ───────────────────────────────────────────────── */
+.manus-files-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+/* ─── Fil-kort ───────────────────────────────────────────────── */
+.manus-file-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #1A1A1A;
+  border: 1px solid #252525;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  overflow: hidden;
+}
+.manus-file-card:hover {
+  border-color: #333;
+  background: #1E1E1E;
+}
+
+.manus-file-icon { flex-shrink: 0; }
+
+.manus-file-info { flex: 1; min-width: 0; }
+.manus-file-name {
+  font-size: 13px;
+  color: #E5E5E5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.manus-file-meta {
+  font-size: 11px;
+  color: #5A5A5A;
+  margin-top: 2px;
+}
+
+/* Hover-nedlastingsknapp */
+.manus-file-download {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 12px;
+  background: linear-gradient(90deg, transparent, #1E1E1E 30%);
+  border: none;
+  color: #E5E5E5;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  border-radius: 0 10px 10px 0;
+  transition: background 0.1s;
+}
+.manus-file-download:hover {
+  background: linear-gradient(90deg, transparent, #252525 30%);
+}
+
+/* Se alle filer-knapp */
+.manus-view-all-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #1A1A1A;
+  border: 1px solid #252525;
+  border-radius: 10px;
+  color: #6B7280;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s;
+  width: 100%;
+}
+.manus-view-all-btn:hover { border-color: #333; color: #E5E5E5; }
+
+/* ─── Oppgave fullført / mislyktes ───────────────────────────── */
+.manus-complete-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0 4px;
+  flex-wrap: wrap;
+}
+
+/* Grønn "Oppgave fullført" badge */
+.manus-complete-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4ADE80;
+}
+
+/* Rating */
+.manus-rating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #4A4A4A;
+}
+.manus-star {
+  background: none;
+  border: none;
+  color: #3A3A3A;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 1px;
+  transition: color 0.1s;
+  font-family: inherit;
+}
+.manus-star:hover { color: #F59E0B; }
+
+/* Mislyktes */
+.manus-failed-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #EF4444;
+  margin: 10px 0 4px;
+}
+
+/* ─── Forslag til videre oppgaver ────────────────────────────── */
+.manus-suggestions {
+  margin-top: 14px;
+  border-top: 1px solid #1E1E1E;
+  padding-top: 12px;
+}
+
+.manus-suggestions-label {
+  font-size: 11px;
+  color: #3A3A3A;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.manus-suggestion-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #7A7A7A;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: background 0.1s, color 0.1s;
+  margin-bottom: 2px;
+}
+.manus-suggestion-row:hover { background: #1E1E1E; color: #E5E5E5; }
+
+.manus-suggestion-icon {
+  flex-shrink: 0;
+  color: #4A4A4A;
+  transition: color 0.1s;
+}
+.manus-suggestion-row:hover .manus-suggestion-icon { color: #9A9A9A; }
+
+.manus-suggestion-arrow {
+  color: #2A2A2A;
+  flex-shrink: 0;
+  margin-left: auto;
+  transition: color 0.1s;
+}
+.manus-suggestion-row:hover .manus-suggestion-arrow { color: #6B7280; }

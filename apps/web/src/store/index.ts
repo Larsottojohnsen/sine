@@ -102,6 +102,27 @@ export function useAppStore() {
     })
   }, [])
 
+  const updateAgentMessage = useCallback((
+    conversationId: string,
+    messageId: string,
+    updates: Partial<Message>
+  ) => {
+    setConversations(prev => {
+      const updated = prev.map(c => {
+        if (c.id !== conversationId) return c
+        return {
+          ...c,
+          messages: c.messages.map(m =>
+            m.id === messageId ? { ...m, ...updates } : m
+          ),
+          updatedAt: new Date(),
+        }
+      })
+      saveToStorage('sine_conversations', updated)
+      return updated
+    })
+  }, [])
+
   const deleteConversation = useCallback((id: string) => {
     setConversations(prev => {
       const updated = prev.filter(c => c.id !== id)
@@ -129,6 +150,7 @@ export function useAppStore() {
     createConversation,
     addMessage,
     updateMessage,
+    updateAgentMessage,
     deleteConversation,
     settings,
     updateSettings,
