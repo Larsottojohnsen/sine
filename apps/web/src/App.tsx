@@ -7,6 +7,8 @@ import { SettingsModal } from './components/settings/SettingsModal'
 import { useApp } from './store/AppContext'
 import { SearchModal } from './components/search/SearchModal'
 import { LibraryView } from './components/library/LibraryView'
+import { LoginPage } from './components/auth/LoginPage'
+import { useAuth } from './hooks/useAuth'
 
 export type AppPage = 'chat' | 'agents' | 'search' | 'library'
 
@@ -14,7 +16,6 @@ export type AppPage = 'chat' | 'agents' | 'search' | 'library'
 interface NavContextType {
   currentPage: AppPage
   setCurrentPage: (p: AppPage) => void
-  // null = ingen pending, string = aktiver agent-modus (tom streng = bare aktiver)
   pendingAgentTask: string | null
   setPendingAgentTask: (task: string | null) => void
   searchOpen: boolean
@@ -99,10 +100,28 @@ function AppLayout() {
   )
 }
 
-export default function App() {
+function AuthGate() {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="auth-loading">
+        <div className="auth-loading-spinner" />
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <LoginPage />
+  }
+
   return (
     <AppProvider>
       <AppLayout />
     </AppProvider>
   )
+}
+
+export default function App() {
+  return <AuthGate />
 }

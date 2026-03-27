@@ -21,7 +21,8 @@ from schemas.agent import (
 )
 from tools import (
     GitCloneTool, ListFilesTool, ReadFileTool,
-    TerminalTool, WebSearchTool, WriteFileTool
+    TerminalTool, WebSearchTool, WriteFileTool,
+    E2BSandboxTool,
 )
 
 WORKSPACES_DIR = Path(os.getenv("WORKSPACES_DIR", "/tmp/sine_workspaces"))
@@ -102,9 +103,20 @@ class SineOrchestrator:
         self.client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY") or os.getenv("claude_key"))
         self.model = "claude-sonnet-4-5"
 
+        # Velg terminal-verktøy: E2B cloud sandkasse hvis API-nøkkel finnes, ellers lokal
+        e2b_key = os.getenv("E2B_API_KEY") or os.getenv("e2b_adc2a4765b2c0b1e4e7c291a5de3910160041901")
+        self.use_e2b = bool(e2b_key)
+        self.e2b_sandbox: Optional[E2BSandboxTool] = None
+
+        if self.use_e2b:
+            terminal_tool = E2BSandboxTool(run_id=run_id, safe_mode=self.safe_mode)
+            self.e2b_sandbox = terminal_tool
+        else:
+            terminal_tool = TerminalTool(str(self.workspace), safe_mode=self.safe_mode)
+
         # Initialiser verktøy
         self.tools = {
-            "terminal": TerminalTool(str(self.workspace), safe_mode=self.safe_mode),
+            "terminal": terminal_tool,
             "read_file": ReadFileTool(str(self.workspace)),
             "write_file": WriteFileTool(str(self.workspace)),
             "list_files": ListFilesTool(str(self.workspace)),
@@ -418,3 +430,8 @@ class SineOrchestrator:
         if self.pending_approval:
             self.approval_result = False
             self.pending_approval.set()
+
+    async def cleanup(self) -> None:
+        """Rydd opp ressurser inkl. E2B sandkasse"""
+        if self.e2b_sandbox:
+            await self.e2b_sandbox.close()

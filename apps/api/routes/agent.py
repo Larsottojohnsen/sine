@@ -178,6 +178,23 @@ async def download_file(run_id: str, file_path: str):
 
 
 async def _cleanup_run(run_id: str, delay: int = 300):
-    """Rydd opp en kjøring etter forsinkelse"""
+    """Rydd opp en kjøring etter forsinkelse (inkl. E2B sandkasse)"""
     await asyncio.sleep(delay)
-    active_runs.pop(run_id, None)
+    orchestrator = active_runs.pop(run_id, None)
+    if orchestrator:
+        try:
+            await orchestrator.cleanup()
+        except Exception:
+            pass
+
+
+@router.get("/status")
+async def agent_status():
+    """Returner status for agent-systemet inkl. E2B-tilgjengelighet"""
+    import os
+    e2b_available = bool(os.getenv("E2B_API_KEY") or os.getenv("e2b_adc2a4765b2c0b1e4e7c291a5de3910160041901"))
+    return {
+        "active_runs": len(active_runs),
+        "e2b_enabled": e2b_available,
+        "sandbox_type": "e2b_cloud" if e2b_available else "local"
+    }
