@@ -380,7 +380,7 @@ export function AgentChatMessage({ message, onOpenFile, onSuggestion }: AgentCha
                 onClick={() => onSuggestion?.(s)}
               >
                 <MessageSquare size={13} className="manus-suggestion-icon" />
-                <span>{s}</span>
+                <span>{s.replace(/\*\*/g, '').replace(/^#+\s*/, '').trim()}</span>
                 <ChevronRight size={13} className="manus-suggestion-arrow" />
               </button>
             ))}
