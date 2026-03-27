@@ -1,4 +1,20 @@
-export type MessageRole = 'user' | 'assistant' | 'system'
+export type MessageRole = 'user' | 'assistant' | 'system' | 'agent'
+
+export interface AgentTask {
+  id: string
+  label: string
+  status: 'running' | 'done' | 'error'
+  tool?: string
+  filePath?: string
+}
+
+export interface AgentFile {
+  name: string
+  path: string
+  size?: string
+  type: 'markdown' | 'code' | 'archive' | 'image' | 'text' | 'other'
+  content?: string
+}
 
 export interface Message {
   id: string
@@ -6,6 +22,12 @@ export interface Message {
   content: string
   createdAt: Date
   isStreaming?: boolean
+  // Agent-spesifikke felt
+  agentTasks?: AgentTask[]
+  agentFiles?: AgentFile[]
+  agentStatus?: 'running' | 'completed' | 'failed' | 'stopped'
+  agentSuggestions?: string[]
+  isAgentMessage?: boolean
 }
 
 export interface Conversation {
@@ -15,6 +37,7 @@ export interface Conversation {
   createdAt: Date
   updatedAt: Date
   model: SineModel
+  type?: 'chat' | 'agent'
 }
 
 export type SineModel = 'sine-1' | 'sine-pro'

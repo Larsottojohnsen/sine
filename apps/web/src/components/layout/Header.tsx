@@ -1,10 +1,15 @@
+import { useState, useRef } from 'react'
 import { ChevronDown, Share2, MoreHorizontal, Bell, Users } from 'lucide-react'
 import { useApp } from '@/store/AppContext'
 import { getTranslations } from '@/i18n'
+import { UserAvatarDropdown } from './UserAvatarDropdown'
+import { CollaboratePanel } from './CollaboratePanel'
 
 export function Header() {
   const { activeConversation, settings, setSettingsOpen } = useApp()
   const t = getTranslations(settings.language)
+  const [collaborateOpen, setCollaborateOpen] = useState(false)
+  const collaborateRef = useRef<HTMLButtonElement>(null)
 
   const modelLabels: Record<string, string> = {
     'sine-1':   'Sine 1.0',
@@ -46,7 +51,12 @@ export function Header() {
         {activeConversation && (
           <>
             <div style={{ width: 1, height: 16, background: '#252525', margin: '0 2px' }} />
-            <button className="header-action-btn">
+            <button
+              ref={collaborateRef}
+              className="header-action-btn"
+              onClick={() => setCollaborateOpen(v => !v)}
+              style={collaborateOpen ? { background: '#1E1E1E', color: '#E5E5E5' } : {}}
+            >
               <Users size={16} />
               <span>{t.app.collaborate}</span>
             </button>
@@ -60,15 +70,18 @@ export function Header() {
           </>
         )}
 
-        <button
-          className="header-avatar"
-          onClick={() => setSettingsOpen(true)}
-          title="Profil og innstillinger"
-          style={{ marginLeft: 4 }}
-        >
-          S
-        </button>
+        {/* Bruker-avatar med dropdown */}
+        <div style={{ marginLeft: 4 }}>
+          <UserAvatarDropdown onOpenSettings={() => setSettingsOpen(true)} />
+        </div>
       </div>
+
+      {/* Collaborate panel */}
+      <CollaboratePanel
+        open={collaborateOpen}
+        onClose={() => setCollaborateOpen(false)}
+        anchorRef={collaborateRef as React.RefObject<HTMLElement>}
+      />
     </header>
   )
 }

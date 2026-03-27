@@ -2,26 +2,19 @@ import { useState } from 'react'
 import {
   Plus, Search, BookOpen, FolderPlus, Trash2,
   Bot, PanelLeftClose, PanelLeftOpen,
-  LayoutGrid, Monitor, Terminal, ChevronRight, Zap, SlidersHorizontal
+  LayoutGrid, Monitor, Terminal, ChevronRight, Zap, SlidersHorizontal,
+  MessageSquare
 } from 'lucide-react'
 import { useApp } from '@/store/AppContext'
 import { getTranslations } from '@/i18n'
 
-function getConvIcon(title: string) {
-  const lower = title.toLowerCase()
-  if (lower.includes('kode') || lower.includes('code') || lower.includes('github')) return '⌥'
-  if (lower.includes('web') || lower.includes('nett') || lower.includes('side')) return '⊞'
-  if (lower.includes('agent') || lower.includes('bot')) return '◎'
-  if (lower.includes('rapport') || lower.includes('dokument') || lower.includes('plan')) return '≡'
-  return '○'
-}
-
 interface SidebarProps {
   onNavigate?: (page: string) => void
   currentPage?: string
+  activeAgentRunId?: string | null
 }
 
-export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
+export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId }: SidebarProps) {
   const {
     conversations,
     activeConversationId,
@@ -95,21 +88,14 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
             style={{ height: 22, width: 'auto', opacity: 0.85 }}
           />
         </div>
-        <button
-          className="icon-btn"
-          onClick={() => setSidebarOpen(false)}
-          title="Lukk sidebar"
-        >
+        <button className="icon-btn" onClick={() => setSidebarOpen(false)} title="Lukk sidebar">
           <PanelLeftClose size={18} />
         </button>
       </div>
 
       {/* Main nav */}
       <div className="sidebar-nav" style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <button
-          className={`nav-item highlight`}
-          onClick={handleNewChat}
-        >
+        <button className="nav-item highlight" onClick={handleNewChat}>
           <Plus size={18} style={{ flexShrink: 0 }} />
           <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.app.newChat}</span>
         </button>
@@ -119,10 +105,6 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
         >
           <Bot size={18} style={{ flexShrink: 0 }} />
           <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.app.agents}</span>
-          <span style={{
-            fontSize: 10, fontWeight: 700, padding: '1px 5px', borderRadius: 4,
-            background: '#1A93FE', color: '#fff', flexShrink: 0
-          }}>Ny</span>
         </button>
         <button
           className={`nav-item${currentPage === 'search' ? ' active' : ''}`}
@@ -141,7 +123,6 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
         </button>
       </div>
 
-      {/* Divider */}
       <div className="sidebar-divider" />
 
       {/* Projects */}
@@ -158,7 +139,7 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
         </button>
       </div>
 
-      {/* Conversations */}
+      {/* All tasks header */}
       <div style={{ padding: '4px 8px 0', flexShrink: 0 }}>
         <div className="sidebar-section-header">
           <span className="sidebar-section-label">{t.app.allTasks}</span>
@@ -168,30 +149,27 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
         </div>
       </div>
 
+      {/* Conversations list */}
       <div className="sidebar-conversations">
         {conversations.length === 0 ? (
           <p style={{ fontSize: 12, padding: '12px 8px', textAlign: 'center', color: '#3A3A3A', lineHeight: 1.5 }}>
             Ingen samtaler ennå.{' '}
-            <span
-              style={{ color: '#1A93FE', cursor: 'pointer' }}
-              onClick={handleNewChat}
-            >
+            <span style={{ color: '#1A93FE', cursor: 'pointer' }} onClick={handleNewChat}>
               Start en ny
             </span>
           </p>
         ) : (
           <>
-            <ConvGroup label="I dag" conversations={groups.today} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={setActiveConversationId} onDelete={deleteConversation} />
-            <ConvGroup label="I går" conversations={groups.yesterday} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={setActiveConversationId} onDelete={deleteConversation} />
-            <ConvGroup label="Siste 7 dager" conversations={groups.week} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={setActiveConversationId} onDelete={deleteConversation} />
-            <ConvGroup label="Eldre" conversations={groups.older} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={setActiveConversationId} onDelete={deleteConversation} />
+            <ConvGroup label="I dag" conversations={groups.today} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={setActiveConversationId} onDelete={deleteConversation} activeAgentRunId={activeAgentRunId} />
+            <ConvGroup label="I går" conversations={groups.yesterday} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={setActiveConversationId} onDelete={deleteConversation} activeAgentRunId={activeAgentRunId} />
+            <ConvGroup label="Siste 7 dager" conversations={groups.week} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={setActiveConversationId} onDelete={deleteConversation} activeAgentRunId={activeAgentRunId} />
+            <ConvGroup label="Eldre" conversations={groups.older} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={setActiveConversationId} onDelete={deleteConversation} activeAgentRunId={activeAgentRunId} />
           </>
         )}
       </div>
 
       {/* Bottom */}
       <div className="sidebar-bottom">
-        {/* Referral banner */}
         <div className="referral-banner">
           <div style={{
             width: 28, height: 28, borderRadius: 6,
@@ -208,8 +186,6 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
           </div>
           <ChevronRight size={12} style={{ color: '#3A3A3A', flexShrink: 0 }} />
         </div>
-
-        {/* Icon row */}
         <div className="sidebar-icon-row">
           <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <button className="icon-btn" onClick={() => setSettingsOpen(true)} title="Innstillinger">
@@ -230,48 +206,63 @@ export function Sidebar({ onNavigate, currentPage = 'chat' }: SidebarProps) {
 }
 
 function ConvGroup({
-  label, conversations, activeId, hoveredId, onHover, onSelect, onDelete,
+  label, conversations, activeId, hoveredId, onHover, onSelect, onDelete, activeAgentRunId,
 }: {
   label: string
-  conversations: { id: string; title: string; updatedAt: Date }[]
+  conversations: { id: string; title: string; updatedAt: Date; type?: string }[]
   activeId: string | null
   hoveredId: string | null
   onHover: (id: string | null) => void
   onSelect: (id: string) => void
   onDelete: (id: string) => void
+  activeAgentRunId?: string | null
 }) {
   if (conversations.length === 0) return null
   return (
     <div style={{ marginBottom: 4 }}>
       <p className="conv-group-label">{label}</p>
-      {conversations.map(conv => (
-        <button
-          key={conv.id}
-          className={`conv-item${activeId === conv.id ? ' active' : ''}`}
-          onClick={() => onSelect(conv.id)}
-          onMouseEnter={() => onHover(conv.id)}
-          onMouseLeave={() => onHover(null)}
-        >
-          <span style={{ flexShrink: 0, fontSize: 11, opacity: 0.4 }}>{getConvIcon(conv.title)}</span>
-          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {conv.title.length > 26 ? conv.title.slice(0, 26) + '…' : conv.title}
-          </span>
-          {hoveredId === conv.id && (
-            <button
-              onClick={e => { e.stopPropagation(); onDelete(conv.id) }}
-              style={{
-                position: 'absolute', right: 6,
-                width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                borderRadius: 5, border: 'none', background: 'transparent', color: '#4A4A4A', cursor: 'pointer'
-              }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}
-            >
-              <Trash2 size={11} />
-            </button>
-          )}
-        </button>
-      ))}
+      {conversations.map(conv => {
+        const isAgent = conv.type === 'agent'
+        // Spinner vises kun for den aktive agent-samtalen mens agenten kjører
+        const isRunning = isAgent && activeAgentRunId != null && activeId === conv.id
+
+        return (
+          <button
+            key={conv.id}
+            className={`conv-item${activeId === conv.id ? ' active' : ''}`}
+            onClick={() => onSelect(conv.id)}
+            onMouseEnter={() => onHover(conv.id)}
+            onMouseLeave={() => onHover(null)}
+          >
+            <span style={{ flexShrink: 0, fontSize: 11, opacity: 0.5, display: 'flex', alignItems: 'center', width: 14 }}>
+              {isRunning ? (
+                <span className="conv-spinner" />
+              ) : isAgent ? (
+                <Bot size={12} />
+              ) : (
+                <MessageSquare size={12} />
+              )}
+            </span>
+            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {conv.title.length > 26 ? conv.title.slice(0, 26) + '…' : conv.title}
+            </span>
+            {hoveredId === conv.id && (
+              <button
+                onClick={e => { e.stopPropagation(); onDelete(conv.id) }}
+                style={{
+                  position: 'absolute', right: 6,
+                  width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  borderRadius: 5, border: 'none', background: 'transparent', color: '#4A4A4A', cursor: 'pointer'
+                }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}
+              >
+                <Trash2 size={11} />
+              </button>
+            )}
+          </button>
+        )
+      })}
     </div>
   )
 }

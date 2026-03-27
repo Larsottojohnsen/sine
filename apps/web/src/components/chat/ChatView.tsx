@@ -1,37 +1,36 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChatMessage } from './ChatMessage'
 import { ChatInput } from './ChatInput'
+import { AgentChatMessage, FilePopup } from './AgentChatMessage'
+import AgentSidePanel from '../agent/AgentSidePanel'
 import { useApp } from '@/store/AppContext'
 import { useChat } from '@/hooks/useChat'
 import { useAgent, type AgentMode } from '@/hooks/useAgent'
-import AgentTerminalPanel from '../agent/AgentTerminalPanel'
-import AgentSidePanel from '../agent/AgentSidePanel'
 import { useNav } from '@/App'
+import type { AgentFile } from '@/types'
 import {
-  Globe, Code2, BarChart3, FileText, Zap,
-  Terminal, Search, GitBranch, Bot
+  Globe, Code2, FileText, BarChart3, Zap, Bot
 } from 'lucide-react'
 
-// ─── Chat velkomst-forslag ────────────────────────────────────
+// ─── Velkomst-forslag ─────────────────────────────────────────
 const CHAT_SUGGESTIONS = [
-  { icon: <Globe size={13} />, label: 'Forklar et konsept', prompt: 'Forklar meg ' },
-  { icon: <Code2 size={13} />, label: 'Skriv kode', prompt: 'Skriv kode for ' },
-  { icon: <FileText size={13} />, label: 'Lag et sammendrag', prompt: 'Lag et sammendrag av ' },
-  { icon: <Search size={13} />, label: 'Analyser tekst', prompt: 'Analyser denne teksten: ' },
-  { icon: <GitBranch size={13} />, label: 'Oversett', prompt: 'Oversett dette til norsk: ' },
+  { icon: '💬', label: 'Forklar et konsept' },
+  { icon: '⌨️', label: 'Skriv kode' },
+  { icon: '📝', label: 'Lag et sammendrag' },
+  { icon: '🔍', label: 'Analyser tekst' },
+  { icon: '🌐', label: 'Oversett' },
 ]
 
-// ─── Agent velkomst-forslag ───────────────────────────────────
 const AGENT_SUGGESTIONS = [
-  { icon: <Globe size={13} />, label: 'Søk og analyser nett', prompt: 'Søk etter informasjon om ' },
-  { icon: <Code2 size={13} />, label: 'Bygg en app', prompt: 'Bygg en enkel app som ' },
-  { icon: <BarChart3 size={13} />, label: 'Analyser data', prompt: 'Analyser dette datasettet og lag visualiseringer: ' },
-  { icon: <FileText size={13} />, label: 'Skriv rapport', prompt: 'Skriv en detaljert rapport om ' },
-  { icon: <Zap size={13} />, label: 'Automatiser oppgave', prompt: 'Automatiser denne oppgaven: ' },
-  { icon: <Terminal size={13} />, label: 'Kjør skript', prompt: 'Skriv og kjør et Python-skript som ' },
+  { icon: <Globe size={13} />, label: 'Søk og analyser nett' },
+  { icon: <Code2 size={13} />, label: 'Bygg en app' },
+  { icon: <BarChart3 size={13} />, label: 'Analyser data' },
+  { icon: <FileText size={13} />, label: 'Skriv rapport' },
+  { icon: <Zap size={13} />, label: 'Automatiser oppgave' },
+  { icon: <Code2 size={13} />, label: 'Kjør skript' },
 ]
 
-// ─── Velkomst-skjerm (sentrert layout) ───────────────────────
+// ─── Velkomst-layout ──────────────────────────────────────────
 function WelcomeLayout({
   title,
   subtitle,
@@ -39,23 +38,13 @@ function WelcomeLayout({
   onSuggestion,
   isAgent,
   chatInputProps,
-  showTerminal,
-  agentState,
-  onExpand,
-  onStop,
-  onApprove,
 }: {
   title: string
   subtitle?: string
-  suggestions: { icon: React.ReactNode; label: string; prompt: string }[]
+  suggestions: { icon: React.ReactNode | string; label: string }[]
   onSuggestion: (text: string) => void
   isAgent: boolean
-  chatInputProps: React.ComponentProps<typeof ChatInput>
-  showTerminal: boolean
-  agentState: Parameters<typeof AgentTerminalPanel>[0]['state']
-  onExpand: () => void
-  onStop: () => void
-  onApprove: (approved: boolean) => void
+  chatInputProps: Parameters<typeof ChatInput>[0]
 }) {
   return (
     <div style={{
@@ -64,82 +53,84 @@ function WelcomeLayout({
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      background: '#1C1C1C',
       padding: '0 24px 24px',
+      minHeight: 0,
     }}>
-      {/* Tittel */}
-      <div style={{ textAlign: 'center', marginBottom: 32 }}>
-        {isAgent && (
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            marginBottom: 12,
-            padding: '5px 12px',
-            borderRadius: 20,
-            background: 'rgba(26,147,254,0.1)',
-            border: '1px solid rgba(26,147,254,0.2)',
-          }}>
-            <Bot size={13} style={{ color: '#1A93FE' }} />
-            <span style={{ fontSize: 12, color: '#1A93FE', fontWeight: 500 }}>Agent-modus</span>
-          </div>
-        )}
-        <h1 style={{
-          fontSize: 32,
-          fontWeight: 300,
-          color: '#E5E5E5',
-          letterSpacing: '-0.5px',
-          lineHeight: 1.2,
-          margin: 0,
+      {/* Agent-badge */}
+      {isAgent && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '4px 12px',
+          background: 'rgba(99,102,241,0.12)',
+          border: '1px solid rgba(99,102,241,0.25)',
+          borderRadius: 20,
+          marginBottom: 20,
+          fontSize: 12,
+          color: '#818CF8',
+          fontWeight: 500,
         }}>
-          {title}
-        </h1>
-        {subtitle && (
-          <p style={{ fontSize: 14, color: '#555', marginTop: 8 }}>{subtitle}</p>
-        )}
-      </div>
+          <Bot size={13} />
+          Agent-modus
+        </div>
+      )}
+
+      {/* Tittel */}
+      <h1 style={{
+        fontSize: 'clamp(24px, 4vw, 36px)',
+        fontWeight: 300,
+        color: '#E5E5E5',
+        textAlign: 'center',
+        marginBottom: subtitle ? 8 : 28,
+        letterSpacing: '-0.02em',
+        fontFamily: '"Georgia", serif',
+      }}>
+        {title}
+      </h1>
+
+      {subtitle && (
+        <p style={{
+          fontSize: 14,
+          color: '#6B7280',
+          textAlign: 'center',
+          marginBottom: 28,
+        }}>
+          {subtitle}
+        </p>
+      )}
 
       {/* Chat-input */}
-      <div style={{ width: '100%', maxWidth: 720 }}>
-        {showTerminal && (
-          <div style={{ marginBottom: 8 }}>
-            <AgentTerminalPanel
-              state={agentState}
-              onExpand={onExpand}
-              onStop={onStop}
-              onApprove={onApprove}
-            />
-          </div>
-        )}
+      <div style={{ width: '100%', maxWidth: 680 }}>
         <ChatInput {...chatInputProps} compact />
       </div>
 
-      {/* Forslag under input */}
+      {/* Forslag */}
       <div style={{
         display: 'flex',
         flexWrap: 'wrap',
         gap: 8,
         justifyContent: 'center',
-        maxWidth: 680,
         marginTop: 16,
+        maxWidth: 680,
       }}>
         {suggestions.map((s, i) => (
           <button
             key={i}
-            onClick={() => onSuggestion(s.prompt)}
+            onClick={() => onSuggestion(s.label)}
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 7,
+              gap: 6,
               padding: '7px 14px',
               borderRadius: 20,
               border: '1px solid #2E2E2E',
               background: 'transparent',
               color: '#9A9A9A',
-              cursor: 'pointer',
               fontSize: 13,
+              cursor: 'pointer',
               fontFamily: 'inherit',
-              transition: 'background 0.15s, color 0.15s, border-color 0.15s',
+              transition: 'all 0.15s',
               whiteSpace: 'nowrap',
             }}
             onMouseEnter={e => {
@@ -166,16 +157,17 @@ function WelcomeLayout({
 export function ChatView() {
   const { activeConversation, settings, updateSettings } = useApp()
   const { sendMessage, stopStreaming, isStreaming } = useChat()
-  const { state: agentState, startAgent, stopAgent, approveAction, fetchFileContent } = useAgent()
+  const { state: agentState, startAgent, approveAction, fetchFileContent } = useAgent()
   const [agentMode, setAgentMode] = useState<AgentMode>('safe')
   const [showSidePanel, setShowSidePanel] = useState(false)
   const [useAgentMode, setUseAgentMode] = useState(false)
+  const [openFile, setOpenFile] = useState<AgentFile | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const { pendingAgentTask, setPendingAgentTask } = useNav()
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [activeConversation?.messages])
+  }, [activeConversation?.messages, agentState.liveTasks.length])
 
   // Når bruker klikker agent i sidebar, aktiver agent-modus
   useEffect(() => {
@@ -203,13 +195,11 @@ export function ChatView() {
 
   const handleRegenerate = () => {
     if (!activeConversation) return
-    const messages = activeConversation.messages
-    const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')
+    const lastUserMsg = [...activeConversation.messages].reverse().find(m => m.role === 'user')
     if (lastUserMsg) sendMessage(lastUserMsg.content)
   }
 
   const isAgentActive = ['planning', 'running', 'waiting_approval'].includes(agentState.status)
-  const showTerminal = isAgentActive || agentState.logs.length > 0
   const hasMessages = activeConversation && activeConversation.messages.length > 0
 
   const chatInputProps = {
@@ -226,7 +216,7 @@ export function ChatView() {
     onToggleAgentMode: () => setUseAgentMode(v => !v),
   }
 
-  // ── Velkomstskjerm (ingen meldinger) ──────────────────────
+  // ── Velkomstskjerm ────────────────────────────────────────
   if (!hasMessages) {
     return (
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
@@ -237,17 +227,19 @@ export function ChatView() {
           onSuggestion={handleSuggestion}
           isAgent={useAgentMode}
           chatInputProps={chatInputProps}
-          showTerminal={showTerminal}
-          agentState={agentState}
-          onExpand={() => setShowSidePanel(true)}
-          onStop={stopAgent}
-          onApprove={approveAction}
         />
         {showSidePanel && (
           <AgentSidePanel
             state={agentState}
             onClose={() => setShowSidePanel(false)}
             onFetchFile={fetchFileContent}
+          />
+        )}
+        {openFile && (
+          <FilePopup
+            file={openFile}
+            allFiles={agentState.liveFiles}
+            onClose={() => setOpenFile(null)}
           />
         )}
       </div>
@@ -260,26 +252,98 @@ export function ChatView() {
       <div className="chat-view" style={{ flex: 1 }}>
         <div className="chat-messages-area">
           <div className="chat-messages-inner">
-            {activeConversation.messages.map((msg, i) => (
-              <ChatMessage
-                key={msg.id}
-                message={msg}
-                isLast={i === activeConversation.messages.length - 1}
-                onRegenerate={i === activeConversation.messages.length - 1 ? handleRegenerate : undefined}
-              />
-            ))}
+            {activeConversation.messages.map((msg, i) => {
+              const isLast = i === activeConversation.messages.length - 1
+
+              // Agent-melding
+              if (msg.isAgentMessage || msg.role === 'agent') {
+                // Bruk live-data fra agentState hvis dette er den aktive agent-meldingen
+                const isActiveAgentMsg = msg.id === agentState.agentMessageId
+                const tasks = isActiveAgentMsg ? agentState.liveTasks : (msg.agentTasks ?? [])
+                const files = isActiveAgentMsg ? agentState.liveFiles : (msg.agentFiles ?? [])
+                const status = isActiveAgentMsg
+                  ? (agentState.status === 'completed' ? 'completed'
+                    : agentState.status === 'failed' ? 'failed'
+                    : agentState.status === 'stopped' ? 'stopped'
+                    : 'running')
+                  : (msg.agentStatus ?? 'completed')
+
+                const suggestions = status === 'completed' ? AGENT_SUGGESTIONS.slice(0, 3).map(s => typeof s.label === 'string' ? s.label : '') : []
+
+                return (
+                  <AgentChatMessage
+                    key={msg.id}
+                    message={{
+                      ...msg,
+                      agentTasks: tasks,
+                      agentFiles: files,
+                      agentStatus: status as 'running' | 'completed' | 'failed' | 'stopped',
+                      agentSuggestions: suggestions,
+                    }}
+                    onOpenFile={(file) => {
+                      setOpenFile(file)
+                      setShowSidePanel(true)
+                    }}
+                    onSuggestion={(text) => startAgent(text, agentMode)}
+                  />
+                )
+              }
+
+              // Vanlig chat-melding
+              return (
+                <ChatMessage
+                  key={msg.id}
+                  message={msg}
+                  isLast={isLast}
+                  onRegenerate={isLast ? handleRegenerate : undefined}
+                />
+              )
+            })}
             <div ref={bottomRef} style={{ height: 16 }} />
           </div>
         </div>
 
-        {showTerminal && (
-          <div style={{ padding: '0 24px' }}>
-            <AgentTerminalPanel
-              state={agentState}
-              onExpand={() => setShowSidePanel(true)}
-              onStop={stopAgent}
-              onApprove={approveAction}
-            />
+        {/* Godkjenning-banner */}
+        {agentState.pendingApproval && (
+          <div style={{
+            margin: '0 24px 12px',
+            padding: '12px 16px',
+            background: 'rgba(245,158,11,0.1)',
+            border: '1px solid rgba(245,158,11,0.3)',
+            borderRadius: 10,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+          }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#F59E0B', marginBottom: 2 }}>
+                Godkjenning kreves
+              </div>
+              <div style={{ fontSize: 12, color: '#9A9A9A' }}>
+                {agentState.pendingApproval.description}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+              <button
+                onClick={() => approveAction(false)}
+                style={{
+                  padding: '6px 12px', borderRadius: 7, border: '1px solid #3A3A3A',
+                  background: 'transparent', color: '#9A9A9A', fontSize: 12, cursor: 'pointer',
+                }}
+              >
+                Avslå
+              </button>
+              <button
+                onClick={() => approveAction(true)}
+                style={{
+                  padding: '6px 12px', borderRadius: 7, border: 'none',
+                  background: '#F59E0B', color: '#141414', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                Godkjenn
+              </button>
+            </div>
           </div>
         )}
 
@@ -291,6 +355,14 @@ export function ChatView() {
           state={agentState}
           onClose={() => setShowSidePanel(false)}
           onFetchFile={fetchFileContent}
+        />
+      )}
+
+      {openFile && (
+        <FilePopup
+          file={openFile}
+          allFiles={agentState.liveFiles}
+          onClose={() => setOpenFile(null)}
         />
       )}
     </div>
