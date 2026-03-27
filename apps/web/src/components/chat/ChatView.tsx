@@ -280,6 +280,8 @@ export function ChatView() {
     isAgentActive,
     useAgentMode,
     onToggleAgentMode: () => setUseAgentMode(v => !v),
+    agentState,
+    onOpenTerminal: () => setShowSidePanel(true),
   }
 
   // ── Velkomstskjerm ────────────────────────────────────────

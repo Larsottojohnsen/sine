@@ -1,11 +1,12 @@
-import { useState, useRef, useCallback, type KeyboardEvent } from 'react'
+import { useState, useRef, useCallback, type KeyboardEvent, useEffect } from 'react'
 import {
-  Plus, GitBranch, MessageSquare, Mic, ArrowUp, Square,
-  ChevronDown, Globe, Cpu, Shield, ShieldOff, Bot, BotOff
+  GitBranch, Monitor, Mic, ArrowUp, Square,
+  ChevronDown, Globe, Cpu, Shield, ShieldOff, Bot, BotOff,
+  Plus, Settings2, Paperclip, ChevronRight, CheckCircle2
 } from 'lucide-react'
 import type { SineModel } from '@/types'
 import { getTranslations } from '@/i18n'
-import type { AgentMode } from '@/hooks/useAgent'
+import type { AgentMode, AgentState } from '@/hooks/useAgent'
 
 interface ChatInputProps {
   onSend: (message: string, mode?: AgentMode) => void
@@ -22,6 +23,9 @@ interface ChatInputProps {
   onToggleAgentMode?: () => void
   // Når true, fjernes padding (brukt i sentrert velkomst-layout)
   compact?: boolean
+  // Agent-state for live task-boks
+  agentState?: AgentState
+  onOpenTerminal?: () => void
 }
 
 export function ChatInput({
@@ -38,11 +42,27 @@ export function ChatInput({
   useAgentMode = false,
   onToggleAgentMode,
   compact = false,
+  agentState,
+  onOpenTerminal,
 }: ChatInputProps) {
   const [value, setValue] = useState('')
+  const [showPlusMenu, setShowPlusMenu] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const plusMenuRef = useRef<HTMLDivElement>(null)
   const t = getTranslations(language)
   const isSafeMode = agentMode === 'safe'
+
+  // Lukk plus-meny ved klikk utenfor
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (plusMenuRef.current && !plusMenuRef.current.contains(e.target as Node)) {
+        setShowPlusMenu(false)
+      }
+    }
+    if (showPlusMenu) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showPlusMenu])
 
   const adjustHeight = useCallback(() => {
     const ta = textareaRef.current
@@ -68,6 +88,15 @@ export function ChatInput({
     }
   }, [handleSend])
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    const fileNames = Array.from(files).map(f => f.name).join(', ')
+    setValue(prev => prev ? `${prev} [${fileNames}]` : `[${fileNames}]`)
+    setShowPlusMenu(false)
+    textareaRef.current?.focus()
+  }
+
   const canSend = value.trim().length > 0 && !disabled
 
   const placeholder = isAgentActive
@@ -76,14 +105,62 @@ export function ChatInput({
       ? 'Beskriv hva agenten skal gjøre...'
       : t.app.placeholder
 
+  // Live task-boks: vis siste aktive oppgave over input
+  const showLiveTask = agentState && ['planning', 'running'].includes(agentState.status)
+  const lastTask = agentState?.liveTasks?.slice(-1)[0]
+  const totalTasks = agentState?.liveTasks?.length ?? 0
+  const doneTasks = agentState?.liveTasks?.filter(t => t.status === 'done').length ?? 0
+
   return (
     <div
       className="chat-input-area"
       style={compact ? { padding: 0, margin: 0 } : undefined}
     >
+      {/* ── Live task-boks (vises over input når agent er aktiv) ── */}
+      {showLiveTask && !compact && (
+        <div className="live-task-bar" onClick={onOpenTerminal}>
+          {/* Thumbnail / terminal-preview */}
+          <div className="live-task-thumb">
+            <div className="live-task-thumb-inner">
+              {agentState.logs.slice(-3).map((log, i) => (
+                <div key={i} style={{
+                  fontSize: 9,
+                  color: log.type === 'tool_result' && log.success ? '#4ADE80'
+                    : log.type === 'error' ? '#F87171'
+                    : '#60A5FA',
+                  fontFamily: 'monospace',
+                  lineHeight: 1.4,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {log.message.slice(0, 40)}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Oppgave-tekst */}
+          <div className="live-task-content">
+            <CheckCircle2 size={14} style={{ color: '#4ADE80', flexShrink: 0 }} />
+            <span className="live-task-label">
+              {lastTask?.label ?? agentState.currentTask}
+            </span>
+          </div>
+
+          {/* Teller + pil */}
+          <div className="live-task-right">
+            {totalTasks > 0 && (
+              <span className="live-task-counter">{doneTasks}/{totalTasks}</span>
+            )}
+            <ChevronDown size={14} style={{ color: '#6B7280' }} />
+          </div>
+        </div>
+      )}
+
+      {/* ── Hoved input-boks ─────────────────────────────────── */}
       <div
-        className="chat-input-box"
-        style={useAgentMode ? { borderColor: 'rgba(26,147,254,0.35)' } : undefined}
+        className={`chat-input-box${useAgentMode ? ' agent-mode' : ''}`}
       >
         {/* Textarea */}
         <textarea
@@ -101,81 +178,102 @@ export function ChatInput({
         {/* Bottom toolbar */}
         <div className="chat-toolbar">
           <div className="chat-toolbar-left">
-            <button className="toolbar-btn" title={t.chat.uploadFile}>
-              <Plus size={18} />
-            </button>
+
+            {/* ── Plus-knapp med dropdown ── */}
+            <div style={{ position: 'relative' }} ref={plusMenuRef}>
+              <button
+                className="toolbar-btn"
+                title="Legg til"
+                onClick={() => setShowPlusMenu(v => !v)}
+                style={{
+                  background: showPlusMenu ? '#2E2E2E' : undefined,
+                  color: showPlusMenu ? '#C0C0C0' : undefined,
+                }}
+              >
+                <Plus size={18} />
+              </button>
+
+              {/* Plus-meny */}
+              {showPlusMenu && (
+                <div className="plus-menu">
+                  <button
+                    className="plus-menu-item"
+                    onClick={() => {
+                      setShowPlusMenu(false)
+                      // Skills er en fremtidig funksjon
+                    }}
+                  >
+                    <Settings2 size={14} className="plus-menu-icon" />
+                    <span>Bruk Skills</span>
+                    <ChevronRight size={12} style={{ marginLeft: 'auto', color: '#4A4A4A' }} />
+                  </button>
+                  <button
+                    className="plus-menu-item"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Paperclip size={14} className="plus-menu-icon" />
+                    <span>Last opp filer</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Skjult fil-input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              style={{ display: 'none' }}
+              onChange={handleFileUpload}
+              accept="*/*"
+            />
+
             <button className="toolbar-btn" title="GitHub">
               <GitBranch size={18} />
             </button>
-            <button className="toolbar-btn" title="Kontekst">
-              <MessageSquare size={18} />
+
+            {/* Terminal-knapp */}
+            <button
+              className="toolbar-btn"
+              title="Terminal"
+              onClick={onOpenTerminal}
+              style={
+                agentState && ['planning', 'running'].includes(agentState.status)
+                  ? { color: '#60A5FA' }
+                  : undefined
+              }
+            >
+              <Monitor size={18} />
             </button>
 
             {/* Agent/Chat-modus toggle */}
             {onToggleAgentMode && (
               <button
-                className="toolbar-btn"
+                className={`toolbar-mode-btn${useAgentMode ? ' active' : ''}`}
                 onClick={onToggleAgentMode}
                 title={useAgentMode ? 'Agent-modus aktiv – klikk for chat' : 'Chat-modus – klikk for agent'}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  padding: '4px 8px',
-                  borderRadius: '6px',
-                  background: useAgentMode
-                    ? 'rgba(26,147,254,0.15)'
-                    : 'rgba(80,80,80,0.1)',
-                  border: `1px solid ${useAgentMode ? 'rgba(26,147,254,0.3)' : 'rgba(80,80,80,0.2)'}`,
-                  color: useAgentMode ? '#1A93FE' : '#666',
-                  fontSize: '11px',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                  width: 'auto',
-                  height: 'auto',
-                }}
               >
                 {useAgentMode ? <Bot size={12} /> : <BotOff size={12} />}
-                <span style={{ fontSize: '11px' }}>
-                  {useAgentMode ? 'Agent' : 'Chat'}
-                </span>
+                <span>{useAgentMode ? 'Agent' : 'Chat'}</span>
               </button>
             )}
 
             {/* Safe Mode – kun i agent-modus */}
             {useAgentMode && onAgentModeChange && (
               <button
-                className="toolbar-btn"
+                className={`toolbar-mode-btn${isSafeMode ? ' safe' : ' power'}`}
                 onClick={() => onAgentModeChange(isSafeMode ? 'power' : 'safe')}
                 title={isSafeMode ? 'Safe Mode PÅ' : 'Power Mode'}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  padding: '4px 8px',
-                  borderRadius: '6px',
-                  background: isSafeMode ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
-                  border: `1px solid ${isSafeMode ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`,
-                  color: isSafeMode ? '#4ADE80' : '#F87171',
-                  fontSize: '11px',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                  width: 'auto',
-                  height: 'auto',
-                }}
               >
                 {isSafeMode ? <Shield size={12} /> : <ShieldOff size={12} />}
-                <span style={{ fontSize: '11px' }}>
-                  {isSafeMode ? 'Safe' : 'Power'}
-                </span>
+                <span>{isSafeMode ? 'Safe' : 'Power'}</span>
               </button>
             )}
           </div>
 
           <div className="chat-toolbar-right">
             <ModelSelector model={model} onModelChange={onModelChange} />
+
             <button className="mic-btn" title={t.chat.voiceInput}>
               <Mic size={18} />
             </button>
@@ -188,9 +286,8 @@ export function ChatInput({
               <button
                 onClick={handleSend}
                 disabled={!canSend}
-                className="send-btn"
+                className={`send-btn${canSend ? ' active' : ''}`}
                 title={t.chat.send}
-                style={useAgentMode && canSend ? { background: '#1A93FE' } : undefined}
               >
                 <ArrowUp size={16} strokeWidth={2.5} />
               </button>

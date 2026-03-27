@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import type { AgentState, AgentLogEntry } from '../../hooks/useAgent';
+import {
+  X, Monitor, FileText, SkipBack, SkipForward,
+  CheckCircle2, ChevronUp, ChevronDown
+} from 'lucide-react';
 
 interface AgentSidePanelProps {
   state: AgentState;
@@ -10,17 +14,6 @@ interface AgentSidePanelProps {
 type PanelTab = 'terminal' | 'files';
 
 function LogLine({ entry }: { entry: AgentLogEntry }) {
-  const getIcon = () => {
-    switch (entry.type) {
-      case 'tool_call': return '⚡';
-      case 'tool_result': return entry.success ? '✓' : '✗';
-      case 'file_change': return '📄';
-      case 'error': return '✗';
-      case 'thinking': return '💭';
-      default: return '›';
-    }
-  };
-
   const getColor = () => {
     switch (entry.type) {
       case 'tool_call': return '#60A5FA';
@@ -32,23 +25,28 @@ function LogLine({ entry }: { entry: AgentLogEntry }) {
     }
   };
 
-  const time = new Date(entry.timestamp).toLocaleTimeString('no-NO', {
-    hour: '2-digit', minute: '2-digit', second: '2-digit'
-  });
+  const getPrefix = () => {
+    switch (entry.type) {
+      case 'tool_call': return '$ ';
+      case 'tool_result': return entry.success ? '  ' : '✗ ';
+      case 'error': return '✗ ';
+      default: return '  ';
+    }
+  };
 
   return (
     <div style={{
       display: 'flex',
-      gap: '8px',
-      padding: '3px 0',
+      gap: '0',
+      padding: '1px 0',
       fontSize: '12px',
-      lineHeight: '1.5',
+      lineHeight: '1.6',
       fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-      borderBottom: '1px solid rgba(255,255,255,0.03)',
     }}>
-      <span style={{ color: '#4B5563', flexShrink: 0, fontSize: '11px' }}>{time}</span>
-      <span style={{ color: getColor(), opacity: 0.7, flexShrink: 0 }}>{getIcon()}</span>
-      <span style={{ color: getColor(), wordBreak: 'break-all' }}>{entry.message}</span>
+      <span style={{ color: getColor(), whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+        <span style={{ opacity: 0.5 }}>{getPrefix()}</span>
+        {entry.message}
+      </span>
     </div>
   );
 }
@@ -58,6 +56,7 @@ export default function AgentSidePanel({ state, onClose, onFetchFile }: AgentSid
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string>('');
   const [loadingFile, setLoadingFile] = useState(false);
+  const [taskExpanded, setTaskExpanded] = useState(true);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -88,81 +87,104 @@ export default function AgentSidePanel({ state, onClose, onFetchFile }: AgentSid
     }
   };
 
+  const isActive = ['planning', 'running'].includes(state.status);
+  const lastTask = state.liveTasks?.slice(-1)[0];
+  const totalTasks = state.liveTasks?.length ?? 0;
+  const doneTasks = state.liveTasks?.filter(t => t.status === 'done').length ?? 0;
+
+  // Finn siste terminal-kommando for header-linje
+  const lastTerminalLog = [...state.logs].reverse().find(l => l.type === 'tool_call');
+
   return (
-    <div style={{
-      width: '420px',
-      minWidth: '420px',
-      background: '#141414',
-      borderLeft: '1px solid #2A2A2A',
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
-    }}>
-      {/* Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        padding: '12px 16px',
-        borderBottom: '1px solid #2A2A2A',
-        gap: '8px',
-      }}>
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: '2px', flex: 1 }}>
-          {(['terminal', 'files'] as PanelTab[]).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                background: activeTab === tab ? '#2A2A2A' : 'transparent',
-                border: 'none',
-                color: activeTab === tab ? '#E5E5E5' : '#6B7280',
-                padding: '4px 12px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: activeTab === tab ? 500 : 400,
-                textTransform: 'capitalize',
-              }}
-            >
-              {tab === 'terminal' ? '⌨️ Terminal' : `📁 Filer (${state.files.length})`}
-            </button>
-          ))}
+    <div className="computer-panel">
+      {/* ── Tittel-rad ─────────────────────────────────────── */}
+      <div className="computer-panel-header">
+        <div className="computer-panel-title">
+          <Monitor size={15} style={{ color: '#9A9A9A' }} />
+          <span>Sine's Computer</span>
+        </div>
+
+        {/* Faner */}
+        <div className="computer-panel-tabs">
+          <button
+            className={`computer-tab${activeTab === 'terminal' ? ' active' : ''}`}
+            onClick={() => setActiveTab('terminal')}
+          >
+            <Monitor size={12} />
+            Terminal
+          </button>
+          <button
+            className={`computer-tab${activeTab === 'files' ? ' active' : ''}`}
+            onClick={() => setActiveTab('files')}
+          >
+            <FileText size={12} />
+            Filer {state.files.length > 0 && `(${state.files.length})`}
+          </button>
         </div>
 
         {/* Lukk */}
-        <button
-          onClick={onClose}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: '#6B7280',
-            cursor: 'pointer',
-            fontSize: '16px',
-            padding: '2px 6px',
-            borderRadius: '4px',
-          }}
-        >
-          ✕
+        <button className="computer-panel-close" onClick={onClose}>
+          <X size={14} />
         </button>
       </div>
 
-      {/* Innhold */}
-      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      {/* ── Aktiv kommando-linje ───────────────────────────── */}
+      {lastTerminalLog && (
+        <div className="computer-panel-status-bar">
+          <span className="computer-panel-status-icon">▶</span>
+          <span className="computer-panel-status-text">
+            {isActive ? 'Kjører kommando' : 'Siste kommando'}
+          </span>
+          <span className="computer-panel-status-cmd">
+            {lastTerminalLog.message.slice(0, 60)}
+            {lastTerminalLog.message.length > 60 ? '…' : ''}
+          </span>
+        </div>
+      )}
+
+      {/* ── Innhold ────────────────────────────────────────── */}
+      <div className="computer-panel-body">
         {activeTab === 'terminal' && (
-          <div style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: '12px 16px',
-            background: '#0D0D0D',
-          }}>
-            {state.logs.length === 0 ? (
-              <div style={{ color: '#4B5563', fontSize: '12px', fontFamily: 'monospace' }}>
-                Venter på agent-aktivitet...
+          <div className="computer-terminal">
+            {/* Terminal-tittel */}
+            <div className="computer-terminal-title">
+              {state.currentTask ? state.currentTask.slice(0, 30) : 'build'}
+            </div>
+
+            {/* Terminal-innhold */}
+            <div className="computer-terminal-content">
+              {/* Prompt-linje */}
+              <div style={{
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                fontSize: 12,
+                marginBottom: 4,
+              }}>
+                <span style={{ color: '#4ADE80' }}>ubuntu@sandbox:~</span>
+                <span style={{ color: '#60A5FA' }}>/sine</span>
+                <span style={{ color: '#E5E5E5' }}> $</span>
               </div>
-            ) : (
-              state.logs.map(entry => <LogLine key={entry.id} entry={entry} />)
-            )}
-            <div ref={logsEndRef} />
+
+              {state.logs.length === 0 ? (
+                <div style={{ color: '#4B5563', fontSize: 12, fontFamily: 'monospace' }}>
+                  Venter på agent-aktivitet...
+                </div>
+              ) : (
+                state.logs.map(entry => <LogLine key={entry.id} entry={entry} />)
+              )}
+
+              {/* Blinkende cursor */}
+              {isActive && (
+                <div style={{
+                  display: 'inline-block',
+                  width: 8,
+                  height: 14,
+                  background: '#E5E5E5',
+                  marginTop: 2,
+                  animation: 'blink 1s step-end infinite',
+                }} />
+              )}
+              <div ref={logsEndRef} />
+            </div>
           </div>
         )}
 
@@ -177,8 +199,8 @@ export default function AgentSidePanel({ state, onClose, onFetchFile }: AgentSid
               padding: '8px',
             }}>
               {state.files.length === 0 ? (
-                <div style={{ color: '#4B5563', fontSize: '12px', padding: '8px' }}>
-                  Ingen filer ennå
+                <div style={{ color: '#4B5563', fontSize: 12, padding: 8, fontFamily: 'monospace' }}>
+                  Ingen filer ennå...
                 </div>
               ) : (
                 state.files.map(file => (
@@ -188,18 +210,26 @@ export default function AgentSidePanel({ state, onClose, onFetchFile }: AgentSid
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '6px',
+                      gap: 6,
                       padding: '6px 8px',
-                      borderRadius: '6px',
+                      borderRadius: 6,
                       cursor: 'pointer',
                       background: selectedFile === file.path ? '#2A2A2A' : 'transparent',
-                      marginBottom: '2px',
+                      marginBottom: 2,
+                    }}
+                    onMouseEnter={e => {
+                      if (selectedFile !== file.path)
+                        e.currentTarget.style.background = '#1E1E1E'
+                    }}
+                    onMouseLeave={e => {
+                      if (selectedFile !== file.path)
+                        e.currentTarget.style.background = 'transparent'
                     }}
                   >
-                    <span style={{ fontSize: '13px' }}>{getFileIcon(file.path)}</span>
+                    <span style={{ fontSize: 13 }}>{getFileIcon(file.path)}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{
-                        fontSize: '12px',
+                        fontSize: 12,
                         color: '#E5E5E5',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -207,14 +237,14 @@ export default function AgentSidePanel({ state, onClose, onFetchFile }: AgentSid
                       }}>
                         {file.path.split('/').pop()}
                       </div>
-                      <div style={{ fontSize: '10px', color: '#6B7280' }}>
+                      <div style={{ fontSize: 10, color: '#6B7280' }}>
                         {file.path.includes('/') ? file.path.split('/').slice(0, -1).join('/') : ''}
                       </div>
                     </div>
                     <span style={{
-                      fontSize: '10px',
+                      fontSize: 10,
                       padding: '1px 5px',
-                      borderRadius: '3px',
+                      borderRadius: 3,
                       background: file.action === 'created'
                         ? 'rgba(34,197,94,0.15)'
                         : 'rgba(167,139,250,0.15)',
@@ -234,7 +264,7 @@ export default function AgentSidePanel({ state, onClose, onFetchFile }: AgentSid
                 <div style={{
                   padding: '8px 12px',
                   borderBottom: '1px solid #2A2A2A',
-                  fontSize: '11px',
+                  fontSize: 11,
                   color: '#6B7280',
                   fontFamily: 'monospace',
                   display: 'flex',
@@ -244,32 +274,19 @@ export default function AgentSidePanel({ state, onClose, onFetchFile }: AgentSid
                   <span>{selectedFile}</span>
                   <button
                     onClick={() => setSelectedFile(null)}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#6B7280',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                    }}
+                    style={{ background: 'transparent', border: 'none', color: '#6B7280', cursor: 'pointer', fontSize: 12 }}
                   >
                     ✕
                   </button>
                 </div>
-                <div style={{
-                  flex: 1,
-                  overflowY: 'auto',
-                  padding: '12px',
-                  background: '#0D0D0D',
-                }}>
+                <div style={{ flex: 1, overflowY: 'auto', padding: 12, background: '#0D0D0D' }}>
                   {loadingFile ? (
-                    <div style={{ color: '#6B7280', fontSize: '12px', fontFamily: 'monospace' }}>
-                      Laster...
-                    </div>
+                    <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'monospace' }}>Laster...</div>
                   ) : (
                     <pre style={{
                       margin: 0,
-                      fontSize: '11.5px',
-                      lineHeight: '1.6',
+                      fontSize: 11.5,
+                      lineHeight: 1.6,
                       color: '#D1D5DB',
                       fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                       whiteSpace: 'pre-wrap',
@@ -283,6 +300,58 @@ export default function AgentSidePanel({ state, onClose, onFetchFile }: AgentSid
             )}
           </div>
         )}
+      </div>
+
+      {/* ── Playback-bar ───────────────────────────────────── */}
+      <div className="computer-playback-bar">
+        <button className="computer-playback-btn" title="Tilbake">
+          <SkipBack size={13} />
+        </button>
+        <button className="computer-playback-btn" title="Frem">
+          <SkipForward size={13} />
+        </button>
+
+        {/* Progress-linje */}
+        <div className="computer-playback-track">
+          <div
+            className="computer-playback-fill"
+            style={{
+              width: totalTasks > 0 ? `${(doneTasks / totalTasks) * 100}%` : (isActive ? '60%' : '100%'),
+            }}
+          />
+          <div
+            className="computer-playback-dot"
+            style={{
+              left: totalTasks > 0 ? `calc(${(doneTasks / totalTasks) * 100}% - 5px)` : (isActive ? 'calc(60% - 5px)' : 'calc(100% - 5px)'),
+            }}
+          />
+        </div>
+
+        {/* Live-indikator */}
+        <div className="computer-live-badge">
+          {isActive && <span className="computer-live-dot" />}
+          <span style={{ fontSize: 11, color: isActive ? '#E5E5E5' : '#6B7280' }}>
+            {isActive ? 'live' : 'ferdig'}
+          </span>
+        </div>
+      </div>
+
+      {/* ── Task-footer ────────────────────────────────────── */}
+      <div
+        className="computer-task-footer"
+        onClick={() => setTaskExpanded(v => !v)}
+      >
+        <CheckCircle2 size={14} style={{ color: '#4ADE80', flexShrink: 0 }} />
+        <span className="computer-task-footer-label">
+          {lastTask?.label ?? state.currentTask ?? 'Venter...'}
+        </span>
+        <span className="computer-task-footer-counter">
+          {doneTasks}/{totalTasks}
+        </span>
+        {taskExpanded
+          ? <ChevronUp size={13} style={{ color: '#6B7280', flexShrink: 0 }} />
+          : <ChevronDown size={13} style={{ color: '#6B7280', flexShrink: 0 }} />
+        }
       </div>
     </div>
   );
