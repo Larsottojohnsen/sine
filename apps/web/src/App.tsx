@@ -1,10 +1,12 @@
-import { useState, createContext, useContext } from 'react'
+import { useState, createContext, useContext, useEffect } from 'react'
 import { AppProvider } from './store/AppContext'
 import { Sidebar } from './components/layout/Sidebar'
 import { Header } from './components/layout/Header'
 import { ChatView } from './components/chat/ChatView'
 import { SettingsModal } from './components/settings/SettingsModal'
 import { useApp } from './store/AppContext'
+import { SearchModal } from './components/search/SearchModal'
+import { LibraryView } from './components/library/LibraryView'
 
 export type AppPage = 'chat' | 'agents' | 'search' | 'library'
 
@@ -15,6 +17,8 @@ interface NavContextType {
   // null = ingen pending, string = aktiver agent-modus (tom streng = bare aktiver)
   pendingAgentTask: string | null
   setPendingAgentTask: (task: string | null) => void
+  searchOpen: boolean
+  setSearchOpen: (open: boolean) => void
 }
 
 export const NavContext = createContext<NavContextType>({
@@ -22,6 +26,8 @@ export const NavContext = createContext<NavContextType>({
   setCurrentPage: () => {},
   pendingAgentTask: null,
   setPendingAgentTask: () => {},
+  searchOpen: false,
+  setSearchOpen: () => {},
 })
 
 export function useNav() {
@@ -31,32 +37,63 @@ export function useNav() {
 function AppLayout() {
   const [currentPage, setCurrentPage] = useState<AppPage>('chat')
   const [pendingAgentTask, setPendingAgentTask] = useState<string | null>(null)
-  useApp()
+  const [searchOpen, setSearchOpen] = useState(false)
+  const { setActiveConversationId, createConversation } = useApp()
 
-  // Alltid vis chat – agent er nå en modus i ChatView, ikke en egen side
-  const effectivePage: AppPage = 'chat'
+  // Cmd+K / Ctrl+K global shortcut
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(prev => !prev)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   const handleNavigate = (p: string) => {
     if (p === 'agents') {
-      // Naviger til chat og aktiver agent-modus
       setPendingAgentTask('')
       setCurrentPage('chat')
+    } else if (p === 'search') {
+      setSearchOpen(true)
     } else {
       setCurrentPage(p as AppPage)
     }
   }
 
+  const handleSelectConversation = (id: string) => {
+    setActiveConversationId(id)
+    setCurrentPage('chat')
+  }
+
+  const handleNewChat = () => {
+    createConversation()
+    setCurrentPage('chat')
+  }
+
   return (
-    <NavContext.Provider value={{ currentPage: effectivePage, setCurrentPage, pendingAgentTask, setPendingAgentTask }}>
+    <NavContext.Provider value={{ currentPage, setCurrentPage, pendingAgentTask, setPendingAgentTask, searchOpen, setSearchOpen }}>
       <div className="app-layout">
-        <Sidebar onNavigate={handleNavigate} currentPage={currentPage === 'agents' ? 'agents' : effectivePage} />
+        <Sidebar onNavigate={handleNavigate} currentPage={currentPage} />
         <div className="main-content">
           <Header />
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <ChatView />
+            {currentPage === 'library' ? (
+              <LibraryView />
+            ) : (
+              <ChatView />
+            )}
           </div>
         </div>
         <SettingsModal />
+        <SearchModal
+          open={searchOpen}
+          onClose={() => setSearchOpen(false)}
+          onSelectConversation={handleSelectConversation}
+          onNewChat={handleNewChat}
+        />
       </div>
     </NavContext.Provider>
   )
