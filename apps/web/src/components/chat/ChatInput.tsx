@@ -20,6 +20,8 @@ interface ChatInputProps {
   isAgentActive?: boolean
   useAgentMode?: boolean
   onToggleAgentMode?: () => void
+  // Når true, fjernes padding (brukt i sentrert velkomst-layout)
+  compact?: boolean
 }
 
 export function ChatInput({
@@ -35,6 +37,7 @@ export function ChatInput({
   isAgentActive,
   useAgentMode = false,
   onToggleAgentMode,
+  compact = false,
 }: ChatInputProps) {
   const [value, setValue] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -74,10 +77,13 @@ export function ChatInput({
       : t.app.placeholder
 
   return (
-    <div className="chat-input-area">
+    <div
+      className="chat-input-area"
+      style={compact ? { padding: 0, margin: 0 } : undefined}
+    >
       <div
         className="chat-input-box"
-        style={useAgentMode ? { borderColor: 'rgba(26,147,254,0.4)' } : undefined}
+        style={useAgentMode ? { borderColor: 'rgba(26,147,254,0.35)' } : undefined}
       >
         {/* Textarea */}
         <textarea
@@ -105,12 +111,12 @@ export function ChatInput({
               <MessageSquare size={18} />
             </button>
 
-            {/* Agent-modus toggle */}
+            {/* Agent/Chat-modus toggle */}
             {onToggleAgentMode && (
               <button
                 className="toolbar-btn"
                 onClick={onToggleAgentMode}
-                title={useAgentMode ? 'Agent-modus: PÅ – klikk for å bytte til chat' : 'Chat-modus – klikk for å aktivere agent'}
+                title={useAgentMode ? 'Agent-modus aktiv – klikk for chat' : 'Chat-modus – klikk for agent'}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -119,13 +125,15 @@ export function ChatInput({
                   borderRadius: '6px',
                   background: useAgentMode
                     ? 'rgba(26,147,254,0.15)'
-                    : 'rgba(80,80,80,0.15)',
-                  border: `1px solid ${useAgentMode ? 'rgba(26,147,254,0.35)' : 'rgba(80,80,80,0.25)'}`,
+                    : 'rgba(80,80,80,0.1)',
+                  border: `1px solid ${useAgentMode ? 'rgba(26,147,254,0.3)' : 'rgba(80,80,80,0.2)'}`,
                   color: useAgentMode ? '#1A93FE' : '#666',
                   fontSize: '11px',
                   fontWeight: 500,
                   cursor: 'pointer',
                   transition: 'all 0.15s',
+                  width: 'auto',
+                  height: 'auto',
                 }}
               >
                 {useAgentMode ? <Bot size={12} /> : <BotOff size={12} />}
@@ -135,27 +143,27 @@ export function ChatInput({
               </button>
             )}
 
-            {/* Safe Mode toggle – kun synlig i agent-modus */}
+            {/* Safe Mode – kun i agent-modus */}
             {useAgentMode && onAgentModeChange && (
               <button
                 className="toolbar-btn"
                 onClick={() => onAgentModeChange(isSafeMode ? 'power' : 'safe')}
-                title={isSafeMode ? 'Safe Mode: PÅ – klikk for å slå av' : 'Safe Mode: AV – klikk for å slå på'}
+                title={isSafeMode ? 'Safe Mode PÅ' : 'Power Mode'}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '5px',
                   padding: '4px 8px',
                   borderRadius: '6px',
-                  background: isSafeMode
-                    ? 'rgba(34,197,94,0.12)'
-                    : 'rgba(239,68,68,0.12)',
+                  background: isSafeMode ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
                   border: `1px solid ${isSafeMode ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`,
                   color: isSafeMode ? '#4ADE80' : '#F87171',
                   fontSize: '11px',
                   fontWeight: 500,
                   cursor: 'pointer',
                   transition: 'all 0.15s',
+                  width: 'auto',
+                  height: 'auto',
                 }}
               >
                 {isSafeMode ? <Shield size={12} /> : <ShieldOff size={12} />}
@@ -173,11 +181,7 @@ export function ChatInput({
             </button>
 
             {isStreaming ? (
-              <button
-                onClick={onStop}
-                className="send-btn"
-                title={t.chat.stop}
-              >
+              <button onClick={onStop} className="send-btn" title={t.chat.stop}>
                 <Square size={12} fill="#1C1C1C" style={{ color: '#1C1C1C' }} />
               </button>
             ) : (
@@ -195,9 +199,11 @@ export function ChatInput({
         </div>
       </div>
 
-      <p className="chat-disclaimer">
-        Sine kan gjøre feil. Sjekk viktig informasjon.
-      </p>
+      {!compact && (
+        <p className="chat-disclaimer">
+          Sine kan gjøre feil. Sjekk viktig informasjon.
+        </p>
+      )}
     </div>
   )
 }
@@ -210,19 +216,13 @@ function ModelSelector({ model, onModelChange }: { model: SineModel; onModelChan
   }
   return (
     <div style={{ position: 'relative' }}>
-      <button
-        className="model-select-btn"
-        onClick={() => setOpen(!open)}
-      >
+      <button className="model-select-btn" onClick={() => setOpen(!open)}>
         <span>{labels[model].name}</span>
         <ChevronDown size={10} />
       </button>
       {open && (
         <>
-          <div
-            style={{ position: 'fixed', inset: 0, zIndex: 40 }}
-            onClick={() => setOpen(false)}
-          />
+          <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setOpen(false)} />
           <div style={{
             position: 'absolute',
             bottom: '100%',
@@ -257,9 +257,7 @@ function ModelSelector({ model, onModelChange }: { model: SineModel; onModelChan
                 onMouseEnter={e => { if (model !== m) e.currentTarget.style.background = '#1E1E1E' }}
                 onMouseLeave={e => { if (model !== m) e.currentTarget.style.background = 'transparent' }}
               >
-                <span style={{ color: model === m ? '#1A93FE' : '#5A5A5A' }}>
-                  {labels[m].icon}
-                </span>
+                <span style={{ color: model === m ? '#1A93FE' : '#5A5A5A' }}>{labels[m].icon}</span>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 500, color: model === m ? '#E5E5E5' : '#C0C0C0' }}>
                     {labels[m].name}
