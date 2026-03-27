@@ -7,6 +7,7 @@ import AgentTerminalPanel from '../agent/AgentTerminalPanel'
 import { useApp } from '@/store/AppContext'
 import { useChat } from '@/hooks/useChat'
 import { useAgent, type AgentMode } from '@/hooks/useAgent'
+import { useUserMemory } from '@/hooks/useUserMemory'
 import { useNav } from '@/App'
 import type { AgentFile } from '@/types'
 import {
@@ -204,6 +205,7 @@ export function ChatView() {
   const { activeConversation, settings, updateSettings, updateAgentMessage } = useApp()
   const { sendMessage, stopStreaming, isStreaming } = useChat()
   const { state: agentState, startAgent, stopAgent, approveAction, fetchFileContent } = useAgent()
+  const { memory, addMemory, removeMemory, clearMemory, extractFromMessage } = useUserMemory()
   const [agentMode, setAgentMode] = useState<AgentMode>('safe')
   const [showSidePanel, setShowSidePanel] = useState(false)
   const [useAgentMode, setUseAgentMode] = useState(false)
@@ -269,6 +271,10 @@ export function ChatView() {
   }, [updateAgentMessage])
 
   const handleSend = useCallback((text: string, mode?: AgentMode) => {
+    // Trekk ut minne fra brukerens melding
+    const convTitle = activeConversation?.title ?? 'Ny samtale'
+    extractFromMessage(text, convTitle)
+
     if (useAgentMode) {
       // Start blob fade-out
       setBlobFadingOut(true)
@@ -281,7 +287,7 @@ export function ChatView() {
       setBlobFadingOut(true)
       sendMessage(text)
     }
-  }, [useAgentMode, agentMode, startAgent, sendMessage])
+  }, [useAgentMode, agentMode, startAgent, sendMessage, extractFromMessage, activeConversation?.title])
 
   const handleSuggestion = useCallback((text: string) => {
     if (useAgentMode) {
@@ -363,6 +369,10 @@ export function ChatView() {
     onOpenTerminal: () => setShowSidePanel(true),
     agentSettings,
     onAgentSettingsChange: setAgentSettings,
+    memory,
+    onAddMemory: (key: string, value: string) => addMemory(key, value, activeConversation?.title ?? 'Manuelt'),
+    onRemoveMemory: removeMemory,
+    onClearMemory: clearMemory,
   }
 
   // ── Velkomstskjerm ────────────────────────────────────────

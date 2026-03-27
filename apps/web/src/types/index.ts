@@ -18,6 +18,32 @@ export interface AgentFile {
   runId?: string
 }
 
+// ─── Plan-steg (Manus-inspirert todo.md) ─────────────────────
+export interface PlanStep {
+  id: number
+  text: string
+  status: 'pending' | 'running' | 'done' | 'error'
+}
+
+// ─── Agent-event for event-stream visning ─────────────────────
+export interface AgentEvent {
+  id: string
+  type: 'thinking' | 'tool_call' | 'tool_result' | 'observation' | 'plan_update' | 'approval_needed' | 'message'
+  label: string
+  tool?: string
+  success?: boolean
+  timestamp: number
+}
+
+// ─── Bruker-minne (persistert på tvers av samtaler) ──────────
+export interface UserMemory {
+  id: string
+  key: string       // f.eks. "studiested", "programmeringsspråk"
+  value: string     // f.eks. "UiO", "Python"
+  source: string    // hvilken samtale det kom fra
+  createdAt: Date
+}
+
 export interface Message {
   id: string
   role: MessageRole
@@ -27,9 +53,18 @@ export interface Message {
   // Agent-spesifikke felt
   agentTasks?: AgentTask[]
   agentFiles?: AgentFile[]
-  agentStatus?: 'running' | 'completed' | 'failed' | 'stopped'
+  agentStatus?: 'running' | 'completed' | 'failed' | 'stopped' | 'waiting_approval'
   agentSuggestions?: string[]
   isAgentMessage?: boolean
+  // Nye felt: plan og events
+  agentPlan?: PlanStep[]
+  agentEvents?: AgentEvent[]
+  // Godkjennings-forespørsel (Safe mode)
+  pendingApproval?: {
+    tool: string
+    args: Record<string, unknown>
+    description: string
+  }
 }
 
 export interface Conversation {
@@ -40,6 +75,7 @@ export interface Conversation {
   updatedAt: Date
   model: SineModel
   type?: 'chat' | 'agent'
+  agentType?: 'code' | 'writing'
 }
 
 export type SineModel = 'sine-1' | 'sine-pro'
@@ -48,6 +84,11 @@ export interface AppSettings {
   language: 'no' | 'en'
   model: SineModel
   theme: 'dark'
+  // Bruker-minne
+  userMemory?: UserMemory[]
+  // Agent-standardinnstillinger
+  defaultAgentType?: 'code' | 'writing'
+  defaultSafeMode?: boolean
 }
 
 export interface NavItem {

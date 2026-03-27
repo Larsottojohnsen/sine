@@ -8,6 +8,7 @@ import type { SineModel } from '@/types'
 import { getTranslations } from '@/i18n'
 import type { AgentMode, AgentState } from '@/hooks/useAgent'
 import { AgentSettingsPopover, type AgentSettings } from './AgentSettingsPopover'
+import type { UserMemory } from '@/types'
 
 interface ChatInputProps {
   onSend: (message: string, mode?: AgentMode) => void
@@ -28,6 +29,11 @@ interface ChatInputProps {
   // Ny: agent-innstillinger
   agentSettings?: AgentSettings
   onAgentSettingsChange?: (s: AgentSettings) => void
+  // Minne
+  memory?: UserMemory[]
+  onAddMemory?: (key: string, value: string) => void
+  onRemoveMemory?: (id: string) => void
+  onClearMemory?: () => void
 }
 
 export function ChatInput({
@@ -48,6 +54,10 @@ export function ChatInput({
   onOpenTerminal,
   agentSettings,
   onAgentSettingsChange,
+  memory = [],
+  onAddMemory,
+  onRemoveMemory,
+  onClearMemory,
 }: ChatInputProps) {
   const [value, setValue] = useState('')
   const [showPlusMenu, setShowPlusMenu] = useState(false)
@@ -279,6 +289,10 @@ export function ChatInput({
                   onAgentSettingsChange(s)
                   onAgentModeChange?.(s.agentMode)
                 }}
+                memory={memory}
+                onAddMemory={onAddMemory}
+                onRemoveMemory={onRemoveMemory}
+                onClearMemory={onClearMemory}
               />
             )}
           </div>

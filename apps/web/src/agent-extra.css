@@ -1,0 +1,198 @@
+/* ═══════════════════════════════════════════════════════════════
+   AGENT PLAN VIEW (Manus-inspirert todo.md)
+   ═══════════════════════════════════════════════════════════════ */
+
+.agent-plan-container {
+  margin: 12px 0;
+  border: 1px solid #2A2A2A;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #1E1E1E;
+}
+
+.agent-plan-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  color: #9A9A9A;
+  transition: background 0.15s;
+}
+
+.agent-plan-header:hover { background: #242424; }
+
+.agent-plan-header-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.agent-plan-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.agent-plan-icon { color: #5A5A5A; flex-shrink: 0; }
+.agent-plan-title { font-size: 12px; font-weight: 500; color: #C0C0C0; }
+.agent-plan-progress-text { font-size: 11px; color: #5A5A5A; }
+
+.agent-plan-progress-bar {
+  width: 60px;
+  height: 3px;
+  background: #2E2E2E;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.agent-plan-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1A93FE, #7B5EA7);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.agent-plan-chevron { color: #5A5A5A; flex-shrink: 0; }
+
+.agent-plan-steps {
+  padding: 4px 0 8px;
+  border-top: 1px solid #2A2A2A;
+}
+
+.agent-plan-step {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 12px;
+  position: relative;
+  transition: background 0.1s;
+}
+
+.agent-plan-step:hover { background: #222222; }
+.agent-plan-step-icon { flex-shrink: 0; display: flex; align-items: center; }
+.agent-plan-step-text { font-size: 12px; line-height: 1.4; flex: 1; }
+
+.agent-plan-step-pending .agent-plan-step-icon { color: #3A3A3A; }
+.agent-plan-step-pending .agent-plan-step-text { color: #5A5A5A; }
+.agent-plan-step-running .agent-plan-step-icon { color: #1A93FE; }
+.agent-plan-step-running .agent-plan-step-text { color: #E5E5E5; font-weight: 500; }
+.agent-plan-step-done .agent-plan-step-icon { color: #34D399; }
+.agent-plan-step-done .agent-plan-step-text { color: #6B7280; text-decoration: line-through; }
+.agent-plan-step-error .agent-plan-step-icon { color: #F87171; }
+.agent-plan-step-error .agent-plan-step-text { color: #F87171; }
+
+.agent-plan-spinner { animation: plan-spin 1s linear infinite; }
+@keyframes plan-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.agent-plan-step-pulse {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #1A93FE;
+  flex-shrink: 0;
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   USER MEMORY PANEL
+   ═══════════════════════════════════════════════════════════════ */
+
+.memory-panel { display: flex; flex-direction: column; gap: 12px; }
+.memory-panel-header { display: flex; flex-direction: column; gap: 4px; }
+.memory-panel-title { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #C0C0C0; }
+.memory-panel-desc { font-size: 11px; color: #5A5A5A; line-height: 1.5; margin: 0; }
+
+.memory-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 0; text-align: center; }
+.memory-empty-icon { color: #3A3A3A; }
+.memory-empty p { font-size: 12px; color: #5A5A5A; margin: 0; }
+.memory-empty-hint { font-size: 11px; color: #3A3A3A; line-height: 1.5; }
+
+.memory-list { display: flex; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto; }
+
+.memory-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 7px 10px;
+  background: #1A1A1A; border: 1px solid #2A2A2A; border-radius: 7px;
+  transition: border-color 0.15s;
+}
+.memory-item:hover { border-color: #3A3A3A; }
+.memory-item-content { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.memory-item-key { font-size: 10px; font-weight: 600; color: #5A5A5A; text-transform: uppercase; letter-spacing: 0.05em; }
+.memory-item-value { font-size: 12px; color: #C0C0C0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.memory-item-remove {
+  background: transparent; border: none; cursor: pointer; color: #3A3A3A;
+  padding: 2px; border-radius: 4px; display: flex; align-items: center; transition: color 0.15s; flex-shrink: 0;
+}
+.memory-item-remove:hover { color: #F87171; }
+
+.memory-add-form {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 10px; background: #1A1A1A; border: 1px solid #2A2A2A; border-radius: 8px;
+}
+.memory-input {
+  background: #242424; border: 1px solid #2E2E2E; border-radius: 6px;
+  padding: 7px 10px; font-size: 12px; color: #E5E5E5; font-family: inherit; outline: none; transition: border-color 0.15s;
+}
+.memory-input:focus { border-color: #1A93FE; }
+.memory-input::placeholder { color: #3A3A3A; }
+.memory-add-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.memory-btn-cancel {
+  padding: 5px 10px; background: transparent; border: 1px solid #2E2E2E; border-radius: 6px;
+  color: #6B7280; font-size: 11px; cursor: pointer; font-family: inherit; transition: all 0.15s;
+}
+.memory-btn-cancel:hover { border-color: #3A3A3A; color: #9A9A9A; }
+.memory-btn-save {
+  padding: 5px 12px; background: #1A93FE; border: none; border-radius: 6px;
+  color: #fff; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; transition: opacity 0.15s;
+}
+.memory-btn-save:hover { opacity: 0.85; }
+
+.memory-actions { display: flex; gap: 8px; align-items: center; }
+.memory-btn-add {
+  display: flex; align-items: center; gap: 5px; padding: 5px 10px;
+  background: #1E1E1E; border: 1px solid #2E2E2E; border-radius: 6px;
+  color: #9A9A9A; font-size: 11px; cursor: pointer; font-family: inherit; transition: all 0.15s;
+}
+.memory-btn-add:hover { background: #242424; color: #E5E5E5; border-color: #3A3A3A; }
+.memory-btn-clear {
+  display: flex; align-items: center; gap: 5px; padding: 5px 10px;
+  background: transparent; border: 1px solid transparent; border-radius: 6px;
+  color: #5A5A5A; font-size: 11px; cursor: pointer; font-family: inherit; transition: all 0.15s;
+}
+.memory-btn-clear:hover { color: #F87171; border-color: rgba(248,113,113,0.2); }
+
+/* ═══════════════════════════════════════════════════════════════
+   AGENT SETTINGS POPOVER — Tabs og Memory-badge
+   ═══════════════════════════════════════════════════════════════ */
+
+.asp-tabs {
+  display: flex;
+  border-bottom: 1px solid #2A2A2A;
+  margin: 0 0 4px;
+}
+
+.asp-tab {
+  display: flex; align-items: center; gap: 5px;
+  padding: 8px 12px;
+  background: transparent; border: none;
+  border-bottom: 2px solid transparent;
+  color: #5A5A5A; font-size: 12px; cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+  margin-bottom: -1px;
+}
+.asp-tab:hover { color: #9A9A9A; }
+.asp-tab.active { color: #E5E5E5; border-bottom-color: #1A93FE; }
+
+.asp-memory-badge {
+  background: #1A93FE; color: #fff;
+  font-size: 9px; font-weight: 700;
+  padding: 1px 5px; border-radius: 10px; line-height: 1.4;
+}

@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import {
   Settings2, Code2, PenLine, Shield,
-  ChevronDown, FileText, Languages, LayoutList, Check
+  ChevronDown, FileText, Languages, LayoutList, Check, Brain
 } from 'lucide-react'
 import type { AgentMode } from '@/hooks/useAgent'
+import type { UserMemory } from '@/types'
+import { UserMemoryPanel } from '@/components/settings/UserMemoryPanel'
 
 export type AgentType = 'code' | 'writing'
 
@@ -20,6 +22,10 @@ export interface AgentSettings {
 interface AgentSettingsPopoverProps {
   settings: AgentSettings
   onSettingsChange: (s: AgentSettings) => void
+  memory?: UserMemory[]
+  onAddMemory?: (key: string, value: string) => void
+  onRemoveMemory?: (id: string) => void
+  onClearMemory?: () => void
 }
 
 const AGENT_TYPES: { id: AgentType; label: string; desc: string; icon: React.ReactNode }[] = [
@@ -57,8 +63,16 @@ const OUTPUT_LANGS: { id: AgentSettings['outputLanguage']; label: string }[] = [
   { id: 'en', label: 'English' },
 ]
 
-export function AgentSettingsPopover({ settings, onSettingsChange }: AgentSettingsPopoverProps) {
+export function AgentSettingsPopover({
+  settings,
+  onSettingsChange,
+  memory = [],
+  onAddMemory,
+  onRemoveMemory,
+  onClearMemory,
+}: AgentSettingsPopoverProps) {
   const [open, setOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState<'settings' | 'memory'>('settings')
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -89,6 +103,39 @@ export function AgentSettingsPopover({ settings, onSettingsChange }: AgentSettin
 
       {open && (
         <div className="agent-settings-popover">
+          {/* ── Tabs ── */}
+          <div className="asp-tabs">
+            <button
+              className={`asp-tab${activeTab === 'settings' ? ' active' : ''}`}
+              onClick={() => setActiveTab('settings')}
+            >
+              <Settings2 size={11} />
+              <span>Innstillinger</span>
+            </button>
+            <button
+              className={`asp-tab${activeTab === 'memory' ? ' active' : ''}`}
+              onClick={() => setActiveTab('memory')}
+            >
+              <Brain size={11} />
+              <span>Minne</span>
+              {memory.length > 0 && (
+                <span className="asp-memory-badge">{memory.length}</span>
+              )}
+            </button>
+          </div>
+
+          {activeTab === 'memory' && (
+            <div className="asp-section">
+              <UserMemoryPanel
+                memory={memory}
+                onAdd={(key, value) => onAddMemory?.(key, value)}
+                onRemove={(id) => onRemoveMemory?.(id)}
+                onClear={() => onClearMemory?.()}
+              />
+            </div>
+          )}
+
+          {activeTab === 'settings' && <>
           {/* ── Agent-type ── */}
           <div className="asp-section">
             <div className="asp-section-label">Type agent</div>
@@ -224,6 +271,7 @@ export function AgentSettingsPopover({ settings, onSettingsChange }: AgentSettin
               </div>
             </>
           )}
+          </> }
         </div>
       )}
     </div>

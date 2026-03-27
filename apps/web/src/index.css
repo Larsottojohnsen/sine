@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @source "../src/**/*.{tsx,ts,jsx,js}";
+@import "./agent-extra.css";
 
 /* ─── Reset ─────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
