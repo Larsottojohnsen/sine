@@ -218,7 +218,7 @@ export function AgentChatMessage({ message, onOpenFile, onSuggestion }: AgentCha
         <img
           src="/sine/sine-logo.webp"
           alt="Sine"
-          style={{ height: 20, width: 'auto', objectFit: 'contain', opacity: 0.9 }}
+          style={{ height: 22, width: 'auto', maxWidth: 80, objectFit: 'contain', opacity: 1 }}
         />
       </div>
 

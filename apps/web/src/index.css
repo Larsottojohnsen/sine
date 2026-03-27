@@ -809,6 +809,9 @@ button { font-family: inherit; }
   max-width: none;
   line-height: 1.5;
   font-size: 16px;
+  /* Smooth streaming rendering */
+  will-change: contents;
+  contain: layout style;
 }
 .prose h1, .prose h2, .prose h3, .prose h4 {
   color: #E5E5E5;
@@ -2141,13 +2144,13 @@ button { font-family: inherit; }
 
 /* ─── Ren avatar (kun logo, ingen bakgrunn) ───────────────────── */
 .message-avatar-clean {
-  width: 24px;
+  width: 48px;
   height: 24px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-top: 1px;
+  justify-content: flex-start;
+  margin-top: 2px;
 }
 
 /* ─── Ren badge (kun tekst, ingen boks) ──────────────────────── */

@@ -13,6 +13,9 @@ Du er laget for norske brukere og har god kunnskap om norske forhold, regler og 
 Du er ærlig om usikkerhet og sier tydelig fra når du ikke vet noe sikkert.
 Formater svarene dine med markdown der det er hensiktsmessig.`
 
+// Batch-interval for smooth streaming (ms)
+const BATCH_INTERVAL = 40
+
 export function useChat() {
   const { activeConversation, activeConversationId, createConversation, addMessage, updateMessage, settings } = useApp()
   const [isStreaming, setIsStreaming] = useState(false)
@@ -39,6 +42,27 @@ export function useChat() {
 
     setIsStreaming(true)
     abortRef.current = new AbortController()
+
+    // ── Batch-buffer for smooth streaming ──────────────────────────
+    let batchTimer: ReturnType<typeof setTimeout> | null = null
+    let accumulated = ''
+
+    const flushToUI = (final: boolean) => {
+      if (batchTimer) {
+        clearTimeout(batchTimer)
+        batchTimer = null
+      }
+      updateMessage(convId!, assistantMsgId, accumulated, !final)
+    }
+
+    const scheduleBatch = () => {
+      if (batchTimer) return
+      batchTimer = setTimeout(() => {
+        batchTimer = null
+        updateMessage(convId!, assistantMsgId, accumulated, true)
+      }, BATCH_INTERVAL)
+    }
+    // ───────────────────────────────────────────────────────────────
 
     try {
       // Build message history from conversation
@@ -79,7 +103,6 @@ export function useChat() {
 
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
-      let accumulated = ''
 
       if (!reader) throw new Error('Ingen response body')
 
@@ -99,7 +122,7 @@ export function useChat() {
             const parsed = JSON.parse(data)
             if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
               accumulated += parsed.delta.text
-              updateMessage(convId!, assistantMsgId, accumulated, true)
+              scheduleBatch()
             }
           } catch {
             // ignore parse errors
@@ -107,12 +130,13 @@ export function useChat() {
         }
       }
 
-      // Mark streaming as done
-      updateMessage(convId!, assistantMsgId, accumulated, false)
+      // Mark streaming as done – flush final content
+      flushToUI(true)
     } catch (err: unknown) {
+      if (batchTimer) clearTimeout(batchTimer)
       if (err instanceof Error && err.name === 'AbortError') {
         // User stopped generation – keep what we have
-        updateMessage(convId!, assistantMsgId, '', false)
+        updateMessage(convId!, assistantMsgId, accumulated || '', false)
       } else {
         const msg = err instanceof Error ? err.message : 'Ukjent feil'
         updateMessage(convId!, assistantMsgId, `*Feil: ${msg}*`, false)

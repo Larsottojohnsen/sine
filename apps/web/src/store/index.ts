@@ -97,7 +97,8 @@ export function useAppStore() {
           updatedAt: new Date(),
         }
       })
-      saveToStorage('sine_conversations', updated)
+      // Ikke lagre til localStorage under streaming – kun når ferdig
+      if (!isStreaming) saveToStorage('sine_conversations', updated)
       return updated
     })
   }, [])
