@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, type KeyboardEvent, useEffect } from 're
 import {
   GitBranch, Monitor, Mic, ArrowUp, Square,
   ChevronDown, Globe, Cpu, Shield, ShieldOff, Bot, BotOff,
-  Plus, Settings2, Paperclip, ChevronRight, CheckCircle2
+  Plus, Settings2, Paperclip, ChevronRight
 } from 'lucide-react'
 import type { SineModel } from '@/types'
 import { getTranslations } from '@/i18n'
@@ -105,11 +105,12 @@ export function ChatInput({
       ? 'Beskriv hva agenten skal gjøre...'
       : t.app.placeholder
 
-  // Live task-boks: vis siste aktive oppgave over input
-  const showLiveTask = agentState && ['planning', 'running'].includes(agentState.status)
+  // Live task-boks: vis når agent er aktiv (uavhengig av om tasks er lastet ennå)
+  const showLiveTask = isAgentActive || (agentState && ['planning', 'running'].includes(agentState.status))
   const lastTask = agentState?.liveTasks?.slice(-1)[0]
   const totalTasks = agentState?.liveTasks?.length ?? 0
   const doneTasks = agentState?.liveTasks?.filter(t => t.status === 'done').length ?? 0
+  const currentTaskLabel = lastTask?.label ?? agentState?.currentTask ?? 'Planlegger...'
 
   return (
     <div
@@ -122,7 +123,7 @@ export function ChatInput({
           {/* Thumbnail / terminal-preview */}
           <div className="live-task-thumb">
             <div className="live-task-thumb-inner">
-              {agentState.logs.slice(-3).map((log, i) => (
+              {agentState?.logs.slice(-3).map((log, i) => (
                 <div key={i} style={{
                   fontSize: 9,
                   color: log.type === 'tool_result' && log.success ? '#4ADE80'
@@ -142,9 +143,14 @@ export function ChatInput({
 
           {/* Oppgave-tekst */}
           <div className="live-task-content">
-            <CheckCircle2 size={14} style={{ color: '#4ADE80', flexShrink: 0 }} />
+            {/* Pulserende blå dot */}
+            <div style={{
+              width: 8, height: 8, borderRadius: '50%',
+              background: '#1A93FE', flexShrink: 0,
+              animation: 'pulse-dot 1.5s ease-in-out infinite',
+            }} />
             <span className="live-task-label">
-              {lastTask?.label ?? agentState.currentTask}
+              {currentTaskLabel}
             </span>
           </div>
 

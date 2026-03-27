@@ -36,12 +36,12 @@ export function ChatMessage({ message, onRegenerate, isLast }: ChatMessageProps)
 
   return (
     <div className="message-assistant animate-fade-in">
-      {/* Avatar – kun logo, ingen bakgrunn */}
+      {/* Avatar – full logo (ikon + tekst) */}
       <div className="message-avatar-clean">
         <img
-          src="/sine/sine-icon.webp"
+          src="/sine/sine-logo.webp"
           alt="Sine"
-          style={{ width: 22, height: 22, objectFit: 'contain', opacity: 0.85 }}
+          style={{ height: 20, width: 'auto', objectFit: 'contain', opacity: 0.9 }}
         />
       </div>
 
@@ -61,10 +61,54 @@ export function ChatMessage({ message, onRegenerate, isLast }: ChatMessageProps)
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
+                // Klikkbare lenker som åpner i ny fane
+                a({ href, children }) {
+                  return (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#60A5FA', textDecoration: 'underline', cursor: 'pointer' }}
+                    >
+                      {children}
+                    </a>
+                  )
+                },
+                // Overskrifter
+                h1({ children }) {
+                  return <h1 style={{ fontSize: '1.2rem', fontWeight: 700, margin: '0.75rem 0 0.4rem', color: '#F3F4F6' }}>{children}</h1>
+                },
+                h2({ children }) {
+                  return <h2 style={{ fontSize: '1.05rem', fontWeight: 600, margin: '0.65rem 0 0.35rem', color: '#F3F4F6' }}>{children}</h2>
+                },
+                h3({ children }) {
+                  return <h3 style={{ fontSize: '0.95rem', fontWeight: 600, margin: '0.55rem 0 0.3rem', color: '#E5E7EB' }}>{children}</h3>
+                },
+                // Paragraf
+                p({ children }) {
+                  return <p style={{ margin: '0 0 0.55rem 0', lineHeight: 1.65 }}>{children}</p>
+                },
+                // Sterk tekst
+                strong({ children }) {
+                  return <strong style={{ fontWeight: 600, color: '#F3F4F6' }}>{children}</strong>
+                },
+                // Kode
                 code({ className, children }) {
                   const match = /language-(\w+)/.exec(className || '')
                   if (!match) {
-                    return <code className={className}>{children}</code>
+                    return (
+                      <code style={{
+                        background: '#1E1E1E',
+                        border: '1px solid #2E2E2E',
+                        borderRadius: 4,
+                        padding: '1px 5px',
+                        fontSize: '0.8em',
+                        fontFamily: 'monospace',
+                        color: '#E2E8F0',
+                      }}>
+                        {children}
+                      </code>
+                    )
                   }
                   return (
                     <CodeBlock
@@ -72,6 +116,16 @@ export function ChatMessage({ message, onRegenerate, isLast }: ChatMessageProps)
                       code={String(children).replace(/\n$/, '')}
                     />
                   )
+                },
+                // Lister
+                ul({ children }) {
+                  return <ul style={{ paddingLeft: '1.2rem', margin: '0.3rem 0 0.55rem 0' }}>{children}</ul>
+                },
+                ol({ children }) {
+                  return <ol style={{ paddingLeft: '1.2rem', margin: '0.3rem 0 0.55rem 0' }}>{children}</ol>
+                },
+                li({ children }) {
+                  return <li style={{ marginBottom: '0.2rem', lineHeight: 1.6 }}>{children}</li>
                 },
               }}
             >

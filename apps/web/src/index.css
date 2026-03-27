@@ -862,6 +862,7 @@ button { font-family: inherit; }
 @keyframes blink   { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 @keyframes spin    { to { transform: rotate(360deg); } }
 @keyframes pulse   { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+@keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.75); } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .animate-fade-in  { animation: fadeIn  200ms ease forwards; }
 .animate-slide-up { animation: slideUp 250ms ease forwards; }
@@ -1327,11 +1328,10 @@ button { font-family: inherit; }
 
 /* ─── Agent intro-tekst ──────────────────────────────────────── */
 .manus-agent-text {
-  font-size: 14px;
-  color: #C5C5C5;
-  line-height: 1.6;
+  font-size: 16px;
+  color: #DADADA;
+  line-height: 1.65;
   margin-bottom: 10px;
-  white-space: pre-wrap;
 }
 
 /* ─── Oppgave-strøm ──────────────────────────────────────────── */
