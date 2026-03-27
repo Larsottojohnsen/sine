@@ -211,12 +211,12 @@ export function AgentChatMessage({ message, onOpenFile, onSuggestion }: AgentCha
 
   return (
     <div className="message-assistant animate-fade-in">
-      {/* Avatar */}
-      <div className="message-avatar">
+      {/* Avatar – kun logo, ingen bakgrunn */}
+      <div className="message-avatar-clean">
         <img
           src="/sine/sine-logo.webp"
           alt="Sine"
-          style={{ width: 20, height: 20, objectFit: 'contain', opacity: 0.9 }}
+          style={{ width: 22, height: 22, objectFit: 'contain', opacity: 0.92 }}
         />
       </div>
 
@@ -224,8 +224,7 @@ export function AgentChatMessage({ message, onOpenFile, onSuggestion }: AgentCha
       <div className="message-body" style={{ flex: 1, minWidth: 0 }}>
         {/* Header */}
         <div className="message-header">
-          <span className="message-name">sine</span>
-          <span className="message-badge" style={{ background: 'rgba(99,102,241,0.15)', color: '#818CF8' }}>Agent</span>
+          <span className="message-badge-clean" style={{ color: '#818CF8' }}>Agent</span>
         </div>
 
         {/* Intro-tekst fra agenten */}

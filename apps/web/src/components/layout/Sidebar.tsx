@@ -198,7 +198,14 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId }: 
               <Terminal size={18} />
             </button>
           </div>
-          <span style={{ fontSize: 10, color: '#2A2A2A' }}>fra Sine AI</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 10, color: '#3A3A3A', letterSpacing: '0.02em' }}>av</span>
+            <img
+              src="/sine/jtg-logo.png"
+              alt="Johnsen Technology AS"
+              style={{ height: 14, opacity: 0.45, objectFit: 'contain' }}
+            />
+          </div>
         </div>
       </div>
     </div>

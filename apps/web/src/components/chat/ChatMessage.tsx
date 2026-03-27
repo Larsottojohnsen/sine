@@ -36,25 +36,27 @@ export function ChatMessage({ message, onRegenerate, isLast }: ChatMessageProps)
 
   return (
     <div className="message-assistant animate-fade-in">
-      {/* Avatar */}
-      <div className="message-avatar">
+      {/* Avatar – kun logo, ingen bakgrunn */}
+      <div className="message-avatar-clean">
         <img
           src="/sine/sine-logo.webp"
           alt="Sine"
-          style={{ width: 20, height: 20, objectFit: 'contain', opacity: 0.9 }}
+          style={{ width: 22, height: 22, objectFit: 'contain', opacity: 0.92 }}
         />
       </div>
 
       {/* Content */}
       <div className="message-body">
         <div className="message-header">
-          <span className="message-name">sine</span>
-          <span className="message-badge">1.0</span>
+          <span className="message-badge-clean">1.0</span>
         </div>
 
         <div className={`prose${message.isStreaming && !message.content ? ' streaming-cursor' : ''}`}>
           {message.isStreaming && !message.content ? (
-            <span className="streaming-cursor" />
+            <div className="thinking-indicator">
+              <div className="thinking-dot" />
+              <span className="thinking-text">Thinking</span>
+            </div>
           ) : (
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
