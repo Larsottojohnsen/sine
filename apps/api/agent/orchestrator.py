@@ -100,7 +100,7 @@ class SineOrchestrator:
         self.workspace.mkdir(parents=True, exist_ok=True)
 
         self.client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY") or os.getenv("claude_key"))
-        self.model = "claude-opus-4-5"
+        self.model = "claude-sonnet-4-5"
 
         # Initialiser verktøy
         self.tools = {

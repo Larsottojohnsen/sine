@@ -17,8 +17,8 @@ router = APIRouter(prefix="/api/chat", tags=["chat"])
 client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY") or os.getenv("claude_key"))
 
 MODEL_MAP = {
-    "sine-1":   "claude-3-5-haiku-20241022",
-    "sine-pro":  "claude-opus-4-5",
+    "sine-1":   "claude-haiku-4-5",
+    "sine-pro":  "claude-sonnet-4-5",
 }
 
 SYSTEM_PROMPT_NO = """Du er Sine, en intelligent AI-assistent. Du svarer alltid på norsk med mindre brukeren skriver på et annet språk.
