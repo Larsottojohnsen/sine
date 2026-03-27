@@ -143,15 +143,23 @@ export function ChatInput({
 
           {/* Oppgave-tekst */}
           <div className="live-task-content">
-            {/* Pulserende blå dot */}
-            <div style={{
-              width: 8, height: 8, borderRadius: '50%',
-              background: '#1A93FE', flexShrink: 0,
-              animation: 'pulse-dot 1.5s ease-in-out infinite',
-            }} />
-            <span className="live-task-label">
-              {currentTaskLabel}
-            </span>
+            {/* Tittel-rad med pulserende dot */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                width: 8, height: 8, borderRadius: '50%',
+                background: '#1A93FE', flexShrink: 0,
+                animation: 'pulse-dot 1.5s ease-in-out infinite',
+              }} />
+              <span className="live-task-label">
+                {currentTaskLabel}
+              </span>
+            </div>
+            {/* Sublabel: siste log-melding */}
+            {agentState?.logs && agentState.logs.length > 0 && (
+              <span className="live-task-sublabel">
+                {agentState.logs[agentState.logs.length - 1].message.slice(0, 60)}
+              </span>
+            )}
           </div>
 
           {/* Teller + pil */}

@@ -45,11 +45,14 @@ Du jobber i en isolert workspace-mappe og kan:
 - Alltid planlegg FØR du starter å kjøre kommandoer
 - Bruk norsk i all kommunikasjon med brukeren
 - Forklar hva du gjør og hvorfor med korte setninger
-- Hvis noe feiler, prøv en alternativ tilnærming
+- **ALDRI gi opp** – hvis noe feiler, prøv alltid en alternativ tilnærming
+- Hvis et verktøy feiler, tenk på andre måter å oppnå samme resultat
+- Eksempler på alternativer: bruk curl i stedet for git clone, skriv filen manuelt i stedet for å laste ned, bruk en annen pakkeversjon, etc.
 - Aldri anta at en kommando fungerte – verifiser alltid outputen
 - Lag filer med meningsfulle navn og god struktur
 - **ALLTID pakk leveransen som ZIP** – bruk terminal: zip -r leveranse.zip <mappe>/
 - Skriv alltid en README.md med installasjonsinstruksjoner
+- Bare spør brukeren om hjelp hvis du absolutt ikke finner noen løsning etter mange forsøk
 
 ## Leveranse-format
 Når du er ferdig, skriv en oppsummering som:
@@ -79,6 +82,8 @@ SAFE_MODE_ON = """Du kjører i Safe Mode. Dette betyr:
 SAFE_MODE_OFF = """Du kjører i Power Mode. Du har utvidede tillatelser, men vær fortsatt forsiktig med destruktive operasjoner."""
 
 MAX_ITERATIONS = 30
+MAX_LLM_RETRIES = 3
+MAX_TOOL_FAILURES = 5  # Maks antall verktøy-feil før agenten spør brukeren
 
 
 class SineOrchestrator:
@@ -235,6 +240,8 @@ class SineOrchestrator:
         self.messages.append({"role": "user", "content": task})
 
         iteration = 0
+        llm_retries = 0
+        consecutive_tool_failures = 0
 
         while iteration < MAX_ITERATIONS:
             iteration += 1
@@ -255,10 +262,17 @@ class SineOrchestrator:
                     tools=self._claude_tools(),
                     messages=self.messages
                 )
+                llm_retries = 0  # Reset ved suksess
             except Exception as e:
-                await self._emit("error", {"message": f"LLM-feil: {str(e)}"})
-                self.state.status = AgentStatus.FAILED
-                break
+                llm_retries += 1
+                await self._emit("log", {"message": f"LLM-feil (forsøk {llm_retries}/{MAX_LLM_RETRIES}): {str(e)}", "level": "error"})
+                if llm_retries >= MAX_LLM_RETRIES:
+                    await self._emit("error", {"message": f"Kunne ikke nå AI-modellen etter {MAX_LLM_RETRIES} forsøk: {str(e)}"})
+                    self.state.status = AgentStatus.FAILED
+                    break
+                # Vent litt før retry
+                await asyncio.sleep(2 * llm_retries)
+                continue
 
             # Yield events
             while not self._event_queue.empty():
@@ -340,11 +354,36 @@ class SineOrchestrator:
                         "id": tool_use_id
                     })
 
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": tool_use_id,
-                        "content": result.output if result.success else f"Feil: {result.error}"
-                    })
+                    if not result.success:
+                        consecutive_tool_failures += 1
+                        # Legg til en eksplisitt instruksjon om å prøve alternativ tilnærming
+                        error_hint = (
+                            f"Feil: {result.error}. "
+                            f"Prøv en alternativ tilnærming for å løse dette. "
+                            f"Ikke gi opp – finn en annen måte."
+                        )
+                        tool_results.append({
+                            "type": "tool_result",
+                            "tool_use_id": tool_use_id,
+                            "content": error_hint
+                        })
+                        # Spør brukeren hvis for mange feil på rad
+                        if consecutive_tool_failures >= MAX_TOOL_FAILURES:
+                            await self._emit("ask_user", {
+                                "message": (
+                                    f"Jeg har prøvd {consecutive_tool_failures} ganger uten suksess. "
+                                    f"Siste feil: {result.error}. "
+                                    f"Kan du gi meg mer informasjon eller en annen tilnærming?"
+                                )
+                            })
+                            consecutive_tool_failures = 0  # Reset etter spørsmål
+                    else:
+                        consecutive_tool_failures = 0  # Reset ved suksess
+                        tool_results.append({
+                            "type": "tool_result",
+                            "tool_use_id": tool_use_id,
+                            "content": result.output
+                        })
 
             # Yield events etter tool-kjøring
             while not self._event_queue.empty():

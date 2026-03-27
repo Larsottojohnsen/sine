@@ -213,21 +213,18 @@ export function AgentChatMessage({ message, onOpenFile, onSuggestion }: AgentCha
 
   return (
     <div className="message-assistant animate-fade-in">
-      {/* Avatar – full logo (ikon + tekst) */}
-      <div className="message-avatar-clean">
+      {/* Avatar – full logo (ikon + tekst) + badge i samme rad */}
+      <div className="message-avatar-row">
         <img
           src="/sine/sine-logo.webp"
           alt="Sine"
-          style={{ height: 22, width: 'auto', maxWidth: 80, objectFit: 'contain', opacity: 1 }}
+          className="message-logo-img"
         />
+        <span className="message-badge-clean" style={{ color: '#818CF8' }}>Agent</span>
       </div>
 
       {/* Content */}
       <div className="message-body" style={{ flex: 1, minWidth: 0 }}>
-        {/* Header */}
-        <div className="message-header">
-          <span className="message-badge-clean" style={{ color: '#818CF8' }}>Agent</span>
-        </div>
 
         {/* Intro-tekst fra agenten – med markdown-rendering og klikkbare lenker */}
         {message.content && (

@@ -36,20 +36,18 @@ export function ChatMessage({ message, onRegenerate, isLast }: ChatMessageProps)
 
   return (
     <div className="message-assistant animate-fade-in">
-      {/* Avatar – full logo (ikon + tekst) */}
-      <div className="message-avatar-clean">
+      {/* Avatar – full logo (ikon + tekst) + badge i samme rad */}
+      <div className="message-avatar-row">
         <img
           src="/sine/sine-logo.webp"
           alt="Sine"
-          style={{ height: 22, width: 'auto', maxWidth: 80, objectFit: 'contain', opacity: 1 }}
+          className="message-logo-img"
         />
+        <span className="message-badge-clean">1.0</span>
       </div>
 
       {/* Content */}
       <div className="message-body">
-        <div className="message-header">
-          <span className="message-badge-clean">1.0</span>
-        </div>
 
         <div className={`prose${message.isStreaming && !message.content ? ' streaming-cursor' : ''}`}>
           {message.isStreaming && !message.content ? (
