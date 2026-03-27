@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AuroraBackground } from './AuroraBackground'
+import PixelBlast from './PixelBlast'
 import { getSupabase, useAuth } from '../../hooks/useAuth'
 
 type LoginStep = 'main' | 'email-password' | 'email-sent' | 'create-account'
@@ -24,9 +24,7 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
       const supabase = getSupabase()
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-          redirectTo: window.location.origin + (import.meta.env.BASE_URL || '/'),
-        }
+        options: { redirectTo: window.location.origin + (import.meta.env.BASE_URL || '/') }
       })
       if (error) setError(error.message)
     } catch {
@@ -43,9 +41,7 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
       const supabase = getSupabase()
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
-        options: {
-          redirectTo: window.location.origin + (import.meta.env.BASE_URL || '/'),
-        }
+        options: { redirectTo: window.location.origin + (import.meta.env.BASE_URL || '/') }
       })
       if (error) setError(error.message)
     } catch {
@@ -71,11 +67,8 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
           shouldCreateUser: true,
         }
       })
-      if (error) {
-        setError(error.message)
-      } else {
-        setStep('email-sent')
-      }
+      if (error) setError(error.message)
+      else setStep('email-sent')
     } catch {
       setError('Noe gikk galt. Prøv igjen.')
     } finally {
@@ -84,21 +77,13 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
   }
 
   const handlePasswordLogin = async () => {
-    if (!password.trim()) {
-      setError('Skriv inn passord')
-      return
-    }
+    if (!password.trim()) { setError('Skriv inn passord'); return }
     setLoading(true)
     setError('')
     try {
       const supabase = getSupabase()
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      })
-      if (error) {
-        setError(error.message.includes('Invalid login credentials') ? 'Feil e-post eller passord' : error.message)
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+      if (error) setError(error.message.includes('Invalid login credentials') ? 'Feil e-post eller passord' : error.message)
     } catch {
       setError('Innlogging feilet. Prøv igjen.')
     } finally {
@@ -108,7 +93,25 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
 
   return (
     <div className="login-page">
-      <AuroraBackground variant="login" />
+      {/* PixelBlast bakgrunn – fyller hele siden */}
+      <div className="login-pixel-bg">
+        <PixelBlast
+          variant="square"
+          pixelSize={4}
+          color="#4a5568"
+          patternScale={2}
+          patternDensity={1}
+          pixelSizeJitter={0}
+          enableRipples
+          rippleSpeed={0.4}
+          rippleThickness={0.12}
+          rippleIntensityScale={1.5}
+          liquid={false}
+          speed={0.5}
+          edgeFade={0.25}
+          transparent
+        />
+      </div>
 
       {/* Logo øverst til venstre */}
       <div className="login-logo">
@@ -119,7 +122,7 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
       <div className="login-card-wrapper">
         <div className="login-card">
 
-          {/* Sine favicon-ikon – bruker SVG-filen direkte */}
+          {/* Sine favicon-ikon */}
           <div className="login-icon">
             <img
               src="/sine/Sinefaviconsvg.svg"
@@ -152,9 +155,7 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
                 </button>
               </div>
 
-              <div className="login-divider">
-                <span>Eller</span>
-              </div>
+              <div className="login-divider"><span>Eller</span></div>
 
               <div className="login-email-section">
                 <input
@@ -167,30 +168,33 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
                   autoComplete="email"
                 />
                 {error && <p className="login-error">{error}</p>}
-                <button
-                  className="login-continue-btn"
-                  onClick={handleEmailContinue}
-                  disabled={loading || !email.trim()}
-                >
+                <button className="login-continue-btn" onClick={handleEmailContinue} disabled={loading || !email.trim()}>
                   {loading ? <span className="login-spinner" /> : 'Fortsett'}
                 </button>
               </div>
 
-              {/* Dev-bypass knapp */}
-              <button
-                className="login-dev-btn"
-                onClick={devLogin}
-                title="Kun for utvikling – hopper over innlogging"
-              >
+              <button className="login-dev-btn" onClick={devLogin} title="Kun for utvikling – hopper over innlogging">
                 ⚡ Fortsett uten innlogging (dev)
               </button>
             </>
           )}
 
-          {step === 'email-password' && (
+          {step === 'email-sent' && (
             <>
-              <h1 className="login-title">Logg inn</h1>
-              <p className="login-subtitle">{email}</p>
+              <h1 className="login-title">Sjekk e-posten din</h1>
+              <p className="login-subtitle">
+                Vi har sendt en innloggingslenke til<br />
+                <strong style={{ color: '#e0e0e0' }}>{email}</strong>
+              </p>
+              <button className="login-back-btn" style={{ marginTop: '24px' }} onClick={() => setStep('main')}>
+                Tilbake
+              </button>
+            </>
+          )}
+
+          {(step === 'email-password' || step === 'create-account') && (
+            <>
+              <h1 className="login-title">{step === 'create-account' ? 'Opprett konto' : 'Logg inn'}</h1>
               <div className="login-email-section">
                 <div className="login-input-group">
                   <label className="login-label">E-post</label>
@@ -212,53 +216,6 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
                       autoFocus
                     />
                     <button className="login-eye-btn" onClick={() => setShowPassword(p => !p)} type="button">
-                      {showPassword ? (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
-                          <line x1="1" y1="1" x2="23" y2="23"/>
-                        </svg>
-                      ) : (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                          <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                </div>
-                {error && <p className="login-error">{error}</p>}
-                <button className="login-continue-btn" onClick={handlePasswordLogin} disabled={loading || !password.trim()}>
-                  {loading ? <span className="login-spinner" /> : 'Fortsett'}
-                </button>
-                <button className="login-back-btn" onClick={() => setStep('main')}>Tilbake</button>
-              </div>
-            </>
-          )}
-
-          {step === 'create-account' && (
-            <>
-              <h1 className="login-title">Opprett konto</h1>
-              <p className="login-subtitle">Sett passord for å fortsette</p>
-              <div className="login-email-section">
-                <div className="login-input-group">
-                  <label className="login-label">E-post</label>
-                  <div className="login-input-with-action">
-                    <input type="email" className="login-input" value={email} readOnly />
-                    <button className="login-edit-btn" onClick={() => setStep('main')}>Endre</button>
-                  </div>
-                </div>
-                <div className="login-input-group">
-                  <label className="login-label">Passord</label>
-                  <div className="login-input-with-action">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      className="login-input"
-                      placeholder="Skriv inn passord"
-                      value={password}
-                      onChange={e => { setPassword(e.target.value); setError('') }}
-                      autoFocus
-                    />
-                    <button className="login-eye-btn" onClick={() => setShowPassword(p => !p)} type="button">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                         <circle cx="12" cy="12" r="3"/>
@@ -268,40 +225,14 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
                 </div>
                 {error && <p className="login-error">{error}</p>}
                 <button className="login-continue-btn" onClick={handlePasswordLogin} disabled={loading || !password.trim()}>
-                  {loading ? <span className="login-spinner" /> : 'Opprett konto'}
+                  {loading ? <span className="login-spinner" /> : step === 'create-account' ? 'Opprett konto' : 'Fortsett'}
                 </button>
                 <button className="login-back-btn" onClick={() => setStep('main')}>Tilbake</button>
               </div>
             </>
           )}
-
-          {step === 'email-sent' && (
-            <>
-              <div className="login-email-sent-icon">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="url(#aurora-icon2)" strokeWidth="1.5">
-                  <defs>
-                    <linearGradient id="aurora-icon2" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#00ff9f" />
-                      <stop offset="100%" stopColor="#00d4ff" />
-                    </linearGradient>
-                  </defs>
-                  <path d="M22 16a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h16a2 2 0 012 2v8z"/>
-                  <polyline points="22,8 12,13 2,8"/>
-                </svg>
-              </div>
-              <h1 className="login-title">Sjekk e-posten din</h1>
-              <p className="login-subtitle">
-                Vi har sendt en innloggingslenke til<br />
-                <strong style={{ color: '#e0e0e0' }}>{email}</strong>
-              </p>
-              <button className="login-back-btn" style={{ marginTop: '24px' }} onClick={() => setStep('main')}>
-                Tilbake
-              </button>
-            </>
-          )}
         </div>
 
-        {/* Lenker */}
         <div className="login-footer">
           <a href="#" className="login-footer-link">Vilkår for bruk</a>
           <a href="#" className="login-footer-link">Personvern</a>
@@ -310,11 +241,7 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
 
       {/* Johnsen Technology logo – bunn av siden */}
       <div className="login-bottom-brand">
-        <img
-          src="/sine/jtg-logo-white.png"
-          alt="Johnsen Technology"
-          className="login-jtg-logo"
-        />
+        <img src="/sine/jtg-logo-white.png" alt="Johnsen Technology" className="login-jtg-logo" />
       </div>
     </div>
   )

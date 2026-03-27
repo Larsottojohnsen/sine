@@ -14,7 +14,6 @@ import {
   Globe, Code2, FileText, BarChart3, Zap, Bot
 } from 'lucide-react'
 import { HyperspeedCanvas } from './HyperspeedCanvas'
-import { AuroraBackground } from '../auth/AuroraBackground'
 import { type AgentSettings, type AgentType } from './AgentSettingsPopover'
 
 // ─── Velkomst-forslag ─────────────────────────────────────────
@@ -43,23 +42,7 @@ const WRITING_SUGGESTIONS = [
   { icon: '📖', label: 'Start en bok' },
 ]
 
-// ─── Aurora-bakgrunn for chat ─────────────────────────────────
-function WelcomeBlobs({ fadingOut }: { fadingOut: boolean }) {
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        opacity: fadingOut ? 0 : 1,
-        transition: 'opacity 0.8s ease',
-        pointerEvents: 'none',
-        zIndex: 0,
-      }}
-    >
-      <AuroraBackground variant="chat" />
-    </div>
-  )
-}
+// (Aurora-bakgrunn fjernet fra chat)
 
 // ─── Rainbow border agent-badge ───────────────────────────────
 function AgentBadge({ agentType }: { agentType: AgentType }) {
@@ -84,7 +67,7 @@ function WelcomeLayout({
   isAgent,
   agentType,
   chatInputProps,
-  blobFadingOut,
+  blobFadingOut: _blobFadingOut,
   showHyperspeed,
   onHyperspeedComplete,
 }: {
@@ -111,8 +94,7 @@ function WelcomeLayout({
       position: 'relative',
       overflow: 'hidden',
     }}>
-      {/* Aurora-bakgrunn (chat-modus) */}
-      {!isAgent && <WelcomeBlobs fadingOut={blobFadingOut} />}
+      {/* (ingen aurora-bakgrunn i chat) */}
 
       {/* Hyperspeed canvas (agent-modus) */}
       {isAgent && (
@@ -218,13 +200,15 @@ export function ChatView() {
   const [agentMode, setAgentMode] = useState<AgentMode>('safe')
   const [showSidePanel, setShowSidePanel] = useState(false)
   const [useAgentMode, setUseAgentMode] = useState(false)
+  const [modeSwitching, setModeSwitching] = useState(false)
+  const modeSwitchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [openFile, setOpenFile] = useState<AgentFile | null>(null)
   const [openFileAllFiles, setOpenFileAllFiles] = useState<AgentFile[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
   const { pendingAgentTask, setPendingAgentTask } = useNav()
 
-  // Blob fade state
-  const [blobFadingOut, setBlobFadingOut] = useState(false)
+  // Blob fade state (brukes for å fade ut ved melding)
+  const [_blobFadingOut, setBlobFadingOut] = useState(false)
 
   // Hyperspeed state
   const [showHyperspeed, setShowHyperspeed] = useState(false)
@@ -373,7 +357,15 @@ export function ChatView() {
     onAgentModeChange: (m: AgentMode) => setAgentSettings(s => ({ ...s, agentMode: m })),
     isAgentActive,
     useAgentMode,
-    onToggleAgentMode: () => setUseAgentMode(v => !v),
+    onToggleAgentMode: () => {
+      // Fade-up animasjon ved bytte mellom chat og agent
+      setModeSwitching(true)
+      if (modeSwitchTimeout.current) clearTimeout(modeSwitchTimeout.current)
+      modeSwitchTimeout.current = setTimeout(() => {
+        setUseAgentMode(v => !v)
+        setModeSwitching(false)
+      }, 180)
+    },
     agentState,
     onOpenTerminal: () => setShowSidePanel(true),
     agentSettings,
@@ -384,10 +376,15 @@ export function ChatView() {
     onClearMemory: clearMemory,
   }
 
-  // ── Velkomstskjerm ────────────────────────────────────────
+   // ── Velkomstskjerm ────────────────────────────────────
   if (!hasMessages) {
     return (
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
+      <div style={{
+        display: 'flex', flex: 1, overflow: 'hidden', position: 'relative',
+        opacity: modeSwitching ? 0 : 1,
+        transform: modeSwitching ? 'translateY(12px)' : 'translateY(0)',
+        transition: modeSwitching ? 'none' : 'opacity 0.28s ease, transform 0.28s ease',
+      }}>
         <WelcomeLayout
           title={useAgentMode
             ? (agentSettings.agentType === 'writing' ? 'Hva skal jeg skrive?' : 'Hva skal agenten gjøre?')
@@ -402,7 +399,7 @@ export function ChatView() {
           isAgent={useAgentMode}
           agentType={agentSettings.agentType}
           chatInputProps={chatInputProps}
-          blobFadingOut={blobFadingOut}
+          blobFadingOut={_blobFadingOut}
           showHyperspeed={showHyperspeed}
           onHyperspeedComplete={() => setHyperspeedDone(true)}
         />

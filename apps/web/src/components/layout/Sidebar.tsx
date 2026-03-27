@@ -14,6 +14,91 @@ interface SidebarProps {
   activeAgentRunId?: string | null
 }
 
+// ─── Slett-bekreftelsesdialog ─────────────────────────────────
+function DeleteConfirmDialog({
+  title,
+  onConfirm,
+  onCancel,
+}: {
+  title: string
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: 'rgba(0,0,0,0.6)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+      onClick={onCancel}
+    >
+      <div
+        style={{
+          background: '#1e1e20',
+          border: '1px solid #2e2e30',
+          borderRadius: 12,
+          padding: '24px',
+          width: 360,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+          position: 'relative',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Lukk-knapp */}
+        <button
+          onClick={onCancel}
+          style={{
+            position: 'absolute', top: 14, right: 14,
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            color: '#6A6A6A', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 24, height: 24, borderRadius: 6,
+          }}
+          onMouseEnter={e => (e.currentTarget.style.background = '#2a2a2c')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+        >
+          <X size={15} />
+        </button>
+
+        <h3 style={{ margin: '0 0 10px', fontSize: 16, fontWeight: 600, color: '#E5E5E5' }}>
+          Slett denne samtalen?
+        </h3>
+        <p style={{ margin: '0 0 20px', fontSize: 13, color: '#8A8A8A', lineHeight: 1.5 }}>
+          <strong style={{ color: '#B0B0B0' }}>"{title.length > 40 ? title.slice(0, 40) + '…' : title}"</strong>
+          {' '}vil bli slettet permanent og kan ikke gjenopprettes.
+        </p>
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '8px 18px', borderRadius: 8, border: '1px solid #3A3A3A',
+              background: 'transparent', color: '#C0C0C0', fontSize: 13, cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#2a2a2c')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >
+            Avbryt
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              padding: '8px 18px', borderRadius: 8, border: 'none',
+              background: '#ef4444', color: '#fff', fontSize: 13, cursor: 'pointer',
+              fontFamily: 'inherit', fontWeight: 500,
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#dc2626')}
+            onMouseLeave={e => (e.currentTarget.style.background = '#ef4444')}
+          >
+            Slett
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId }: SidebarProps) {
   const {
     conversations,
@@ -30,10 +115,22 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId }: 
   const t = getTranslations(settings.language)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [referralOpen, setReferralOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null)
 
   const handleNewChat = () => {
     createConversation()
     onNavigate?.('chat')
+  }
+
+  const handleDeleteRequest = (id: string, title: string) => {
+    setDeleteTarget({ id, title })
+  }
+
+  const handleDeleteConfirm = () => {
+    if (deleteTarget) {
+      deleteConversation(deleteTarget.id)
+      setDeleteTarget(null)
+    }
   }
 
   const groupedConversations = () => {
@@ -162,10 +259,10 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId }: 
             </p>
           ) : (
             <>
-              <ConvGroup label="I dag" conversations={groups.today} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={setActiveConversationId} onDelete={deleteConversation} activeAgentRunId={activeAgentRunId} />
-              <ConvGroup label="I går" conversations={groups.yesterday} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={setActiveConversationId} onDelete={deleteConversation} activeAgentRunId={activeAgentRunId} />
-              <ConvGroup label="Siste 7 dager" conversations={groups.week} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={setActiveConversationId} onDelete={deleteConversation} activeAgentRunId={activeAgentRunId} />
-              <ConvGroup label="Eldre" conversations={groups.older} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={setActiveConversationId} onDelete={deleteConversation} activeAgentRunId={activeAgentRunId} />
+              <ConvGroup label="I dag" conversations={groups.today} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={setActiveConversationId} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
+              <ConvGroup label="I går" conversations={groups.yesterday} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={setActiveConversationId} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
+              <ConvGroup label="Siste 7 dager" conversations={groups.week} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={setActiveConversationId} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
+              <ConvGroup label="Eldre" conversations={groups.older} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={setActiveConversationId} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
             </>
           )}
         </div>
@@ -210,6 +307,15 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId }: 
 
       {/* Referral Modal */}
       {referralOpen && <ReferralModal onClose={() => setReferralOpen(false)} />}
+
+      {/* Slett-bekreftelsesdialog */}
+      {deleteTarget && (
+        <DeleteConfirmDialog
+          title={deleteTarget.title}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
     </>
   )
 }
@@ -373,7 +479,7 @@ function ConvGroup({
   hoveredId: string | null
   onHover: (id: string | null) => void
   onSelect: (id: string) => void
-  onDelete: (id: string) => void
+  onDelete: (id: string, title: string) => void
   activeAgentRunId?: string | null
 }) {
   if (conversations.length === 0) return null
@@ -406,7 +512,7 @@ function ConvGroup({
             </span>
             {hoveredId === conv.id && (
               <button
-                onClick={e => { e.stopPropagation(); onDelete(conv.id) }}
+                onClick={e => { e.stopPropagation(); onDelete(conv.id, conv.title) }}
                 style={{
                   position: 'absolute', right: 6,
                   width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
