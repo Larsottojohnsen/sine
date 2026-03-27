@@ -61,6 +61,23 @@ function getFileType(filename: string): AgentFile['type'] {
   return 'other';
 }
 
+function generateIntroText(task: string): string {
+  const t = task.toLowerCase();
+  if (t.includes('chrome') || t.includes('utvidelse') || t.includes('extension'))
+    return `Jeg skal lage en Chrome-utvidelse for deg. La meg starte med å planlegge strukturen og sette opp filene som trengs.`;
+  if (t.includes('spill') || t.includes('game'))
+    return `Jeg skal lage et spill for deg. Starter med å planlegge spillmekanikken og sette opp prosjektstrukturen.`;
+  if (t.includes('nettside') || t.includes('website') || t.includes('app'))
+    return `Jeg skal bygge dette for deg. Planlegger arkitekturen og setter opp filstrukturen nå.`;
+  if (t.includes('analyser') || t.includes('analyse'))
+    return `Jeg starter analysen. Henter inn data og planlegger fremgangsmåten.`;
+  if (t.includes('søk') || t.includes('finn') || t.includes('search'))
+    return `Jeg søker etter dette for deg. Starter med å samle informasjon fra relevante kilder.`;
+  if (t.includes('skriv') || t.includes('lag') || t.includes('opprett'))
+    return `Forstått! Jeg planlegger oppgaven og starter arbeidet med én gang.`;
+  return `Jeg har forstått oppgaven. Planlegger fremgangsmåten og starter arbeidet nå.`;
+}
+
 export function useAgent() {
   const [state, setState] = useState<AgentState>({
     runId: null,
@@ -81,7 +98,7 @@ export function useAgent() {
   const agentMsgIdRef = useRef<string | null>(null);
   const activeTasksRef = useRef<Map<string, AgentTask>>(new Map());
 
-  const { addMessage, updateMessage, activeConversationId, createConversation } = useApp();
+  const { addMessage, updateMessage, updateAgentMessage, activeConversationId, createConversation } = useApp();
 
   const addLog = useCallback((entry: Omit<AgentLogEntry, 'id' | 'timestamp'>) => {
     setState(prev => ({
@@ -105,10 +122,11 @@ export function useAgent() {
     // Legg til bruker-melding
     addMessage(convId, { role: 'user', content: task });
 
-    // Legg til agent-melding (oppdateres live)
+    // Legg til agent-melding med umiddelbar intro-tekst
+    const introText = generateIntroText(task);
     const agentMsgId = addMessage(convId, {
       role: 'agent',
-      content: '',
+      content: introText,
       isAgentMessage: true,
       agentStatus: 'running',
       agentTasks: [],
@@ -207,11 +225,18 @@ export function useAgent() {
 
         addLog({ type: 'tool_call', message: `Kjører ${toolName}`, tool: toolName, args: data.args as Record<string, unknown> });
 
-        setState(prev => ({
-          ...prev,
-          status: 'running',
-          liveTasks: [...prev.liveTasks, newTask],
-        }));
+        setState(prev => {
+          const updatedTasks = [...prev.liveTasks, newTask];
+          // Lagre tasks til meldingen løpende
+          if (_convId && _agentMsgId) {
+            updateAgentMessage(_convId, _agentMsgId, { agentTasks: updatedTasks });
+          }
+          return {
+            ...prev,
+            status: 'running',
+            liveTasks: updatedTasks,
+          };
+        });
         break;
       }
 
@@ -230,6 +255,10 @@ export function useAgent() {
           const idx = tasks.findLastIndex(t => t.tool === toolName && t.status === 'running');
           if (idx >= 0) {
             tasks[idx] = { ...tasks[idx], status: data.success ? 'done' : 'error' };
+          }
+          // Lagre oppdaterte tasks til meldingen
+          if (_convId && _agentMsgId) {
+            updateAgentMessage(_convId, _agentMsgId, { agentTasks: tasks });
           }
           return { ...prev, liveTasks: tasks };
         });

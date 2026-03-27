@@ -3,6 +3,7 @@ import { ChatMessage } from './ChatMessage'
 import { ChatInput } from './ChatInput'
 import { AgentChatMessage, FilePopup } from './AgentChatMessage'
 import AgentSidePanel from '../agent/AgentSidePanel'
+import AgentTerminalPanel from '../agent/AgentTerminalPanel'
 import { useApp } from '@/store/AppContext'
 import { useChat } from '@/hooks/useChat'
 import { useAgent, type AgentMode } from '@/hooks/useAgent'
@@ -157,7 +158,7 @@ function WelcomeLayout({
 export function ChatView() {
   const { activeConversation, settings, updateSettings, updateAgentMessage } = useApp()
   const { sendMessage, stopStreaming, isStreaming } = useChat()
-  const { state: agentState, startAgent, approveAction, fetchFileContent } = useAgent()
+  const { state: agentState, startAgent, stopAgent, approveAction, fetchFileContent } = useAgent()
   const [agentMode, setAgentMode] = useState<AgentMode>('safe')
   const [showSidePanel, setShowSidePanel] = useState(false)
   const [useAgentMode, setUseAgentMode] = useState(false)
@@ -319,6 +320,17 @@ export function ChatView() {
   return (
     <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
       <div className="chat-view" style={{ flex: 1 }}>
+        {/* Agent-status-boks over meldingene når agent er aktiv */}
+        {isAgentActive && (
+          <div style={{ padding: '12px 24px 0', maxWidth: 720, margin: '0 auto', width: '100%' }}>
+            <AgentTerminalPanel
+              state={agentState}
+              onExpand={() => setShowSidePanel(true)}
+              onStop={stopAgent}
+              onApprove={approveAction}
+            />
+          </div>
+        )}
         <div className="chat-messages-area">
           <div className="chat-messages-inner">
             {activeConversation.messages.map((msg, i) => {
