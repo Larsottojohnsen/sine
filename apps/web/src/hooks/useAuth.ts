@@ -4,6 +4,9 @@ import { createClient, type User, type SupabaseClient } from '@supabase/supabase
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://cauaqoqvpvjpeghejgvj.supabase.co'
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhdWFxb3F2cHZqcGVnaGVqZ3ZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2Mzc3MDAsImV4cCI6MjA5MDIxMzcwMH0.eT_KvHh6ZoS5hlLILkhzTyogTP91OAX-pKwG57OeFHI'
 
+// Dev-bypass: lagres i localStorage
+const DEV_BYPASS_KEY = 'sine_dev_bypass'
+
 let _supabase: SupabaseClient | null = null
 
 export function getSupabase() {
@@ -18,6 +21,14 @@ export interface AuthUser {
   email: string
   name?: string
   avatarUrl?: string
+  isDevUser?: boolean
+}
+
+const DEV_USER: AuthUser = {
+  id: 'dev-user-local',
+  email: 'dev@sine.no',
+  name: 'Dev',
+  isDevUser: true,
 }
 
 export function useAuth() {
@@ -25,6 +36,13 @@ export function useAuth() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Sjekk dev-bypass først
+    if (localStorage.getItem(DEV_BYPASS_KEY) === 'true') {
+      setUser(DEV_USER)
+      setLoading(false)
+      return
+    }
+
     const supabase = getSupabase()
 
     // Hent nåværende sesjon
@@ -40,7 +58,12 @@ export function useAuth() {
       if (session?.user) {
         setUser(mapUser(session.user))
       } else {
-        setUser(null)
+        // Sjekk dev-bypass igjen ved sign-out
+        if (localStorage.getItem(DEV_BYPASS_KEY) === 'true') {
+          setUser(DEV_USER)
+        } else {
+          setUser(null)
+        }
       }
       setLoading(false)
     })
@@ -49,12 +72,18 @@ export function useAuth() {
   }, [])
 
   const signOut = async () => {
+    localStorage.removeItem(DEV_BYPASS_KEY)
     const supabase = getSupabase()
     await supabase.auth.signOut()
     setUser(null)
   }
 
-  return { user, loading, signOut }
+  const devLogin = () => {
+    localStorage.setItem(DEV_BYPASS_KEY, 'true')
+    setUser(DEV_USER)
+  }
+
+  return { user, loading, signOut, devLogin }
 }
 
 function mapUser(u: User): AuthUser {

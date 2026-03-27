@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { AuroraBackground } from './AuroraBackground'
-import { getSupabase } from '../../hooks/useAuth'
+import { getSupabase, useAuth } from '../../hooks/useAuth'
 
 type LoginStep = 'main' | 'email-password' | 'email-sent' | 'create-account'
 
@@ -8,31 +8,14 @@ interface LoginPageProps {
   onLogin?: (user: { email: string; name?: string }) => void
 }
 
-// Sine-logo SVG – to avrundede piller (favicon-ikonet)
-function SineIcon({ size = 40 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 384 384"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      {/* Øvre pille */}
-      <rect x="80" y="60" width="224" height="100" rx="50" fill="#dadada" opacity="0.92" />
-      {/* Nedre pille – litt smalere */}
-      <rect x="80" y="186" width="200" height="88" rx="44" fill="#dadada" opacity="0.70" />
-    </svg>
-  )
-}
-
-export function LoginPage({ onLogin }: LoginPageProps) {
+export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
   const [step, setStep] = useState<LoginStep>('main')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const { devLogin } = useAuth()
 
   const handleGoogleLogin = async () => {
     setLoading(true)
@@ -109,18 +92,12 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     setError('')
     try {
       const supabase = getSupabase()
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       })
       if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          setError('Feil e-post eller passord')
-        } else {
-          setError(error.message)
-        }
-      } else if (data.user) {
-        onLogin?.({ email: data.user.email || email, name: data.user.user_metadata?.name })
+        setError(error.message.includes('Invalid login credentials') ? 'Feil e-post eller passord' : error.message)
       }
     } catch {
       setError('Innlogging feilet. Prøv igjen.')
@@ -142,9 +119,13 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       <div className="login-card-wrapper">
         <div className="login-card">
 
-          {/* Sine-ikon – to piller */}
+          {/* Sine favicon-ikon – bruker SVG-filen direkte */}
           <div className="login-icon">
-            <SineIcon size={44} />
+            <img
+              src="/sine/Sinefaviconsvg.svg"
+              alt="Sine ikon"
+              className="login-favicon-icon"
+            />
           </div>
 
           {step === 'main' && (
@@ -194,6 +175,15 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   {loading ? <span className="login-spinner" /> : 'Fortsett'}
                 </button>
               </div>
+
+              {/* Dev-bypass knapp */}
+              <button
+                className="login-dev-btn"
+                onClick={devLogin}
+                title="Kun for utvikling – hopper over innlogging"
+              >
+                ⚡ Fortsett uten innlogging (dev)
+              </button>
             </>
           )}
 
@@ -201,21 +191,14 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             <>
               <h1 className="login-title">Logg inn</h1>
               <p className="login-subtitle">{email}</p>
-
               <div className="login-email-section">
                 <div className="login-input-group">
                   <label className="login-label">E-post</label>
                   <div className="login-input-with-action">
-                    <input
-                      type="email"
-                      className="login-input"
-                      value={email}
-                      readOnly
-                    />
+                    <input type="email" className="login-input" value={email} readOnly />
                     <button className="login-edit-btn" onClick={() => setStep('main')}>Endre</button>
                   </div>
                 </div>
-
                 <div className="login-input-group">
                   <label className="login-label">Passord</label>
                   <div className="login-input-with-action">
@@ -228,11 +211,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                       onKeyDown={e => e.key === 'Enter' && handlePasswordLogin()}
                       autoFocus
                     />
-                    <button
-                      className="login-eye-btn"
-                      onClick={() => setShowPassword(p => !p)}
-                      type="button"
-                    >
+                    <button className="login-eye-btn" onClick={() => setShowPassword(p => !p)} type="button">
                       {showPassword ? (
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
@@ -247,17 +226,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                     </button>
                   </div>
                 </div>
-
                 {error && <p className="login-error">{error}</p>}
-
-                <button
-                  className="login-continue-btn"
-                  onClick={handlePasswordLogin}
-                  disabled={loading || !password.trim()}
-                >
+                <button className="login-continue-btn" onClick={handlePasswordLogin} disabled={loading || !password.trim()}>
                   {loading ? <span className="login-spinner" /> : 'Fortsett'}
                 </button>
-
                 <button className="login-back-btn" onClick={() => setStep('main')}>Tilbake</button>
               </div>
             </>
@@ -267,7 +239,6 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             <>
               <h1 className="login-title">Opprett konto</h1>
               <p className="login-subtitle">Sett passord for å fortsette</p>
-
               <div className="login-email-section">
                 <div className="login-input-group">
                   <label className="login-label">E-post</label>
@@ -276,7 +247,6 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                     <button className="login-edit-btn" onClick={() => setStep('main')}>Endre</button>
                   </div>
                 </div>
-
                 <div className="login-input-group">
                   <label className="login-label">Passord</label>
                   <div className="login-input-with-action">
@@ -296,17 +266,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                     </button>
                   </div>
                 </div>
-
                 {error && <p className="login-error">{error}</p>}
-
-                <button
-                  className="login-continue-btn"
-                  onClick={handlePasswordLogin}
-                  disabled={loading || !password.trim()}
-                >
+                <button className="login-continue-btn" onClick={handlePasswordLogin} disabled={loading || !password.trim()}>
                   {loading ? <span className="login-spinner" /> : 'Opprett konto'}
                 </button>
-
                 <button className="login-back-btn" onClick={() => setStep('main')}>Tilbake</button>
               </div>
             </>
@@ -345,9 +308,13 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         </div>
       </div>
 
-      {/* Johnsen Technology – bunn av siden */}
+      {/* Johnsen Technology logo – bunn av siden */}
       <div className="login-bottom-brand">
-        Johnsen Technology
+        <img
+          src="/sine/jtg-logo-white.png"
+          alt="Johnsen Technology"
+          className="login-jtg-logo"
+        />
       </div>
     </div>
   )
