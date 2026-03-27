@@ -7,6 +7,7 @@ import { useChat } from '@/hooks/useChat'
 import { useAgent, type AgentMode } from '@/hooks/useAgent'
 import AgentTerminalPanel from '../agent/AgentTerminalPanel'
 import AgentSidePanel from '../agent/AgentSidePanel'
+import { useNav } from '@/App'
 
 export function ChatView() {
   const { activeConversation, settings, updateSettings } = useApp()
@@ -14,26 +15,29 @@ export function ChatView() {
   const { state: agentState, startAgent, stopAgent, approveAction, fetchFileContent } = useAgent()
   const [agentMode, setAgentMode] = useState<AgentMode>('safe')
   const [showSidePanel, setShowSidePanel] = useState(false)
+  // useAgentMode: true = send til backend-agent, false = vanlig chat
+  const [useAgentMode, setUseAgentMode] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const { pendingAgentTask, setPendingAgentTask } = useNav()
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [activeConversation?.messages])
 
-  // Åpne sidepanel automatisk når agent starter
+  // Når bruker navigerer fra AgentsPage, aktiver agent-modus automatisk
   useEffect(() => {
-    if (agentState.status === 'running' || agentState.status === 'planning') {
-      // Ikke åpne automatisk – brukeren klikker på terminal
+    if (pendingAgentTask !== null) {
+      setUseAgentMode(true)
+      setPendingAgentTask(null)
     }
-  }, [agentState.status])
+  }, [pendingAgentTask, setPendingAgentTask])
 
   const handleSend = (text: string, mode?: AgentMode) => {
-    // Sjekk om dette er en agent-oppgave (begynner med /, eller inneholder agent-nøkkelord)
-    const isAgentTask = text.startsWith('/agent ') || text.startsWith('/run ')
-    if (isAgentTask) {
-      const task = text.replace(/^\/(agent|run)\s+/, '')
-      startAgent(task, mode || agentMode)
+    if (useAgentMode) {
+      // Agent-modus: send til Railway backend
+      startAgent(text, mode || agentMode)
     } else {
+      // Normal chat: send direkte til Claude
       sendMessage(text)
     }
   }
@@ -65,6 +69,8 @@ export function ChatView() {
     agentMode,
     onAgentModeChange: setAgentMode,
     isAgentActive,
+    useAgentMode,
+    onToggleAgentMode: () => setUseAgentMode(v => !v),
   }
 
   if (!hasMessages) {
@@ -88,7 +94,6 @@ export function ChatView() {
           <ChatInput {...chatInputProps} />
         </div>
 
-        {/* Side panel */}
         {showSidePanel && (
           <AgentSidePanel
             state={agentState}
@@ -103,7 +108,6 @@ export function ChatView() {
   return (
     <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
       <div className="chat-view" style={{ flex: 1 }}>
-        {/* Messages */}
         <div className="chat-messages-area">
           <div className="chat-messages-inner">
             {activeConversation.messages.map((msg, i) => (
@@ -130,11 +134,9 @@ export function ChatView() {
           </div>
         )}
 
-        {/* Input */}
         <ChatInput {...chatInputProps} />
       </div>
 
-      {/* Side panel */}
       {showSidePanel && (
         <AgentSidePanel
           state={agentState}

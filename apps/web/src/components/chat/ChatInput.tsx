@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, type KeyboardEvent } from 'react'
 import {
   Plus, GitBranch, MessageSquare, Mic, ArrowUp, Square,
-  ChevronDown, Globe, Cpu, Shield, ShieldOff
+  ChevronDown, Globe, Cpu, Shield, ShieldOff, Bot, BotOff
 } from 'lucide-react'
 import type { SineModel } from '@/types'
 import { getTranslations } from '@/i18n'
@@ -18,6 +18,8 @@ interface ChatInputProps {
   agentMode?: AgentMode
   onAgentModeChange?: (mode: AgentMode) => void
   isAgentActive?: boolean
+  useAgentMode?: boolean
+  onToggleAgentMode?: () => void
 }
 
 export function ChatInput({
@@ -31,6 +33,8 @@ export function ChatInput({
   agentMode = 'safe',
   onAgentModeChange,
   isAgentActive,
+  useAgentMode = false,
+  onToggleAgentMode,
 }: ChatInputProps) {
   const [value, setValue] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -52,7 +56,7 @@ export function ChatInput({
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
     }
-  }, [value, isStreaming, disabled, onSend])
+  }, [value, isStreaming, disabled, onSend, agentMode])
 
   const handleKeyDown = useCallback((e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -63,16 +67,25 @@ export function ChatInput({
 
   const canSend = value.trim().length > 0 && !disabled
 
+  const placeholder = isAgentActive
+    ? 'Gi agenten en ny oppgave...'
+    : useAgentMode
+      ? 'Beskriv hva agenten skal gjøre...'
+      : t.app.placeholder
+
   return (
     <div className="chat-input-area">
-      <div className="chat-input-box">
+      <div
+        className="chat-input-box"
+        style={useAgentMode ? { borderColor: 'rgba(26,147,254,0.4)' } : undefined}
+      >
         {/* Textarea */}
         <textarea
           ref={textareaRef}
           value={value}
           onChange={e => { setValue(e.target.value); adjustHeight() }}
           onKeyDown={handleKeyDown}
-          placeholder={isAgentActive ? 'Gi agenten en ny oppgave...' : t.app.placeholder}
+          placeholder={placeholder}
           disabled={disabled}
           rows={1}
           className="chat-textarea"
@@ -92,8 +105,38 @@ export function ChatInput({
               <MessageSquare size={18} />
             </button>
 
-            {/* Safe Mode toggle */}
-            {onAgentModeChange && (
+            {/* Agent-modus toggle */}
+            {onToggleAgentMode && (
+              <button
+                className="toolbar-btn"
+                onClick={onToggleAgentMode}
+                title={useAgentMode ? 'Agent-modus: PÅ – klikk for å bytte til chat' : 'Chat-modus – klikk for å aktivere agent'}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  background: useAgentMode
+                    ? 'rgba(26,147,254,0.15)'
+                    : 'rgba(80,80,80,0.15)',
+                  border: `1px solid ${useAgentMode ? 'rgba(26,147,254,0.35)' : 'rgba(80,80,80,0.25)'}`,
+                  color: useAgentMode ? '#1A93FE' : '#666',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {useAgentMode ? <Bot size={12} /> : <BotOff size={12} />}
+                <span style={{ fontSize: '11px' }}>
+                  {useAgentMode ? 'Agent' : 'Chat'}
+                </span>
+              </button>
+            )}
+
+            {/* Safe Mode toggle – kun synlig i agent-modus */}
+            {useAgentMode && onAgentModeChange && (
               <button
                 className="toolbar-btn"
                 onClick={() => onAgentModeChange(isSafeMode ? 'power' : 'safe')}
@@ -143,6 +186,7 @@ export function ChatInput({
                 disabled={!canSend}
                 className="send-btn"
                 title={t.chat.send}
+                style={useAgentMode && canSend ? { background: '#1A93FE' } : undefined}
               >
                 <ArrowUp size={16} strokeWidth={2.5} />
               </button>
@@ -160,12 +204,10 @@ export function ChatInput({
 
 function ModelSelector({ model, onModelChange }: { model: SineModel; onModelChange: (m: SineModel) => void }) {
   const [open, setOpen] = useState(false)
-
   const labels: Record<SineModel, { name: string; desc: string; icon: React.ReactNode }> = {
     'sine-1':   { name: 'Sine 1.0',  desc: 'Rask og effektiv',    icon: <Cpu size={12} /> },
     'sine-pro': { name: 'Sine Pro',  desc: 'Kraftfull og presis',  icon: <Globe size={12} /> },
   }
-
   return (
     <div style={{ position: 'relative' }}>
       <button
@@ -175,7 +217,6 @@ function ModelSelector({ model, onModelChange }: { model: SineModel; onModelChan
         <span>{labels[model].name}</span>
         <ChevronDown size={10} />
       </button>
-
       {open && (
         <>
           <div

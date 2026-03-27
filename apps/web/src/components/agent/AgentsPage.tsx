@@ -1,4 +1,5 @@
 import { Bot, Plus, ChevronRight, Zap, Globe, Code2, FileText, BarChart3 } from 'lucide-react'
+import { useNav } from '@/App'
 
 interface AgentTemplate {
   id: string
@@ -7,6 +8,7 @@ interface AgentTemplate {
   icon: React.ReactNode
   color: string
   category: string
+  prompt: string
 }
 
 const AGENT_TEMPLATES: AgentTemplate[] = [
@@ -17,6 +19,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     icon: <Globe size={18} />,
     color: '#1A93FE',
     category: 'Forskning',
+    prompt: 'Jeg er klar til å søke og analysere informasjon fra nettet for deg. Hva vil du at jeg skal forske på?',
   },
   {
     id: 'code-assistant',
@@ -25,6 +28,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     icon: <Code2 size={18} />,
     color: '#A855F7',
     category: 'Utvikling',
+    prompt: 'Jeg er klar til å hjelpe deg med kode. Beskriv hva du vil bygge, fikse eller forbedre.',
   },
   {
     id: 'data-analyst',
@@ -33,6 +37,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     icon: <BarChart3 size={18} />,
     color: '#10B981',
     category: 'Analyse',
+    prompt: 'Jeg er klar til å analysere data for deg. Del datasett eller beskriv hva du vil analysere.',
   },
   {
     id: 'doc-writer',
@@ -41,6 +46,7 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     icon: <FileText size={18} />,
     color: '#F59E0B',
     category: 'Innhold',
+    prompt: 'Jeg er klar til å skrive dokumenter for deg. Hva trenger du hjelp med å skrive?',
   },
   {
     id: 'task-automator',
@@ -49,10 +55,23 @@ const AGENT_TEMPLATES: AgentTemplate[] = [
     icon: <Zap size={18} />,
     color: '#EF4444',
     category: 'Automatisering',
+    prompt: 'Jeg er klar til å automatisere oppgaver for deg. Beskriv hva du vil ha automatisert.',
   },
 ]
 
 export function AgentsPage() {
+  const { setCurrentPage, setPendingAgentTask } = useNav()
+
+  const handleSelectAgent = (agent: AgentTemplate) => {
+    setPendingAgentTask(agent.prompt)
+    setCurrentPage('chat')
+  }
+
+  const handleCreateCustom = () => {
+    setPendingAgentTask('')
+    setCurrentPage('chat')
+  }
+
   return (
     <div className="flex-1 overflow-y-auto" style={{ background: '#1C1C1C' }}>
       <div className="max-w-3xl mx-auto px-6 py-8">
@@ -75,6 +94,7 @@ export function AgentsPage() {
           style={{ background: '#1E1E1E', border: '1px dashed #3A3A3A' }}
           onMouseEnter={e => (e.currentTarget.style.borderColor = '#1A93FE')}
           onMouseLeave={e => (e.currentTarget.style.borderColor = '#3A3A3A')}
+          onClick={handleCreateCustom}
         >
           <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#2A2A2A' }}>
             <Plus size={18} className="text-[#555] group-hover:text-[#1A93FE] transition-colors" />
@@ -95,7 +115,7 @@ export function AgentsPage() {
           <h2 className="text-[11px] font-medium text-[#444] uppercase tracking-wider mb-3">Maler</h2>
           <div className="space-y-2">
             {AGENT_TEMPLATES.map(agent => (
-              <AgentCard key={agent.id} agent={agent} />
+              <AgentCard key={agent.id} agent={agent} onSelect={handleSelectAgent} />
             ))}
           </div>
         </div>
@@ -104,13 +124,14 @@ export function AgentsPage() {
   )
 }
 
-function AgentCard({ agent }: { agent: AgentTemplate }) {
+function AgentCard({ agent, onSelect }: { agent: AgentTemplate; onSelect: (a: AgentTemplate) => void }) {
   return (
     <button
       className="w-full flex items-center gap-3.5 p-4 rounded-xl transition-all group text-left"
       style={{ background: '#1E1E1E', border: '1px solid #2A2A2A' }}
       onMouseEnter={e => (e.currentTarget.style.background = '#242424')}
       onMouseLeave={e => (e.currentTarget.style.background = '#1E1E1E')}
+      onClick={() => onSelect(agent)}
     >
       <div
         className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
