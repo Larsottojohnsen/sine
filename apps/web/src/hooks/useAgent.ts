@@ -35,7 +35,7 @@ export interface AgentState {
   suggestions: string[];
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://sineapi-production.up.railway.app';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://sineapi-production-8db6.up.railway.app';
 const WS_BASE = API_BASE.replace('https://', 'wss://').replace('http://', 'ws://');
 
 function getTaskLabel(tool: string, args: Record<string, unknown>): string {

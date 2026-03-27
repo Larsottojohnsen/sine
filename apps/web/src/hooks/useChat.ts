@@ -1,17 +1,8 @@
 import { useState, useCallback, useRef } from 'react'
 import { useApp } from '@/store/AppContext'
-import type { SineModel } from '@/types'
 
-const MODEL_MAP: Record<SineModel, string> = {
-  'sine-1': 'claude-haiku-4-5-20251001',
-  'sine-pro': 'claude-sonnet-4-6',
-}
-
-const SYSTEM_PROMPT = `Du er Sine, en norsk AI-assistent. Du er hjelpsom, presis og vennlig. 
-Du svarer alltid på norsk med mindre brukeren skriver på et annet språk.
-Du er laget for norske brukere og har god kunnskap om norske forhold, regler og kultur.
-Du er ærlig om usikkerhet og sier tydelig fra når du ikke vet noe sikkert.
-Formater svarene dine med markdown der det er hensiktsmessig.`
+// Backend API URL – bruker Railway i produksjon
+const API_BASE = import.meta.env.VITE_API_URL || 'https://sineapi-production-8db6.up.railway.app'
 
 // Batch-interval for smooth streaming (ms)
 const BATCH_INTERVAL = 40
@@ -22,12 +13,6 @@ export function useChat() {
   const abortRef = useRef<AbortController | null>(null)
 
   const sendMessage = useCallback(async (userInput: string) => {
-    const apiKey = import.meta.env.VITE_CLAUDE_API_KEY
-    if (!apiKey) {
-      console.error('VITE_CLAUDE_API_KEY mangler')
-      return
-    }
-
     // Ensure we have an active conversation
     let convId = activeConversationId
     if (!convId) {
@@ -67,31 +52,38 @@ export function useChat() {
     try {
       // Build message history from conversation
       const conv = activeConversation
-      const history = conv?.messages.map(m => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-      })) ?? []
+      const history = conv?.messages
+        .filter(m => m.role === 'user' || m.role === 'assistant')
+        .filter(m => m.content && m.content.trim() !== '')
+        .map(m => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+        })) ?? []
 
-      // Add the new user message
+      // Add the new user message at the end
       const messages = [
-        ...history.filter(m => m.role === 'user' || m.role === 'assistant'),
+        ...history,
         { role: 'user' as const, content: userInput },
       ]
 
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      // Hent brukerminne fra localStorage
+      let userMemory: Array<{key: string, value: string}> = []
+      try {
+        const stored = localStorage.getItem('sine_user_memory')
+        if (stored) userMemory = JSON.parse(stored)
+      } catch { /* ignore */ }
+
+      const response = await fetch(`${API_BASE}/api/chat/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
-          model: MODEL_MAP[settings.model],
-          max_tokens: 4096,
-          system: SYSTEM_PROMPT,
           messages,
-          stream: true,
+          model: settings.model || 'sine-1',
+          language: 'no',
+          user_memory: userMemory,
+          conversation_id: convId,
         }),
         signal: abortRef.current.signal,
       })
@@ -116,16 +108,20 @@ export function useChat() {
         for (const line of lines) {
           if (!line.startsWith('data: ')) continue
           const data = line.slice(6).trim()
-          if (data === '[DONE]') continue
+          if (!data) continue
 
           try {
             const parsed = JSON.parse(data)
-            if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
-              accumulated += parsed.delta.text
+            if (parsed.type === 'token') {
+              accumulated += parsed.content
               scheduleBatch()
+            } else if (parsed.type === 'done') {
+              // Streaming ferdig
+            } else if (parsed.type === 'error') {
+              throw new Error(parsed.message)
             }
-          } catch {
-            // ignore parse errors
+          } catch (parseErr) {
+            // ignore JSON parse errors for partial chunks
           }
         }
       }
