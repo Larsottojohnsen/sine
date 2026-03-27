@@ -10,6 +10,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from routes.agent import router as agent_router
+from routes.chat import router as chat_router
+from routes.memory import router as memory_router
+from routes.conversations import router as conversations_router
 
 app = FastAPI(
     title="Sine API",
@@ -34,6 +37,9 @@ app.add_middleware(
 )
 
 app.include_router(agent_router)
+app.include_router(chat_router)
+app.include_router(memory_router)
+app.include_router(conversations_router)
 
 
 @app.get("/health")

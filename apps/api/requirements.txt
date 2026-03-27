@@ -10,3 +10,5 @@ duckduckgo-search==7.2.1
 gitpython==3.1.44
 psutil==6.1.1
 python-multipart==0.0.20
+supabase==2.10.0
+e2b-code-interpreter==1.0.3
