@@ -39,9 +39,9 @@ export function ChatMessage({ message, onRegenerate, isLast }: ChatMessageProps)
       {/* Avatar – kun logo, ingen bakgrunn */}
       <div className="message-avatar-clean">
         <img
-          src="/sine/sine-logo.webp"
+          src="/sine/sine-icon.webp"
           alt="Sine"
-          style={{ width: 22, height: 22, objectFit: 'contain', opacity: 0.92 }}
+          style={{ width: 22, height: 22, objectFit: 'contain', opacity: 0.85 }}
         />
       </div>
 
