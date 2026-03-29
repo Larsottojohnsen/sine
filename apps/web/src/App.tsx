@@ -49,7 +49,7 @@ function AppLayout() {
   const [searchOpen, setSearchOpen] = useState(false)
   // Mobile: false = show sidebar/conv list, true = show chat
   const [mobileShowChat, setMobileShowChat] = useState(false)
-  const { setActiveConversationId, createConversation, settings } = useApp()
+  const { setActiveConversationId, settings } = useApp()
 
   // Apply theme to document root
   useEffect(() => {
@@ -109,10 +109,12 @@ function AppLayout() {
   }, [setActiveConversationId])
 
   const handleNewChat = useCallback(() => {
-    createConversation()
+    // Don't create conversation yet — just clear active conversation
+    // The conversation will be created automatically when the first message is sent
+    setActiveConversationId(null)
     setCurrentPage('chat')
     setMobileShowChat(true)
-  }, [createConversation])
+  }, [setActiveConversationId])
 
   const handleMobileBack = useCallback(() => {
     setMobileShowChat(false)

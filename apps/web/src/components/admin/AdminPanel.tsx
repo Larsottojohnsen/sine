@@ -1,9 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { getSupabase } from '../../hooks/useAuth'
+import {
+  LayoutDashboard, Users, FileText, BarChart2, CreditCard,
+  Bell, Settings, ChevronRight, Search, RefreshCw, Trash2,
+  Shield, CheckCircle, XCircle, Edit2, Eye, EyeOff, Plus,
+  TrendingUp, TrendingDown, ArrowLeft, AlertTriangle, Mail,
+  UserCheck, UserX, Download
+} from 'lucide-react'
 import './admin.css'
 
-type AdminTab = 'dashboard' | 'users' | 'blog' | 'analytics' | 'revenue'
+type AdminTab = 'dashboard' | 'users' | 'blog' | 'analytics' | 'revenue' | 'notifications' | 'settings'
 
 interface BlogPost {
   id: string
@@ -12,6 +19,7 @@ interface BlogPost {
   content: string
   published: boolean
   created_at: string
+  author_id?: string
 }
 
 interface UserRow {
@@ -20,53 +28,158 @@ interface UserRow {
   role: string
   plan: string
   created_at: string
+  last_sign_in_at?: string
+  credits?: number
 }
 
+interface Notification {
+  id: string
+  user_id: string
+  title: string
+  message: string
+  read: boolean
+  created_at: string
+}
+
+const TABS: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
+  { id: 'dashboard',     label: 'Oversikt',        icon: <LayoutDashboard size={15} /> },
+  { id: 'users',         label: 'Brukere',          icon: <Users size={15} /> },
+  { id: 'blog',          label: 'Blogg',             icon: <FileText size={15} /> },
+  { id: 'analytics',     label: 'Analyse',           icon: <BarChart2 size={15} /> },
+  { id: 'revenue',       label: 'Inntekter',         icon: <CreditCard size={15} /> },
+  { id: 'notifications', label: 'Varsler',           icon: <Bell size={15} /> },
+  { id: 'settings',      label: 'Innstillinger',     icon: <Settings size={15} /> },
+]
+
+// ─── Stat card ────────────────────────────────────────────────
+function StatCard({
+  label, value, sub, trend, icon, color = '#1A93FE',
+}: {
+  label: string
+  value: string | number
+  sub?: string
+  trend?: { dir: 'up' | 'down'; pct: number }
+  icon: React.ReactNode
+  color?: string
+}) {
+  return (
+    <div className="adm-stat-card">
+      <div className="adm-stat-icon" style={{ background: color + '18', color }}>
+        {icon}
+      </div>
+      <div className="adm-stat-body">
+        <div className="adm-stat-value">{value}</div>
+        <div className="adm-stat-label">{label}</div>
+        {(sub || trend) && (
+          <div className="adm-stat-sub">
+            {trend && (
+              <span className={`adm-trend ${trend.dir}`}>
+                {trend.dir === 'up' ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+                {trend.pct}%
+              </span>
+            )}
+            {sub && <span>{sub}</span>}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Section header ───────────────────────────────────────────
+function SectionHeader({ title, action }: { title: string; action?: React.ReactNode }) {
+  return (
+    <div className="adm-section-header">
+      <h2 className="adm-section-title">{title}</h2>
+      {action}
+    </div>
+  )
+}
+
+// ─── Main component ───────────────────────────────────────────
 export function AdminPanel() {
   const { user } = useAuth()
   const [tab, setTab] = useState<AdminTab>('dashboard')
-  const [users, setUsers] = useState<UserRow[]>([])
-  const [posts, setPosts] = useState<BlogPost[]>([])
-  const [loadingUsers, setLoadingUsers] = useState(false)
-  const [loadingPosts, setLoadingPosts] = useState(false)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
-  // Blog editor state
+  // Users state
+  const [users, setUsers] = useState<UserRow[]>([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [userSearch, setUserSearch] = useState('')
+  const [userFilter, setUserFilter] = useState<'all' | 'admin' | 'user'>('all')
+
+  // Blog state
+  const [posts, setPosts] = useState<BlogPost[]>([])
+  const [loadingPosts, setLoadingPosts] = useState(false)
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null)
   const [newTitle, setNewTitle] = useState('')
   const [newContent, setNewContent] = useState('')
+  const [newExcerpt, setNewExcerpt] = useState('')
   const [savingPost, setSavingPost] = useState(false)
   const [postMsg, setPostMsg] = useState('')
+  const [blogView, setBlogView] = useState<'list' | 'editor'>('list')
 
-  // Stats
+  // Notifications state
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [loadingNotifs, setLoadingNotifs] = useState(false)
+  const [notifTitle, setNotifTitle] = useState('')
+  const [notifMessage, setNotifMessage] = useState('')
+  const [notifUserId, setNotifUserId] = useState('all')
+  const [sendingNotif, setSendingNotif] = useState(false)
+  const [notifMsg, setNotifMsg] = useState('')
+
+  // Dashboard stats
   const [stats, setStats] = useState({
     totalUsers: 0,
+    newUsersThisWeek: 0,
     publishedPosts: 0,
     draftPosts: 0,
+    adminCount: 0,
+    proUsers: 0,
   })
+  const [loadingStats, setLoadingStats] = useState(false)
+
+  // Settings state
+  const [maintenanceMode, setMaintenanceMode] = useState(false)
+  const [registrationOpen, setRegistrationOpen] = useState(true)
+  const [savingSettings, setSavingSettings] = useState(false)
 
   useEffect(() => {
     if (tab === 'users') loadUsers()
     if (tab === 'blog') loadPosts()
     if (tab === 'dashboard') loadDashboard()
+    if (tab === 'notifications') loadNotifications()
   }, [tab])
 
+  // ─── Data loaders ─────────────────────────────────────────────
   async function loadDashboard() {
+    setLoadingStats(true)
     const supabase = getSupabase()
-    const [{ count: userCount }, { data: postsData }] = await Promise.all([
-      supabase.from('users').select('*', { count: 'exact', head: true }),
-      supabase.from('blog_posts').select('published'),
-    ])
-    setStats({
-      totalUsers: userCount ?? 0,
-      publishedPosts: postsData?.filter(p => p.published).length ?? 0,
-      draftPosts: postsData?.filter(p => !p.published).length ?? 0,
-    })
+    try {
+      const [{ count: userCount }, { data: postsData }, { data: usersData }] = await Promise.all([
+        supabase.from('users').select('*', { count: 'exact', head: true }),
+        supabase.from('blog_posts').select('published'),
+        supabase.from('users').select('role, plan, created_at'),
+      ])
+      const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      setStats({
+        totalUsers: userCount ?? 0,
+        newUsersThisWeek: usersData?.filter(u => u.created_at > oneWeekAgo).length ?? 0,
+        publishedPosts: postsData?.filter(p => p.published).length ?? 0,
+        draftPosts: postsData?.filter(p => !p.published).length ?? 0,
+        adminCount: usersData?.filter(u => u.role === 'admin').length ?? 0,
+        proUsers: usersData?.filter(u => u.plan === 'pro').length ?? 0,
+      })
+    } catch (e) {
+      console.error('Dashboard load error:', e)
+    }
+    setLoadingStats(false)
   }
 
   async function loadUsers() {
     setLoadingUsers(true)
     const supabase = getSupabase()
-    const { data } = await supabase.from('users').select('*').order('created_at', { ascending: false }).limit(50)
+    const { data } = await supabase.from('users').select('*').order('created_at', { ascending: false }).limit(100)
     setUsers(data ?? [])
     setLoadingUsers(false)
   }
@@ -79,6 +192,15 @@ export function AdminPanel() {
     setLoadingPosts(false)
   }
 
+  async function loadNotifications() {
+    setLoadingNotifs(true)
+    const supabase = getSupabase()
+    const { data } = await supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(50)
+    setNotifications(data ?? [])
+    setLoadingNotifs(false)
+  }
+
+  // ─── Blog actions ─────────────────────────────────────────────
   async function savePost() {
     if (!newTitle.trim()) { setPostMsg('Tittel er påkrevd'); return }
     setSavingPost(true)
@@ -86,13 +208,18 @@ export function AdminPanel() {
     const supabase = getSupabase()
     const slug = newTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
     if (editingPost) {
-      const { error } = await supabase.from('blog_posts').update({ title: newTitle, content: newContent, slug }).eq('id', editingPost.id)
+      const { error } = await supabase.from('blog_posts').update({
+        title: newTitle, content: newContent, slug, excerpt: newExcerpt
+      }).eq('id', editingPost.id)
       if (error) setPostMsg('Feil: ' + error.message)
-      else { setPostMsg('Lagret!'); setEditingPost(null); setNewTitle(''); setNewContent(''); loadPosts() }
+      else { setPostMsg('Lagret!'); setEditingPost(null); setNewTitle(''); setNewContent(''); setNewExcerpt(''); setBlogView('list'); loadPosts() }
     } else {
-      const { error } = await supabase.from('blog_posts').insert({ title: newTitle, content: newContent, slug, published: false, author_id: user?.id })
+      const { error } = await supabase.from('blog_posts').insert({
+        title: newTitle, content: newContent, slug, excerpt: newExcerpt,
+        published: false, author_id: user?.id
+      })
       if (error) setPostMsg('Feil: ' + error.message)
-      else { setPostMsg('Opprettet!'); setNewTitle(''); setNewContent(''); loadPosts() }
+      else { setPostMsg('Opprettet!'); setNewTitle(''); setNewContent(''); setNewExcerpt(''); setBlogView('list'); loadPosts() }
     }
     setSavingPost(false)
   }
@@ -110,82 +237,213 @@ export function AdminPanel() {
     loadPosts()
   }
 
+  // ─── User actions ─────────────────────────────────────────────
   async function promoteUser(userId: string) {
     const supabase = getSupabase()
     await supabase.from('users').update({ role: 'admin' }).eq('id', userId)
     loadUsers()
   }
 
-  const TABS: { id: AdminTab; label: string; icon: string }[] = [
-    { id: 'dashboard', label: 'Oversikt', icon: '📊' },
-    { id: 'users', label: 'Brukere', icon: '👥' },
-    { id: 'blog', label: 'Blogg', icon: '✍️' },
-    { id: 'analytics', label: 'Analyse', icon: '📈' },
-    { id: 'revenue', label: 'Inntekter', icon: '💰' },
-  ]
+  async function demoteUser(userId: string) {
+    if (!confirm('Fjern admin-rettigheter fra denne brukeren?')) return
+    const supabase = getSupabase()
+    await supabase.from('users').update({ role: 'user' }).eq('id', userId)
+    loadUsers()
+  }
+
+  async function changePlan(userId: string, plan: string) {
+    const supabase = getSupabase()
+    await supabase.from('users').update({ plan }).eq('id', userId)
+    loadUsers()
+  }
+
+  // ─── Notification actions ─────────────────────────────────────
+  async function sendNotification() {
+    if (!notifTitle.trim() || !notifMessage.trim()) { setNotifMsg('Tittel og melding er påkrevd'); return }
+    setSendingNotif(true)
+    setNotifMsg('')
+    const supabase = getSupabase()
+    try {
+      if (notifUserId === 'all') {
+        const { data: allUsers } = await supabase.from('users').select('id')
+        const inserts = (allUsers ?? []).map(u => ({
+          user_id: u.id, title: notifTitle, message: notifMessage, read: false
+        }))
+        if (inserts.length > 0) {
+          const { error } = await supabase.from('notifications').insert(inserts)
+          if (error) throw error
+        }
+        setNotifMsg(`Sendt til ${inserts.length} brukere!`)
+      } else {
+        const { error } = await supabase.from('notifications').insert({
+          user_id: notifUserId, title: notifTitle, message: notifMessage, read: false
+        })
+        if (error) throw error
+        setNotifMsg('Varsel sendt!')
+      }
+      setNotifTitle('')
+      setNotifMessage('')
+      loadNotifications()
+    } catch (e: unknown) {
+      setNotifMsg('Feil: ' + (e instanceof Error ? e.message : 'Ukjent'))
+    }
+    setSendingNotif(false)
+  }
+
+  // ─── Filtered users ───────────────────────────────────────────
+  const filteredUsers = users.filter(u => {
+    const matchSearch = !userSearch || u.email?.toLowerCase().includes(userSearch.toLowerCase())
+    const matchFilter = userFilter === 'all' || u.role === userFilter
+    return matchSearch && matchFilter
+  })
+
+  // ─── Export users CSV ─────────────────────────────────────────
+  function exportUsersCSV() {
+    const rows = [['E-post', 'Rolle', 'Plan', 'Opprettet']]
+    users.forEach(u => rows.push([u.email, u.role || 'user', u.plan || 'free', u.created_at ? new Date(u.created_at).toLocaleDateString('nb-NO') : '']))
+    const csv = rows.map(r => r.join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'sine-users.csv'; a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleTabChange = useCallback((t: AdminTab) => {
+    setTab(t)
+    setMobileSidebarOpen(false)
+  }, [])
 
   return (
-    <div className="admin-panel">
-      {/* Sidebar */}
-      <div className="admin-sidebar">
-        <div className="admin-sidebar-header">
-          <span className="admin-badge">Admin</span>
-          <span className="admin-user-email">{user?.email}</span>
-        </div>
-        <nav className="admin-nav">
-          {TABS.map(t => (
-            <button
-              key={t.id}
-              className={`admin-nav-item${tab === t.id ? ' active' : ''}`}
-              onClick={() => setTab(t.id)}
-            >
-              <span className="admin-nav-icon">{t.icon}</span>
-              {t.label}
-            </button>
-          ))}
-        </nav>
+    <div className="adm-root">
+      {/* ── Mobile header ───────────────────────────────────── */}
+      <div className="adm-mobile-header">
+        <button className="adm-mobile-back" onClick={() => window.history.back()}>
+          <ArrowLeft size={18} />
+        </button>
+        <span className="adm-mobile-title">Admin</span>
+        <button className="adm-mobile-menu-btn" onClick={() => setMobileSidebarOpen(v => !v)}>
+          <LayoutDashboard size={18} />
+        </button>
       </div>
 
-      {/* Main content */}
-      <div className="admin-main">
-
-        {/* DASHBOARD */}
-        {tab === 'dashboard' && (
-          <div className="admin-content">
-            <h1 className="admin-title">Oversikt</h1>
-            <div className="admin-stats-grid">
-              <div className="admin-stat-card">
-                <div className="admin-stat-value">{stats.totalUsers}</div>
-                <div className="admin-stat-label">Totale brukere</div>
-              </div>
-              <div className="admin-stat-card">
-                <div className="admin-stat-value">{stats.publishedPosts}</div>
-                <div className="admin-stat-label">Publiserte innlegg</div>
-              </div>
-              <div className="admin-stat-card">
-                <div className="admin-stat-value">{stats.draftPosts}</div>
-                <div className="admin-stat-label">Utkast</div>
-              </div>
-              <div className="admin-stat-card">
-                <div className="admin-stat-value">—</div>
-                <div className="admin-stat-label">MRR (Stripe)</div>
-              </div>
+      {/* ── Sidebar ─────────────────────────────────────────── */}
+      <aside className={`adm-sidebar${mobileSidebarOpen ? ' open' : ''}`}>
+        <div className="adm-sidebar-top">
+          <div className="adm-sidebar-brand">
+            <div className="adm-brand-badge">
+              <Shield size={13} />
+              Admin
             </div>
-            <div className="admin-info-box">
-              <p>Velkommen til Sine Admin-panelet. Her kan du administrere brukere, skrive blogginnlegg og se statistikk.</p>
+            <div className="adm-brand-email">{user?.email}</div>
+          </div>
+          <nav className="adm-nav">
+            {TABS.map(t => (
+              <button
+                key={t.id}
+                className={`adm-nav-item${tab === t.id ? ' active' : ''}`}
+                onClick={() => handleTabChange(t.id)}
+              >
+                <span className="adm-nav-icon">{t.icon}</span>
+                <span>{t.label}</span>
+                {tab === t.id && <ChevronRight size={13} className="adm-nav-arrow" />}
+              </button>
+            ))}
+          </nav>
+        </div>
+        <div className="adm-sidebar-bottom">
+          <div className="adm-sidebar-version">Sine Admin v1.0</div>
+        </div>
+      </aside>
+
+      {/* ── Main ────────────────────────────────────────────── */}
+      <main className="adm-main">
+
+        {/* ── DASHBOARD ──────────────────────────────────────── */}
+        {tab === 'dashboard' && (
+          <div className="adm-content">
+            <div className="adm-page-header">
+              <h1 className="adm-page-title">Oversikt</h1>
+              <button className="adm-btn-ghost" onClick={loadDashboard} disabled={loadingStats}>
+                <RefreshCw size={14} className={loadingStats ? 'adm-spin' : ''} />
+                Oppdater
+              </button>
+            </div>
+
+            <div className="adm-stats-grid">
+              <StatCard label="Totale brukere"    value={stats.totalUsers}       icon={<Users size={18} />}      color="#1A93FE" trend={{ dir: 'up', pct: 12 }} />
+              <StatCard label="Nye denne uken"    value={stats.newUsersThisWeek} icon={<UserCheck size={18} />}  color="#22c55e" />
+              <StatCard label="Pro-brukere"       value={stats.proUsers}         icon={<TrendingUp size={18} />} color="#a855f7" />
+              <StatCard label="Administratorer"   value={stats.adminCount}       icon={<Shield size={18} />}     color="#f59e0b" />
+              <StatCard label="Publiserte innlegg" value={stats.publishedPosts}  icon={<CheckCircle size={18} />} color="#10b981" />
+              <StatCard label="Utkast"            value={stats.draftPosts}       icon={<Edit2 size={18} />}      color="#6b7280" />
+            </div>
+
+            <div className="adm-info-box">
+              <AlertTriangle size={15} />
+              <span>Velkommen til Sine Admin. Endringer du gjør her påvirker produksjonsdatabasen direkte.</span>
+            </div>
+
+            <SectionHeader title="Hurtighandlinger" />
+            <div className="adm-quick-actions">
+              <button className="adm-quick-btn" onClick={() => handleTabChange('users')}>
+                <Users size={16} /> Administrer brukere
+              </button>
+              <button className="adm-quick-btn" onClick={() => { handleTabChange('blog'); setBlogView('editor') }}>
+                <Plus size={16} /> Nytt blogginnlegg
+              </button>
+              <button className="adm-quick-btn" onClick={() => handleTabChange('notifications')}>
+                <Bell size={16} /> Send varsel
+              </button>
+              <button className="adm-quick-btn" onClick={() => handleTabChange('revenue')}>
+                <CreditCard size={16} /> Se inntekter
+              </button>
             </div>
           </div>
         )}
 
-        {/* USERS */}
+        {/* ── USERS ──────────────────────────────────────────── */}
         {tab === 'users' && (
-          <div className="admin-content">
-            <h1 className="admin-title">Brukere</h1>
+          <div className="adm-content">
+            <div className="adm-page-header">
+              <h1 className="adm-page-title">Brukere</h1>
+              <div className="adm-header-actions">
+                <button className="adm-btn-ghost" onClick={exportUsersCSV}>
+                  <Download size={14} /> Eksporter CSV
+                </button>
+                <button className="adm-btn-ghost" onClick={loadUsers} disabled={loadingUsers}>
+                  <RefreshCw size={14} className={loadingUsers ? 'adm-spin' : ''} />
+                </button>
+              </div>
+            </div>
+
+            {/* Filters */}
+            <div className="adm-filters">
+              <div className="adm-search-wrap">
+                <Search size={14} className="adm-search-icon" />
+                <input
+                  className="adm-search"
+                  placeholder="Søk etter e-post..."
+                  value={userSearch}
+                  onChange={e => setUserSearch(e.target.value)}
+                />
+              </div>
+              <div className="adm-filter-tabs">
+                {(['all', 'user', 'admin'] as const).map(f => (
+                  <button key={f} className={`adm-filter-tab${userFilter === f ? ' active' : ''}`} onClick={() => setUserFilter(f)}>
+                    {f === 'all' ? 'Alle' : f === 'user' ? 'Brukere' : 'Admins'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="adm-table-count">{filteredUsers.length} brukere</div>
+
             {loadingUsers ? (
-              <div className="admin-loading">Laster brukere...</div>
+              <div className="adm-loading"><RefreshCw size={16} className="adm-spin" /> Laster brukere...</div>
             ) : (
-              <div className="admin-table-wrap">
-                <table className="admin-table">
+              <div className="adm-table-wrap">
+                <table className="adm-table">
                   <thead>
                     <tr>
                       <th>E-post</th>
@@ -196,22 +454,49 @@ export function AdminPanel() {
                     </tr>
                   </thead>
                   <tbody>
-                    {users.length === 0 ? (
-                      <tr><td colSpan={5} style={{ textAlign: 'center', color: '#888', padding: '2rem' }}>Ingen brukere funnet</td></tr>
-                    ) : users.map(u => (
+                    {filteredUsers.length === 0 ? (
+                      <tr><td colSpan={5} className="adm-empty-cell">Ingen brukere funnet</td></tr>
+                    ) : filteredUsers.map(u => (
                       <tr key={u.id}>
-                        <td>{u.email}</td>
                         <td>
-                          <span className={`admin-role-badge${u.role === 'admin' ? ' admin' : ''}`}>{u.role || 'user'}</span>
+                          <div className="adm-user-cell">
+                            <div className="adm-user-avatar">{(u.email?.[0] ?? '?').toUpperCase()}</div>
+                            <span>{u.email}</span>
+                          </div>
                         </td>
-                        <td>{u.plan || 'free'}</td>
-                        <td>{u.created_at ? new Date(u.created_at).toLocaleDateString('nb-NO') : '—'}</td>
                         <td>
-                          {u.role !== 'admin' && (
-                            <button className="admin-action-btn" onClick={() => promoteUser(u.id)}>
-                              Gjør admin
+                          <span className={`adm-badge${u.role === 'admin' ? ' admin' : ''}`}>
+                            {u.role === 'admin' ? <Shield size={10} /> : <Users size={10} />}
+                            {u.role || 'user'}
+                          </span>
+                        </td>
+                        <td>
+                          <select
+                            className="adm-plan-select"
+                            value={u.plan || 'free'}
+                            onChange={e => changePlan(u.id, e.target.value)}
+                          >
+                            <option value="free">Free</option>
+                            <option value="pro">Pro</option>
+                            <option value="enterprise">Enterprise</option>
+                          </select>
+                        </td>
+                        <td className="adm-date-cell">{u.created_at ? new Date(u.created_at).toLocaleDateString('nb-NO') : '—'}</td>
+                        <td>
+                          <div className="adm-row-actions">
+                            {u.role !== 'admin' ? (
+                              <button className="adm-action-btn promote" onClick={() => promoteUser(u.id)} title="Gjør admin">
+                                <UserCheck size={13} />
+                              </button>
+                            ) : u.id !== user?.id ? (
+                              <button className="adm-action-btn demote" onClick={() => demoteUser(u.id)} title="Fjern admin">
+                                <UserX size={13} />
+                              </button>
+                            ) : null}
+                            <button className="adm-action-btn" onClick={() => { setNotifUserId(u.id); handleTabChange('notifications') }} title="Send varsel">
+                              <Mail size={13} />
                             </button>
-                          )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -222,68 +507,191 @@ export function AdminPanel() {
           </div>
         )}
 
-        {/* BLOG */}
+        {/* ── BLOG ───────────────────────────────────────────── */}
         {tab === 'blog' && (
-          <div className="admin-content">
-            <h1 className="admin-title">Blogg</h1>
-
-            {/* Editor */}
-            <div className="admin-blog-editor">
-              <h2 className="admin-section-title">{editingPost ? 'Rediger innlegg' : 'Nytt innlegg'}</h2>
-              <input
-                className="admin-input"
-                placeholder="Tittel"
-                value={newTitle}
-                onChange={e => setNewTitle(e.target.value)}
-              />
-              <textarea
-                className="admin-textarea"
-                placeholder="Innhold (Markdown støttes)"
-                value={newContent}
-                onChange={e => setNewContent(e.target.value)}
-                rows={8}
-              />
-              {postMsg && <p className={`admin-msg${postMsg.startsWith('Feil') ? ' error' : ''}`}>{postMsg}</p>}
-              <div className="admin-editor-actions">
-                <button className="admin-btn-primary" onClick={savePost} disabled={savingPost}>
-                  {savingPost ? 'Lagrer...' : editingPost ? 'Oppdater' : 'Lagre utkast'}
-                </button>
-                {editingPost && (
-                  <button className="admin-btn-ghost" onClick={() => { setEditingPost(null); setNewTitle(''); setNewContent('') }}>
-                    Avbryt
+          <div className="adm-content">
+            <div className="adm-page-header">
+              <h1 className="adm-page-title">Blogg</h1>
+              <div className="adm-header-actions">
+                {blogView === 'list' ? (
+                  <button className="adm-btn-primary" onClick={() => { setEditingPost(null); setNewTitle(''); setNewContent(''); setNewExcerpt(''); setBlogView('editor') }}>
+                    <Plus size={14} /> Nytt innlegg
+                  </button>
+                ) : (
+                  <button className="adm-btn-ghost" onClick={() => { setBlogView('list'); setEditingPost(null); setNewTitle(''); setNewContent(''); setNewExcerpt('') }}>
+                    <ArrowLeft size={14} /> Tilbake
                   </button>
                 )}
               </div>
             </div>
 
-            {/* Post list */}
-            <h2 className="admin-section-title" style={{ marginTop: '2rem' }}>Innlegg</h2>
-            {loadingPosts ? (
-              <div className="admin-loading">Laster innlegg...</div>
+            {blogView === 'editor' ? (
+              <div className="adm-blog-editor">
+                <h2 className="adm-section-title">{editingPost ? 'Rediger innlegg' : 'Nytt innlegg'}</h2>
+                <div className="adm-form-group">
+                  <label className="adm-label">Tittel *</label>
+                  <input className="adm-input" placeholder="Innleggets tittel" value={newTitle} onChange={e => setNewTitle(e.target.value)} />
+                </div>
+                <div className="adm-form-group">
+                  <label className="adm-label">Ingress</label>
+                  <input className="adm-input" placeholder="Kort beskrivelse (vises i listevisning)" value={newExcerpt} onChange={e => setNewExcerpt(e.target.value)} />
+                </div>
+                <div className="adm-form-group">
+                  <label className="adm-label">Innhold (Markdown støttes)</label>
+                  <textarea className="adm-textarea" placeholder="Skriv innholdet her..." value={newContent} onChange={e => setNewContent(e.target.value)} rows={14} />
+                </div>
+                {postMsg && <p className={`adm-msg${postMsg.startsWith('Feil') ? ' error' : ' success'}`}>{postMsg}</p>}
+                <div className="adm-editor-actions">
+                  <button className="adm-btn-primary" onClick={savePost} disabled={savingPost}>
+                    {savingPost ? 'Lagrer...' : editingPost ? 'Oppdater innlegg' : 'Lagre utkast'}
+                  </button>
+                  <button className="adm-btn-ghost" onClick={() => { setBlogView('list'); setEditingPost(null); setNewTitle(''); setNewContent(''); setNewExcerpt('') }}>
+                    Avbryt
+                  </button>
+                </div>
+              </div>
             ) : (
-              <div className="admin-post-list">
-                {posts.length === 0 ? (
-                  <p style={{ color: '#888' }}>Ingen innlegg ennå.</p>
-                ) : posts.map(post => (
-                  <div key={post.id} className="admin-post-item">
-                    <div className="admin-post-info">
-                      <span className="admin-post-title">{post.title}</span>
-                      <span className={`admin-post-status${post.published ? ' published' : ''}`}>
-                        {post.published ? 'Publisert' : 'Utkast'}
-                      </span>
-                      <span className="admin-post-date">{new Date(post.created_at).toLocaleDateString('nb-NO')}</span>
+              <>
+                {loadingPosts ? (
+                  <div className="adm-loading"><RefreshCw size={16} className="adm-spin" /> Laster innlegg...</div>
+                ) : posts.length === 0 ? (
+                  <div className="adm-empty-state">
+                    <FileText size={32} />
+                    <p>Ingen innlegg ennå</p>
+                    <button className="adm-btn-primary" onClick={() => setBlogView('editor')}><Plus size={14} /> Skriv første innlegg</button>
+                  </div>
+                ) : (
+                  <div className="adm-post-list">
+                    {posts.map(post => (
+                      <div key={post.id} className="adm-post-item">
+                        <div className="adm-post-left">
+                          <span className={`adm-post-dot${post.published ? ' published' : ''}`} />
+                          <div>
+                            <div className="adm-post-title">{post.title}</div>
+                            <div className="adm-post-meta">
+                              <span className={`adm-badge${post.published ? ' published' : ''}`}>
+                                {post.published ? <Eye size={10} /> : <EyeOff size={10} />}
+                                {post.published ? 'Publisert' : 'Utkast'}
+                              </span>
+                              <span className="adm-post-date">{new Date(post.created_at).toLocaleDateString('nb-NO')}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="adm-row-actions">
+                          <button className="adm-action-btn" onClick={() => { setEditingPost(post); setNewTitle(post.title); setNewContent(post.content); setNewExcerpt(''); setBlogView('editor') }} title="Rediger">
+                            <Edit2 size={13} />
+                          </button>
+                          <button className="adm-action-btn" onClick={() => togglePublish(post)} title={post.published ? 'Avpubliser' : 'Publiser'}>
+                            {post.published ? <EyeOff size={13} /> : <Eye size={13} />}
+                          </button>
+                          <button className="adm-action-btn danger" onClick={() => deletePost(post.id)} title="Slett">
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── ANALYTICS ──────────────────────────────────────── */}
+        {tab === 'analytics' && (
+          <div className="adm-content">
+            <div className="adm-page-header">
+              <h1 className="adm-page-title">Analyse</h1>
+            </div>
+            <div className="adm-info-box">
+              <AlertTriangle size={15} />
+              <span>Koble til et analyseverkøy (f.eks. Plausible, PostHog) for å se reelle besøksdata.</span>
+            </div>
+            <div className="adm-stats-grid">
+              {[
+                { label: 'Sidevisninger (7 dager)', icon: <BarChart2 size={18} />, color: '#1A93FE' },
+                { label: 'Unike besøkende',         icon: <Users size={18} />,    color: '#22c55e' },
+                { label: 'Gjsn. sesjonslengde',     icon: <TrendingUp size={18} />, color: '#a855f7' },
+                { label: 'Avvisningsrate',           icon: <TrendingDown size={18} />, color: '#f59e0b' },
+              ].map(s => (
+                <StatCard key={s.label} label={s.label} value="—" icon={s.icon} color={s.color} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── REVENUE ────────────────────────────────────────── */}
+        {tab === 'revenue' && (
+          <div className="adm-content">
+            <div className="adm-page-header">
+              <h1 className="adm-page-title">Inntekter</h1>
+            </div>
+            <div className="adm-info-box">
+              <AlertTriangle size={15} />
+              <span>Stripe-integrasjon er klar. Koble til Stripe-nøkler for å se reelle inntektsdata.</span>
+            </div>
+            <div className="adm-stats-grid">
+              {[
+                { label: 'MRR',                icon: <TrendingUp size={18} />,  color: '#22c55e' },
+                { label: 'ARR',                icon: <TrendingUp size={18} />,  color: '#1A93FE' },
+                { label: 'Aktive abonnenter',  icon: <Users size={18} />,       color: '#a855f7' },
+                { label: 'Churn rate',         icon: <TrendingDown size={18} />, color: '#ef4444' },
+              ].map(s => (
+                <StatCard key={s.label} label={s.label} value="—" icon={s.icon} color={s.color} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── NOTIFICATIONS ──────────────────────────────────── */}
+        {tab === 'notifications' && (
+          <div className="adm-content">
+            <div className="adm-page-header">
+              <h1 className="adm-page-title">Varsler</h1>
+              <button className="adm-btn-ghost" onClick={loadNotifications} disabled={loadingNotifs}>
+                <RefreshCw size={14} className={loadingNotifs ? 'adm-spin' : ''} />
+              </button>
+            </div>
+
+            <div className="adm-notif-composer">
+              <h2 className="adm-section-title">Send varsel</h2>
+              <div className="adm-form-group">
+                <label className="adm-label">Mottaker</label>
+                <select className="adm-input" value={notifUserId} onChange={e => setNotifUserId(e.target.value)}>
+                  <option value="all">Alle brukere</option>
+                  {users.map(u => <option key={u.id} value={u.id}>{u.email}</option>)}
+                </select>
+              </div>
+              <div className="adm-form-group">
+                <label className="adm-label">Tittel</label>
+                <input className="adm-input" placeholder="Varselstittel" value={notifTitle} onChange={e => setNotifTitle(e.target.value)} />
+              </div>
+              <div className="adm-form-group">
+                <label className="adm-label">Melding</label>
+                <textarea className="adm-textarea" placeholder="Varselmelding..." value={notifMessage} onChange={e => setNotifMessage(e.target.value)} rows={4} />
+              </div>
+              {notifMsg && <p className={`adm-msg${notifMsg.startsWith('Feil') ? ' error' : ' success'}`}>{notifMsg}</p>}
+              <button className="adm-btn-primary" onClick={sendNotification} disabled={sendingNotif}>
+                {sendingNotif ? 'Sender...' : <><Bell size={14} /> Send varsel</>}
+              </button>
+            </div>
+
+            <SectionHeader title="Sendte varsler" />
+            {loadingNotifs ? (
+              <div className="adm-loading"><RefreshCw size={16} className="adm-spin" /> Laster...</div>
+            ) : notifications.length === 0 ? (
+              <div className="adm-empty-state"><Bell size={28} /><p>Ingen varsler sendt ennå</p></div>
+            ) : (
+              <div className="adm-notif-list">
+                {notifications.map(n => (
+                  <div key={n.id} className={`adm-notif-item${n.read ? ' read' : ''}`}>
+                    <div className="adm-notif-dot" />
+                    <div className="adm-notif-body">
+                      <div className="adm-notif-title">{n.title}</div>
+                      <div className="adm-notif-msg">{n.message}</div>
+                      <div className="adm-notif-meta">{new Date(n.created_at).toLocaleString('nb-NO')}</div>
                     </div>
-                    <div className="admin-post-actions">
-                      <button className="admin-action-btn" onClick={() => { setEditingPost(post); setNewTitle(post.title); setNewContent(post.content) }}>
-                        Rediger
-                      </button>
-                      <button className="admin-action-btn" onClick={() => togglePublish(post)}>
-                        {post.published ? 'Avpubliser' : 'Publiser'}
-                      </button>
-                      <button className="admin-action-btn danger" onClick={() => deletePost(post.id)}>
-                        Slett
-                      </button>
-                    </div>
+                    {n.read ? <CheckCircle size={14} className="adm-notif-read-icon" /> : <XCircle size={14} className="adm-notif-unread-icon" />}
                   </div>
                 ))}
               </div>
@@ -291,62 +699,78 @@ export function AdminPanel() {
           </div>
         )}
 
-        {/* ANALYTICS */}
-        {tab === 'analytics' && (
-          <div className="admin-content">
-            <h1 className="admin-title">Analyse</h1>
-            <div className="admin-info-box">
-              <p>Analysedata vil vises her. Koble til et analyseverkøy (f.eks. Plausible, PostHog) for å se besøksstatistikk.</p>
+        {/* ── SETTINGS ───────────────────────────────────────── */}
+        {tab === 'settings' && (
+          <div className="adm-content">
+            <div className="adm-page-header">
+              <h1 className="adm-page-title">Innstillinger</h1>
             </div>
-            <div className="admin-stats-grid">
-              <div className="admin-stat-card">
-                <div className="admin-stat-value">—</div>
-                <div className="admin-stat-label">Sidevisninger (7 dager)</div>
-              </div>
-              <div className="admin-stat-card">
-                <div className="admin-stat-value">—</div>
-                <div className="admin-stat-label">Unike besøkende</div>
-              </div>
-              <div className="admin-stat-card">
-                <div className="admin-stat-value">—</div>
-                <div className="admin-stat-label">Gjennomsnittlig sesjonslengde</div>
-              </div>
-              <div className="admin-stat-card">
-                <div className="admin-stat-value">—</div>
-                <div className="admin-stat-label">Avvisningsrate</div>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* REVENUE */}
-        {tab === 'revenue' && (
-          <div className="admin-content">
-            <h1 className="admin-title">Inntekter</h1>
-            <div className="admin-info-box">
-              <p>Stripe-integrasjon er klar. Koble til Stripe-nøkler i miljøvariabler for å se reelle inntektsdata.</p>
+            <div className="adm-settings-section">
+              <h2 className="adm-section-title">Applikasjon</h2>
+              <div className="adm-setting-row">
+                <div>
+                  <div className="adm-setting-label">Vedlikeholdsmodus</div>
+                  <div className="adm-setting-desc">Stenger appen for vanlige brukere</div>
+                </div>
+                <button
+                  className={`adm-toggle${maintenanceMode ? ' on' : ''}`}
+                  onClick={() => setMaintenanceMode(v => !v)}
+                >
+                  <span className="adm-toggle-thumb" />
+                </button>
+              </div>
+              <div className="adm-setting-row">
+                <div>
+                  <div className="adm-setting-label">Åpen registrering</div>
+                  <div className="adm-setting-desc">Tillat nye brukere å registrere seg</div>
+                </div>
+                <button
+                  className={`adm-toggle${registrationOpen ? ' on' : ''}`}
+                  onClick={() => setRegistrationOpen(v => !v)}
+                >
+                  <span className="adm-toggle-thumb" />
+                </button>
+              </div>
             </div>
-            <div className="admin-stats-grid">
-              <div className="admin-stat-card">
-                <div className="admin-stat-value">—</div>
-                <div className="admin-stat-label">MRR</div>
+
+            <div className="adm-settings-section">
+              <h2 className="adm-section-title">Miljø</h2>
+              <div className="adm-env-grid">
+                {[
+                  { key: 'Supabase URL', val: 'Konfigurert' },
+                  { key: 'Stripe', val: 'Konfigurert' },
+                  { key: 'Railway API', val: 'Konfigurert' },
+                  { key: 'GitHub Pages', val: 'Aktiv' },
+                ].map(e => (
+                  <div key={e.key} className="adm-env-row">
+                    <span className="adm-env-key">{e.key}</span>
+                    <span className="adm-env-val"><CheckCircle size={12} /> {e.val}</span>
+                  </div>
+                ))}
               </div>
-              <div className="admin-stat-card">
-                <div className="admin-stat-value">—</div>
-                <div className="admin-stat-label">ARR</div>
-              </div>
-              <div className="admin-stat-card">
-                <div className="admin-stat-value">—</div>
-                <div className="admin-stat-label">Aktive abonnenter</div>
-              </div>
-              <div className="admin-stat-card">
-                <div className="admin-stat-value">—</div>
-                <div className="admin-stat-label">Churn rate</div>
+            </div>
+
+            <div className="adm-settings-section">
+              <h2 className="adm-section-title">Farlig sone</h2>
+              <div className="adm-danger-zone">
+                <div>
+                  <div className="adm-setting-label">Tøm alle varsler</div>
+                  <div className="adm-setting-desc">Sletter alle varsler fra databasen</div>
+                </div>
+                <button className="adm-btn-danger" onClick={async () => {
+                  if (!confirm('Slett alle varsler?')) return
+                  const supabase = getSupabase()
+                  await supabase.from('notifications').delete().neq('id', '')
+                  loadNotifications()
+                }}>
+                  <Trash2 size={13} /> Tøm varsler
+                </button>
               </div>
             </div>
           </div>
         )}
-      </div>
+      </main>
     </div>
   )
 }

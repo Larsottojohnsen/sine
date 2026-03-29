@@ -9,6 +9,28 @@ const DEFAULT_SETTINGS: AppSettings = {
   theme: 'dark',
 }
 
+// ─── User-scoped storage keys ─────────────────────────────────────────────────
+// Conversations and settings are stored per-user so that different users
+// on the same device cannot see each other's data.
+function getUserId(): string {
+  // Try to get the current user ID from localStorage (set by useAuth dev bypass)
+  // or from Supabase session. Falls back to 'anon' for unauthenticated users.
+  try {
+    const bypass = localStorage.getItem('sine_dev_bypass')
+    if (bypass === 'true') return 'dev-user'
+    // Try to read Supabase session user id
+    const sbKeys = Object.keys(localStorage).filter(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
+    if (sbKeys.length > 0) {
+      const session = JSON.parse(localStorage.getItem(sbKeys[0]) || '{}')
+      if (session?.user?.id) return session.user.id
+    }
+  } catch { /* ignore */ }
+  return 'anon'
+}
+
+function convKey(): string { return `sine_conversations_${getUserId()}` }
+function settingsKey(): string { return `sine_settings_${getUserId()}` }
+
 function loadFromStorage<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key)
@@ -28,8 +50,11 @@ function saveToStorage<T>(key: string, value: T): void {
 }
 
 export function useAppStore() {
+  // Compute user-scoped keys once at init time
+  const [storageKeys] = useState(() => ({ conv: convKey(), settings: settingsKey() }))
+
   const [conversations, setConversations] = useState<Conversation[]>(() =>
-    loadFromStorage<Conversation[]>('sine_conversations', []).map(c => ({
+    loadFromStorage<Conversation[]>(storageKeys.conv, []).map(c => ({
       ...c,
       createdAt: new Date(c.createdAt),
       updatedAt: new Date(c.updatedAt),
@@ -38,7 +63,7 @@ export function useAppStore() {
   )
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
   const [settings, setSettings] = useState<AppSettings>(() =>
-    loadFromStorage<AppSettings>('sine_settings', DEFAULT_SETTINGS)
+    loadFromStorage<AppSettings>(storageKeys.settings, DEFAULT_SETTINGS)
   )
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -64,12 +89,12 @@ export function useAppStore() {
     }
     setConversations(prev => {
       const updated = [conv, ...prev]
-      saveToStorage('sine_conversations', updated)
+      saveToStorage(storageKeys.conv, updated)
       return updated
     })
     setActiveConversationId(id)
     return id
-  }, [settings.model])
+  }, [settings.model, storageKeys.conv])
 
   const addMessage = useCallback((conversationId: string, message: Omit<Message, 'id' | 'createdAt'>): string => {
     const id = uuidv4()
@@ -85,11 +110,11 @@ export function useAppStore() {
           : c.title
         return { ...c, messages: msgs, updatedAt: now, title }
       })
-      saveToStorage('sine_conversations', updated)
+      saveToStorage(storageKeys.conv, updated)
       return updated
     })
     return id
-  }, [])
+  }, [storageKeys.conv])
 
   const updateMessage = useCallback((conversationId: string, messageId: string, content: string, isStreaming = false) => {
     setConversations(prev => {
@@ -104,10 +129,10 @@ export function useAppStore() {
         }
       })
       // Ikke lagre til localStorage under streaming – kun når ferdig
-      if (!isStreaming) saveToStorage('sine_conversations', updated)
+      if (!isStreaming) saveToStorage(storageKeys.conv, updated)
       return updated
     })
-  }, [])
+  }, [storageKeys.conv])
 
   const updateAgentMessage = useCallback((
     conversationId: string,
@@ -125,29 +150,29 @@ export function useAppStore() {
           updatedAt: new Date(),
         }
       })
-      saveToStorage('sine_conversations', updated)
+      saveToStorage(storageKeys.conv, updated)
       return updated
     })
-  }, [])
+  }, [storageKeys.conv])
 
   const deleteConversation = useCallback((id: string) => {
     setConversations(prev => {
       const updated = prev.filter(c => c.id !== id)
-      saveToStorage('sine_conversations', updated)
+      saveToStorage(storageKeys.conv, updated)
       return updated
     })
     if (activeConversationId === id) {
       setActiveConversationId(null)
     }
-  }, [activeConversationId])
+  }, [activeConversationId, storageKeys.conv])
 
   const updateSettings = useCallback((updates: Partial<AppSettings>) => {
     setSettings(prev => {
       const updated = { ...prev, ...updates }
-      saveToStorage('sine_settings', updated)
+      saveToStorage(storageKeys.settings, updated)
       return updated
     })
-  }, [])
+  }, [storageKeys.settings])
 
   return {
     conversations,

@@ -128,7 +128,8 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
     if (onNewChatProp) {
       onNewChatProp()
     } else {
-      createConversation()
+      // Just clear active conversation; actual creation happens on first message send
+      setActiveConversationId(null)
       onNavigate?.('chat')
     }
   }
@@ -210,13 +211,13 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
 
         {/* Desktop: Logo + collapse */}
         <div className="sidebar-logo sidebar-logo-desktop">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 4 }}>
+          <button className="sidebar-logo-btn" onClick={handleNewChat} title="Ny chat">
             <img
               src={LOGO_LIGHT}
               alt="Sine"
-              style={{ height: 22, width: 'auto', opacity: 1 }}
+              style={{ height: 22, width: 'auto' }}
             />
-          </div>
+          </button>
           <button className="icon-btn" onClick={() => setSidebarOpen(false)} title="Lukk sidebar">
             <PanelLeftClose size={18} />
           </button>

@@ -73,7 +73,7 @@ button { font-family: inherit; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 14px 10px;
+  padding: 16px 14px 14px;
   flex-shrink: 0;
 }
 .sidebar-nav { padding: 0 8px 4px; flex-shrink: 0; }
@@ -176,12 +176,27 @@ button { font-family: inherit; }
   border-radius: 6px;
   border: none;
   background: transparent;
-  color: #4A4A4A;
+  color: #7A7A7A;
   cursor: pointer;
   transition: background 0.1s, color 0.1s;
   flex-shrink: 0;
 }
-.icon-btn:hover { background: #252525; color: #9A9A9A; }
+.icon-btn:hover { background: #252525; color: #C0C0C0; }
+
+/* Clickable logo button */
+.sidebar-logo-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  padding-left: 4px;
+}
+.sidebar-logo-btn:hover { opacity: 0.75; }
 
 /* ─── Referral banner ────────────────────────────────────────── */
 .referral-banner {
