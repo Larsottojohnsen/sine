@@ -1,0 +1,1000 @@
+/* ═══════════════════════════════════════════════════════════════
+   SINE — LIGHT MODE
+   Applied when: [data-theme="light"] on <html>
+   Design reference: Manus light mode
+   ─────────────────────────────────────────────────────────────
+   Color palette:
+     bg-primary:    #FFFFFF  (main content area)
+     bg-secondary:  #F5F5F5  (sidebar, panels)
+     bg-tertiary:   #EBEBEB  (hover states, cards)
+     bg-input:      #F0F0F0  (input boxes)
+     border:        #E0E0E0  (dividers, borders)
+     border-strong: #D0D0D0  (stronger borders)
+     text-primary:  #1A1A1A  (main text)
+     text-secondary:#5A5A5A  (muted text)
+     text-tertiary: #9A9A9A  (placeholder, labels)
+     accent:        #1A93FE  (blue accent – unchanged)
+     accent-green:  #16A34A  (success)
+     accent-red:    #DC2626  (error)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Root / Body ─────────────────────────────────────────────── */
+[data-theme="light"] html,
+[data-theme="light"] body,
+[data-theme="light"] #root,
+html[data-theme="light"],
+html[data-theme="light"] body,
+html[data-theme="light"] #root {
+  background: #FFFFFF;
+  color: #1A1A1A;
+}
+
+html[data-theme="light"] ::selection {
+  background: rgba(26, 147, 254, 0.2);
+}
+
+html[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #D0D0D0;
+}
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #B8B8B8;
+}
+
+html[data-theme="light"] textarea::placeholder,
+html[data-theme="light"] input::placeholder {
+  color: #A0A0A0;
+}
+
+/* ─── Sidebar ─────────────────────────────────────────────────── */
+html[data-theme="light"] .sidebar {
+  background: #F5F5F5;
+  border-right-color: #E0E0E0;
+}
+html[data-theme="light"] .sidebar-collapsed {
+  background: #F5F5F5;
+  border-right-color: #E0E0E0;
+}
+html[data-theme="light"] .sidebar-divider {
+  background: #E0E0E0;
+}
+html[data-theme="light"] .sidebar-section-label {
+  color: #A0A0A0;
+}
+html[data-theme="light"] .sidebar-bottom {
+  border-top-color: #E0E0E0;
+}
+
+/* ─── Nav items ───────────────────────────────────────────────── */
+html[data-theme="light"] .nav-item {
+  color: #4A4A4A;
+}
+html[data-theme="light"] .nav-item:hover {
+  background: #EBEBEB;
+  color: #1A1A1A;
+}
+html[data-theme="light"] .nav-item.active {
+  background: #EBEBEB;
+  color: #1A1A1A;
+}
+html[data-theme="light"] .nav-item.highlight {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .nav-item.highlight:hover {
+  background: #EBEBEB;
+}
+html[data-theme="light"] .conv-group-label {
+  color: #A0A0A0;
+}
+html[data-theme="light"] .conv-item {
+  color: #6A6A6A;
+}
+html[data-theme="light"] .conv-item:hover {
+  background: #EBEBEB;
+  color: #1A1A1A;
+}
+html[data-theme="light"] .conv-item.active {
+  background: #E5E5E5;
+  color: #1A1A1A;
+}
+
+/* ─── Icon buttons ────────────────────────────────────────────── */
+html[data-theme="light"] .icon-btn {
+  color: #8A8A8A;
+}
+html[data-theme="light"] .icon-btn:hover {
+  background: #EBEBEB;
+  color: #4A4A4A;
+}
+
+/* ─── Referral banner ─────────────────────────────────────────── */
+html[data-theme="light"] .referral-banner {
+  background: #EEEEEE;
+  border-color: #E0E0E0;
+}
+html[data-theme="light"] .referral-banner:hover {
+  background: #E8E8E8;
+}
+
+/* ─── Header ──────────────────────────────────────────────────── */
+html[data-theme="light"] .header {
+  background: #FFFFFF;
+  border-bottom-color: #E8E8E8;
+}
+html[data-theme="light"] .header-model-btn {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .header-model-btn:hover {
+  background: #F0F0F0;
+}
+html[data-theme="light"] .header-action-btn {
+  border-color: #E0E0E0;
+  color: #6A6A6A;
+}
+html[data-theme="light"] .header-action-btn:hover {
+  background: #F0F0F0;
+  color: #1A1A1A;
+  border-color: #D0D0D0;
+}
+html[data-theme="light"] .header-icon-btn {
+  color: #8A8A8A;
+}
+html[data-theme="light"] .header-icon-btn:hover {
+  background: #F0F0F0;
+  color: #3A3A3A;
+}
+html[data-theme="light"] .header-credits-btn {
+  color: #6A6A6A;
+}
+html[data-theme="light"] .header-credits-btn:hover {
+  background: #F0F0F0;
+  color: #1A1A1A;
+}
+
+/* ─── Main content ────────────────────────────────────────────── */
+html[data-theme="light"] .main-content {
+  background: #FFFFFF;
+}
+
+/* ─── Welcome screen ──────────────────────────────────────────── */
+html[data-theme="light"] .welcome-screen {
+  background: #FFFFFF;
+}
+html[data-theme="light"] .welcome-title {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .welcome-chip {
+  border-color: #E0E0E0;
+  background: #FAFAFA;
+  color: #6A6A6A;
+}
+html[data-theme="light"] .welcome-chip:hover {
+  background: #F0F0F0;
+  color: #1A1A1A;
+  border-color: #D0D0D0;
+}
+
+/* ─── Chat view ───────────────────────────────────────────────── */
+html[data-theme="light"] .chat-view {
+  background: #FFFFFF;
+}
+html[data-theme="light"] .chat-messages-area {
+  background: #FFFFFF;
+}
+
+/* ─── Messages ────────────────────────────────────────────────── */
+html[data-theme="light"] .message-user-bubble {
+  background: #F0F0F0;
+  color: #1A1A1A;
+}
+html[data-theme="light"] .message-avatar {
+  background: #F0F0F0;
+  border-color: #E0E0E0;
+}
+html[data-theme="light"] .message-name {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .message-badge {
+  background: #F0F0F0;
+  color: #8A8A8A;
+  border-color: #E0E0E0;
+}
+html[data-theme="light"] .message-action-btn {
+  color: #A0A0A0;
+}
+html[data-theme="light"] .message-action-btn:hover {
+  background: #F0F0F0;
+  color: #4A4A4A;
+}
+
+/* ─── Prose / markdown ────────────────────────────────────────── */
+html[data-theme="light"] .prose {
+  color: #2A2A2A;
+}
+html[data-theme="light"] .prose strong {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .prose em {
+  color: #4A4A4A;
+}
+html[data-theme="light"] .prose a {
+  color: #1A93FE;
+}
+html[data-theme="light"] .prose blockquote {
+  border-left-color: #D0D0D0;
+  color: #7A7A7A;
+}
+html[data-theme="light"] .prose code {
+  background: #F0F0F0;
+  color: #C026D3;
+  border-color: #E0E0E0;
+}
+html[data-theme="light"] .prose pre {
+  background: #F7F7F7 !important;
+  border-color: #E0E0E0;
+}
+html[data-theme="light"] .prose pre code {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .prose th {
+  background: #F5F5F5;
+  color: #2A2A2A;
+}
+html[data-theme="light"] .prose th,
+html[data-theme="light"] .prose td {
+  border-color: #E0E0E0;
+}
+html[data-theme="light"] .prose hr {
+  border-top-color: #E8E8E8;
+}
+
+/* ─── Chat input ──────────────────────────────────────────────── */
+html[data-theme="light"] .chat-input-box {
+  background: #F5F5F5;
+  border-color: #E0E0E0;
+}
+html[data-theme="light"] .chat-input-box:focus-within {
+  border-color: #C8C8C8;
+}
+html[data-theme="light"] .chat-textarea {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .toolbar-btn {
+  color: #8A8A8A;
+}
+html[data-theme="light"] .toolbar-btn:hover {
+  background: #E8E8E8;
+  color: #3A3A3A;
+}
+html[data-theme="light"] .model-select-btn {
+  color: #8A8A8A;
+}
+html[data-theme="light"] .model-select-btn:hover {
+  background: #E8E8E8;
+  color: #3A3A3A;
+}
+html[data-theme="light"] .mic-btn {
+  color: #8A8A8A;
+}
+html[data-theme="light"] .mic-btn:hover {
+  background: #E8E8E8;
+  color: #3A3A3A;
+}
+html[data-theme="light"] .send-btn {
+  background: #1A1A1A;
+  color: #FFFFFF;
+}
+html[data-theme="light"] .send-btn:hover {
+  background: #333333;
+}
+html[data-theme="light"] .send-btn:disabled {
+  background: #E0E0E0;
+  color: #A0A0A0;
+}
+html[data-theme="light"] .chat-disclaimer {
+  color: #B0B0B0;
+}
+
+/* ─── Settings modal ──────────────────────────────────────────── */
+html[data-theme="light"] .modal-overlay {
+  background: rgba(0, 0, 0, 0.4);
+}
+html[data-theme="light"] .modal-panel {
+  background: #FFFFFF;
+  border-color: #E0E0E0;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.15);
+}
+html[data-theme="light"] .modal-sidebar {
+  background: #F5F5F5;
+  border-right-color: #E8E8E8;
+}
+html[data-theme="light"] .modal-sidebar-user {
+  border-bottom-color: #E8E8E8;
+}
+html[data-theme="light"] .modal-sidebar-username {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .modal-sidebar-item {
+  color: #5A5A5A;
+}
+html[data-theme="light"] .modal-sidebar-item:hover {
+  background: #EBEBEB;
+  color: #1A1A1A;
+}
+html[data-theme="light"] .modal-sidebar-item.active {
+  background: #E5E5E5;
+  color: #1A1A1A;
+}
+html[data-theme="light"] .modal-content {
+  background: #FFFFFF;
+}
+html[data-theme="light"] .modal-close {
+  color: #8A8A8A;
+}
+html[data-theme="light"] .modal-close:hover {
+  background: #F0F0F0;
+  color: #1A1A1A;
+}
+
+/* ─── Settings content ────────────────────────────────────────── */
+html[data-theme="light"] .settings-title {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .settings-section-label {
+  color: #A0A0A0;
+}
+html[data-theme="light"] .settings-row-label {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .settings-row-desc {
+  color: #7A7A7A;
+}
+html[data-theme="light"] .settings-select {
+  background: #F0F0F0;
+  border-color: #E0E0E0;
+  color: #1A1A1A;
+}
+html[data-theme="light"] .settings-select:hover {
+  border-color: #C8C8C8;
+}
+
+/* Toggle switch */
+html[data-theme="light"] .toggle-slider {
+  background: #D0D0D0;
+}
+html[data-theme="light"] input:checked + .toggle-slider {
+  background: #1A93FE;
+}
+
+/* ─── Search modal ────────────────────────────────────────────── */
+html[data-theme="light"] .search-modal-overlay {
+  background: rgba(0, 0, 0, 0.35);
+}
+html[data-theme="light"] .search-modal {
+  background: #FFFFFF;
+  border-color: #E0E0E0;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+}
+html[data-theme="light"] .search-modal-input-row {
+  border-bottom-color: #E8E8E8;
+}
+html[data-theme="light"] .search-modal-icon {
+  color: #A0A0A0;
+}
+html[data-theme="light"] .search-modal-input {
+  color: #1A1A1A;
+  background: transparent;
+}
+html[data-theme="light"] .search-modal-input::placeholder {
+  color: #A0A0A0;
+}
+html[data-theme="light"] .search-modal-close {
+  background: #F0F0F0;
+  border-color: #E0E0E0;
+  color: #6A6A6A;
+}
+html[data-theme="light"] .search-modal-close:hover {
+  background: #E8E8E8;
+  color: #1A1A1A;
+}
+html[data-theme="light"] .search-modal-divider {
+  background: #E8E8E8;
+}
+html[data-theme="light"] .search-modal-results {
+  background: #FFFFFF;
+}
+html[data-theme="light"] .search-modal-new-task {
+  color: #4A4A4A;
+}
+html[data-theme="light"] .search-modal-new-task:hover {
+  background: #F5F5F5;
+}
+html[data-theme="light"] .search-modal-new-icon {
+  background: #F0F0F0;
+  border-color: #E0E0E0;
+  color: #6A6A6A;
+}
+html[data-theme="light"] .search-modal-group-label {
+  color: #A0A0A0;
+}
+html[data-theme="light"] .search-modal-item {
+  color: #3A3A3A;
+}
+html[data-theme="light"] .search-modal-item:hover {
+  background: #F5F5F5;
+}
+html[data-theme="light"] .search-modal-item-icon {
+  background: #F0F0F0;
+  border-color: #E0E0E0;
+  color: #6A6A6A;
+}
+html[data-theme="light"] .search-modal-item-title {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .search-modal-item-preview {
+  color: #7A7A7A;
+}
+html[data-theme="light"] .search-modal-item-time {
+  color: #A0A0A0;
+}
+html[data-theme="light"] .search-modal-empty {
+  color: #A0A0A0;
+}
+
+/* ─── File popup ──────────────────────────────────────────────── */
+html[data-theme="light"] .file-popup-overlay {
+  background: rgba(0, 0, 0, 0.4);
+}
+html[data-theme="light"] .file-popup {
+  background: #FFFFFF;
+  border-color: #E0E0E0;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.15);
+}
+html[data-theme="light"] .file-popup-header {
+  border-bottom-color: #E8E8E8;
+}
+html[data-theme="light"] .file-popup-title {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .file-popup-action-btn {
+  color: #8A8A8A;
+}
+html[data-theme="light"] .file-popup-action-btn:hover {
+  background: #F0F0F0;
+  color: #1A1A1A;
+}
+html[data-theme="light"] .file-popup-tree {
+  border-right-color: #E8E8E8;
+}
+html[data-theme="light"] .file-popup-tree-root {
+  color: #8A8A8A;
+}
+html[data-theme="light"] .file-popup-tree-item {
+  color: #6A6A6A;
+}
+html[data-theme="light"] .file-popup-tree-item:hover {
+  background: #F0F0F0;
+  color: #1A1A1A;
+}
+html[data-theme="light"] .file-popup-tree-item.active {
+  background: #EBEBEB;
+  color: #1A1A1A;
+}
+html[data-theme="light"] .file-popup-content {
+  background: #FAFAFA;
+}
+html[data-theme="light"] .file-popup-code {
+  color: #1A1A1A;
+}
+
+/* ─── Agent task cards ────────────────────────────────────────── */
+html[data-theme="light"] .agent-task-card {
+  background: #F5F5F5;
+  border-color: #E0E0E0;
+}
+html[data-theme="light"] .agent-task-card:hover {
+  border-color: #C8C8C8;
+}
+html[data-theme="light"] .agent-task-card.agent-task-running {
+  border-color: rgba(26, 147, 254, 0.3);
+  background: #EFF6FF;
+}
+html[data-theme="light"] .agent-task-card.agent-task-done {
+  border-color: rgba(22, 163, 74, 0.2);
+  background: rgba(22, 163, 74, 0.04);
+}
+html[data-theme="light"] .agent-task-card.agent-task-error {
+  border-color: rgba(220, 38, 38, 0.2);
+  background: rgba(220, 38, 38, 0.04);
+}
+html[data-theme="light"] .agent-task-label {
+  color: #3A3A3A;
+}
+html[data-theme="light"] .agent-task-running .agent-task-label {
+  color: #1A1A1A;
+}
+
+/* ─── Manus task cards ────────────────────────────────────────── */
+html[data-theme="light"] .manus-task-card {
+  background: #F5F5F5;
+  border-color: #E0E0E0;
+}
+html[data-theme="light"] .manus-task-card:hover {
+  border-color: #C8C8C8;
+}
+html[data-theme="light"] .manus-task-card.manus-task-running {
+  border-color: rgba(26, 147, 254, 0.3);
+  background: #EFF6FF;
+}
+html[data-theme="light"] .manus-task-card.manus-task-error {
+  border-color: rgba(220, 38, 38, 0.2);
+  background: rgba(220, 38, 38, 0.04);
+}
+html[data-theme="light"] .manus-task-label {
+  color: #3A3A3A;
+}
+html[data-theme="light"] .manus-task-running .manus-task-label {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .manus-task-badge {
+  background: #EBEBEB;
+  border-color: #E0E0E0;
+  color: #5A5A5A;
+}
+html[data-theme="light"] .manus-task-arrow {
+  color: #C0C0C0;
+}
+html[data-theme="light"] .manus-task-card:hover .manus-task-arrow {
+  color: #8A8A8A;
+}
+
+/* ─── File cards ──────────────────────────────────────────────── */
+html[data-theme="light"] .manus-file-card {
+  background: #F5F5F5;
+  border-color: #E0E0E0;
+}
+html[data-theme="light"] .manus-file-card:hover {
+  border-color: #C8C8C8;
+  background: #EBEBEB;
+}
+html[data-theme="light"] .manus-file-name {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .manus-file-meta {
+  color: #8A8A8A;
+}
+html[data-theme="light"] .manus-file-download {
+  background: linear-gradient(90deg, transparent, #F0F0F0 30%);
+  color: #1A1A1A;
+}
+html[data-theme="light"] .manus-file-download:hover {
+  background: linear-gradient(90deg, transparent, #E8E8E8 30%);
+}
+html[data-theme="light"] .manus-view-all-btn {
+  background: #F5F5F5;
+  border-color: #E0E0E0;
+  color: #6A6A6A;
+}
+html[data-theme="light"] .manus-view-all-btn:hover {
+  border-color: #C8C8C8;
+  color: #1A1A1A;
+  background: #EBEBEB;
+}
+
+/* ─── Agent suggestions ───────────────────────────────────────── */
+html[data-theme="light"] .agent-suggestions {
+  border-top-color: #E8E8E8;
+}
+html[data-theme="light"] .agent-suggestions-label {
+  color: #A0A0A0;
+}
+html[data-theme="light"] .agent-suggestion-item {
+  color: #6A6A6A;
+}
+html[data-theme="light"] .agent-suggestion-item:hover {
+  background: #F5F5F5;
+  color: #1A1A1A;
+}
+html[data-theme="light"] .agent-suggestion-icon {
+  background: #F0F0F0;
+  border-color: #E0E0E0;
+  color: #8A8A8A;
+}
+html[data-theme="light"] .agent-suggestion-arrow {
+  color: #D0D0D0;
+}
+html[data-theme="light"] .agent-suggestion-item:hover .agent-suggestion-arrow {
+  color: #8A8A8A;
+}
+
+/* ─── View all btn ────────────────────────────────────────────── */
+html[data-theme="light"] .agent-view-all-btn {
+  background: #F5F5F5;
+  border-color: #E0E0E0;
+  color: #6A6A6A;
+}
+html[data-theme="light"] .agent-view-all-btn:hover {
+  border-color: #C8C8C8;
+  color: #1A1A1A;
+}
+
+/* ─── Library ─────────────────────────────────────────────────── */
+html[data-theme="light"] .library-view {
+  background: #FFFFFF;
+}
+html[data-theme="light"] .library-header {
+  background: #FFFFFF;
+  border-bottom-color: #E8E8E8;
+}
+html[data-theme="light"] .library-title {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .lib-search-input {
+  background: #F0F0F0;
+  border-color: #E0E0E0;
+  color: #1A1A1A;
+}
+html[data-theme="light"] .lib-search-input::placeholder {
+  color: #A0A0A0;
+}
+html[data-theme="light"] .lib-tab {
+  color: #7A7A7A;
+}
+html[data-theme="light"] .lib-tab:hover {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .lib-tab.active {
+  color: #1A1A1A;
+  border-bottom-color: #1A1A1A;
+}
+html[data-theme="light"] .lib-file-card {
+  background: #FAFAFA;
+  border-color: #E8E8E8;
+}
+html[data-theme="light"] .lib-file-card:hover {
+  border-color: #D0D0D0;
+  background: #F5F5F5;
+}
+html[data-theme="light"] .lib-file-name {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .lib-file-meta {
+  color: #8A8A8A;
+}
+html[data-theme="light"] .lib-empty {
+  color: #A0A0A0;
+}
+
+/* ─── Calendar ────────────────────────────────────────────────── */
+html[data-theme="light"] .calendar-page {
+  background: #FFFFFF;
+}
+html[data-theme="light"] .calendar-header {
+  background: #FFFFFF;
+  border-bottom-color: #E8E8E8;
+}
+html[data-theme="light"] .calendar-title {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .calendar-day {
+  border-color: #E8E8E8;
+  color: #1A1A1A;
+}
+html[data-theme="light"] .calendar-day:hover {
+  background: #F5F5F5;
+}
+html[data-theme="light"] .calendar-day-header {
+  color: #7A7A7A;
+}
+html[data-theme="light"] .calendar-task-card {
+  background: #F0F0F0;
+  border-color: #E0E0E0;
+  color: #2A2A2A;
+}
+
+/* ─── Admin panel ─────────────────────────────────────────────── */
+html[data-theme="light"] .admin-panel {
+  background: #FAFAFA;
+  color: #1A1A1A;
+}
+html[data-theme="light"] .admin-header {
+  background: #FFFFFF;
+  border-bottom-color: #E8E8E8;
+}
+html[data-theme="light"] .admin-sidebar {
+  background: #F5F5F5;
+  border-right-color: #E0E0E0;
+}
+html[data-theme="light"] .admin-nav-item {
+  color: #5A5A5A;
+}
+html[data-theme="light"] .admin-nav-item:hover {
+  background: #EBEBEB;
+  color: #1A1A1A;
+}
+html[data-theme="light"] .admin-nav-item.active {
+  background: #E5E5E5;
+  color: #1A1A1A;
+}
+html[data-theme="light"] .admin-card {
+  background: #FFFFFF;
+  border-color: #E8E8E8;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+html[data-theme="light"] .admin-stat-label {
+  color: #7A7A7A;
+}
+html[data-theme="light"] .admin-stat-value {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .admin-table th {
+  background: #F5F5F5;
+  color: #5A5A5A;
+  border-bottom-color: #E0E0E0;
+}
+html[data-theme="light"] .admin-table td {
+  color: #2A2A2A;
+  border-bottom-color: #F0F0F0;
+}
+html[data-theme="light"] .admin-table tr:hover td {
+  background: #FAFAFA;
+}
+
+/* ─── Inline style overrides for hardcoded dark colors ───────── */
+/* These override inline styles in React components that use hardcoded dark hex values */
+
+/* Settings modal inline styles */
+html[data-theme="light"] .modal-panel [style*="background: #222222"],
+html[data-theme="light"] .modal-panel [style*="background:#222222"] {
+  background: #F5F5F5 !important;
+}
+html[data-theme="light"] .modal-panel [style*="background: #1C1C1C"],
+html[data-theme="light"] .modal-panel [style*="background:#1C1C1C"] {
+  background: #FFFFFF !important;
+}
+html[data-theme="light"] .modal-panel [style*="background: #1A1A1A"],
+html[data-theme="light"] .modal-panel [style*="background:#1A1A1A"] {
+  background: #F5F5F5 !important;
+}
+html[data-theme="light"] .modal-panel [style*="color: #E5E5E5"],
+html[data-theme="light"] .modal-panel [style*="color:#E5E5E5"] {
+  color: #1A1A1A !important;
+}
+html[data-theme="light"] .modal-panel [style*="color: #9A9A9A"],
+html[data-theme="light"] .modal-panel [style*="color:#9A9A9A"] {
+  color: #6A6A6A !important;
+}
+html[data-theme="light"] .modal-panel [style*="color: #5A5A5A"],
+html[data-theme="light"] .modal-panel [style*="color:#5A5A5A"] {
+  color: #8A8A8A !important;
+}
+html[data-theme="light"] .modal-panel [style*="color: #7A7A7A"],
+html[data-theme="light"] .modal-panel [style*="color:#7A7A7A"] {
+  color: #6A6A6A !important;
+}
+html[data-theme="light"] .modal-panel [style*="background: #222222"],
+html[data-theme="light"] .modal-panel [style*="border: 1px solid #2A2A2A"] {
+  border-color: #E8E8E8 !important;
+}
+html[data-theme="light"] .modal-panel [style*="height: 1px"][style*="background: #222222"] {
+  background: #E8E8E8 !important;
+}
+
+/* Account content profile card */
+html[data-theme="light"] .modal-content [style*="background: #222222"] {
+  background: #F5F5F5 !important;
+}
+html[data-theme="light"] .modal-content [style*="border: 1px solid #2A2A2A"] {
+  border-color: #E0E0E0 !important;
+}
+html[data-theme="light"] .modal-content [style*="color: #E5E5E5"] {
+  color: #1A1A1A !important;
+}
+html[data-theme="light"] .modal-content [style*="color: #5A5A5A"] {
+  color: #7A7A7A !important;
+}
+html[data-theme="light"] .modal-content [style*="color: #3A3A3A"] {
+  color: #9A9A9A !important;
+}
+html[data-theme="light"] .modal-content [style*="background: #2E2E2E"] {
+  background: #E8E8E8 !important;
+}
+html[data-theme="light"] .modal-content [style*="background: #1A93FE"] {
+  /* keep accent color */
+}
+html[data-theme="light"] .modal-content [style*="border: 1px solid #2E2E2E"] {
+  border-color: #E0E0E0 !important;
+}
+html[data-theme="light"] .modal-content [style*="border: 1px solid #3A1A1A"] {
+  border-color: rgba(220, 38, 38, 0.3) !important;
+}
+html[data-theme="light"] .modal-content [style*="height: 1px"][style*="background: #222222"] {
+  background: #E8E8E8 !important;
+}
+
+/* Usage bar */
+html[data-theme="light"] .modal-content [style*="background: #2E2E2E"][style*="height: 6px"] {
+  background: #E0E0E0 !important;
+}
+
+/* Sidebar inline styles */
+html[data-theme="light"] .modal-sidebar [style*="color: #5A5A5A"] {
+  color: #8A8A8A !important;
+}
+html[data-theme="light"] .modal-sidebar [style*="color: #4A4A4A"] {
+  color: #A0A0A0 !important;
+}
+html[data-theme="light"] .modal-sidebar [style*="color: #3A3A3A"] {
+  color: #C0C0C0 !important;
+}
+html[data-theme="light"] .modal-sidebar [style*="border-bottom: 1px solid #222222"] {
+  border-bottom-color: #E8E8E8 !important;
+}
+
+/* ─── Connectors panel ────────────────────────────────────────── */
+html[data-theme="light"] .connectors-panel {
+  background: #FFFFFF;
+}
+html[data-theme="light"] .connector-card {
+  background: #FAFAFA;
+  border-color: #E8E8E8;
+}
+html[data-theme="light"] .connector-card:hover {
+  border-color: #D0D0D0;
+  background: #F5F5F5;
+}
+html[data-theme="light"] .connector-name {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .connector-desc {
+  color: #7A7A7A;
+}
+
+/* ─── Skills panel ────────────────────────────────────────────── */
+html[data-theme="light"] .skills-panel {
+  background: #FFFFFF;
+}
+html[data-theme="light"] .skill-card {
+  background: #FAFAFA;
+  border-color: #E8E8E8;
+}
+html[data-theme="light"] .skill-card:hover {
+  border-color: #D0D0D0;
+}
+html[data-theme="light"] .skill-name {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .skill-desc {
+  color: #7A7A7A;
+}
+
+/* ─── Billing content ─────────────────────────────────────────── */
+html[data-theme="light"] .billing-card {
+  background: #FAFAFA;
+  border-color: #E8E8E8;
+}
+html[data-theme="light"] .billing-plan-name {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .billing-plan-price {
+  color: #1A1A1A;
+}
+
+/* ─── Personalization content ─────────────────────────────────── */
+html[data-theme="light"] .personalization-section {
+  background: #FAFAFA;
+  border-color: #E8E8E8;
+}
+
+/* ─── Dropdown menus / context menus ─────────────────────────── */
+html[data-theme="light"] .dropdown-menu {
+  background: #FFFFFF;
+  border-color: #E0E0E0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+html[data-theme="light"] .dropdown-item {
+  color: #3A3A3A;
+}
+html[data-theme="light"] .dropdown-item:hover {
+  background: #F5F5F5;
+  color: #1A1A1A;
+}
+html[data-theme="light"] .dropdown-divider {
+  background: #E8E8E8;
+}
+
+/* ─── Tooltips ────────────────────────────────────────────────── */
+html[data-theme="light"] .tooltip {
+  background: #2A2A2A;
+  color: #F0F0F0;
+}
+
+/* ─── Buttons (generic) ───────────────────────────────────────── */
+html[data-theme="light"] .btn-primary {
+  background: #1A1A1A;
+  color: #FFFFFF;
+  border-color: #1A1A1A;
+}
+html[data-theme="light"] .btn-primary:hover {
+  background: #333333;
+}
+html[data-theme="light"] .btn-secondary {
+  background: #F0F0F0;
+  color: #1A1A1A;
+  border-color: #E0E0E0;
+}
+html[data-theme="light"] .btn-secondary:hover {
+  background: #E8E8E8;
+}
+html[data-theme="light"] .btn-ghost {
+  color: #5A5A5A;
+}
+html[data-theme="light"] .btn-ghost:hover {
+  background: #F0F0F0;
+  color: #1A1A1A;
+}
+
+/* ─── Auth loading ────────────────────────────────────────────── */
+html[data-theme="light"] .auth-loading {
+  background: #FFFFFF;
+}
+
+/* ─── Shimmer animations in light mode ───────────────────────── */
+html[data-theme="light"] .agent-task-shimmer,
+html[data-theme="light"] .manus-task-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(26, 147, 254, 0.04) 40%,
+    rgba(26, 147, 254, 0.08) 50%,
+    rgba(26, 147, 254, 0.04) 60%,
+    transparent 100%
+  );
+}
+
+/* ─── Conv spinner stays blue ─────────────────────────────────── */
+/* (no change needed — accent color is same in both modes) */
+
+/* ─── Manus complete / failed badges ─────────────────────────── */
+html[data-theme="light"] .manus-complete-badge {
+  color: #16A34A;
+}
+html[data-theme="light"] .manus-failed-badge {
+  color: #DC2626;
+}
+html[data-theme="light"] .agent-task-complete {
+  color: #16A34A;
+}
+html[data-theme="light"] .agent-task-failed {
+  color: #DC2626;
+}
+
+/* ─── Manus rating stars ──────────────────────────────────────── */
+html[data-theme="light"] .manus-star {
+  color: #D0D0D0;
+}
+html[data-theme="light"] .manus-star:hover {
+  color: #F59E0B;
+}
+html[data-theme="light"] .manus-rating {
+  color: #A0A0A0;
+}
+
+/* ─── Official library panel ──────────────────────────────────── */
+html[data-theme="light"] .official-library-panel {
+  background: #FFFFFF;
+}
+html[data-theme="light"] .official-library-inner {
+  background: #FFFFFF;
+}
+html[data-theme="light"] .official-library-header {
+  border-bottom-color: #E8E8E8;
+}
+html[data-theme="light"] .official-library-back {
+  color: #7A7A7A;
+}
+html[data-theme="light"] .official-library-back:hover {
+  color: #1A1A1A;
+}
+html[data-theme="light"] .official-library-title {
+  color: #1A1A1A;
+}

@@ -83,7 +83,7 @@ export type SineModel = 'sine-1' | 'sine-pro'
 export interface AppSettings {
   language: 'no' | 'en'
   model: SineModel
-  theme: 'dark'
+  theme: 'dark' | 'light' | 'system'
   // Bruker-minne
   userMemory?: UserMemory[]
   // Agent-standardinnstillinger

@@ -160,12 +160,12 @@ function SettingsContent({
   settings,
   updateSettings,
 }: {
-  settings: { language: 'no' | 'en' }
-  updateSettings: (u: Partial<{ language: 'no' | 'en' }>) => void
+  settings: { language: 'no' | 'en'; theme: 'dark' | 'light' | 'system' }
+  updateSettings: (u: Partial<{ language: 'no' | 'en'; theme: 'dark' | 'light' | 'system' }>) => void
 }) {
   const [emailUpdates, setEmailUpdates] = useState(true)
   const [emailTask, setEmailTask] = useState(true)
-  const [appearance, setAppearance] = useState<'light' | 'dark' | 'system'>('dark')
+  const appearance = settings.theme ?? 'dark'
   const [autoApproveCalendar, setAutoApproveCalendar] = useState(false)
   const [pushNotifications, setPushNotifications] = useState(true)
 
@@ -226,7 +226,7 @@ function SettingsContent({
             ].map(theme => (
               <button
                 key={theme.id}
-                onClick={() => setAppearance(theme.id)}
+                onClick={() => updateSettings({ theme: theme.id })}
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
@@ -243,7 +243,7 @@ function SettingsContent({
                   height: 56,
                   borderRadius: 10,
                   overflow: 'hidden',
-                  border: appearance === theme.id ? '2px solid #1A93FE' : '2px solid #2E2E2E',
+                  border: appearance === theme.id ? '2px solid #1A93FE' : '2px solid #3A3A3A',
                   transition: 'border-color 0.15s',
                   background: theme.id === 'light' ? '#F0F0F0' : '#1A1A1A',
                   display: 'flex',
@@ -264,7 +264,7 @@ function SettingsContent({
                 </div>
                 <span style={{
                   fontSize: 12,
-                  color: appearance === theme.id ? '#E5E5E5' : '#5A5A5A',
+                  color: appearance === theme.id ? '#1A93FE' : '#5A5A5A',
                   fontWeight: appearance === theme.id ? 500 : 400,
                 }}>
                   {theme.label}

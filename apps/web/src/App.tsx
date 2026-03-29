@@ -42,7 +42,28 @@ function AppLayout() {
   const [currentPage, setCurrentPage] = useState<AppPage>('chat')
   const [pendingAgentTask, setPendingAgentTask] = useState<string | null>(null)
   const [searchOpen, setSearchOpen] = useState(false)
-  const { setActiveConversationId, createConversation } = useApp()
+  const { setActiveConversationId, createConversation, settings } = useApp()
+
+  // Apply theme to document root
+  useEffect(() => {
+    const applyTheme = (theme: string) => {
+      if (theme === 'system') {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light')
+      } else {
+        document.documentElement.setAttribute('data-theme', theme)
+      }
+    }
+    applyTheme(settings.theme)
+    if (settings.theme === 'system') {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)')
+      const handler = (e: MediaQueryListEvent) => {
+        document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light')
+      }
+      mq.addEventListener('change', handler)
+      return () => mq.removeEventListener('change', handler)
+    }
+  }, [settings.theme])
 
   // Cmd+K / Ctrl+K global shortcut
   useEffect(() => {
