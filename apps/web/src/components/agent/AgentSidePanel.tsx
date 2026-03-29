@@ -165,7 +165,6 @@ export default function AgentSidePanel({ state, onClose, onFetchFile }: AgentSid
   // Last tool call for the status bar
   const lastToolCall = [...state.logs].reverse().find(l => l.type === 'tool_call' || l.type === 'file_change');
   const lastFileChange = [...state.logs].reverse().find(l => l.type === 'file_change');
-  const activeFileName = lastFileChange?.message?.split('/').pop() ?? state.currentTask?.split('/').pop() ?? null;
 
   // File extension for syntax highlighting
   const selectedExt = selectedFile?.split('.').pop()?.toLowerCase() ?? '';

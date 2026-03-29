@@ -184,7 +184,7 @@ function groupIntoPhases(tasks: AgentTask[]): PhaseStep[] {
   return phases
 }
 
-function generatePhaseTitle(label: string, tool: string): string {
+function generatePhaseTitle(label: string, _tool: string): string {
   // Capitalize and clean up the label to use as a phase title
   const cleaned = label
     .replace(/^(run|execute|create|write|read|list|search|analyze)\s+/i, '')
