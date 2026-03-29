@@ -16,10 +16,6 @@ const BG_MOUNTAIN   = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/
 const BG_STAVE      = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Gemini_Generated_Image_g0v8hog0v8hog0v8_8c9d434c.png";
 const BG_FJORD      = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Gemini_Generated_Image_vtlyktvtlyktvtly_b84d3a15.png";
 const BG_WATERFALL  = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Gemini_Generated_Image_x181mgx181mgx181_a6ac7765.png";
-const BG_FOREST     = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Gemini_Generated_Image_hzytp9hzytp9hzyt_84c118d6.png";
-const BG_COASTAL    = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Gemini_Generated_Image_qhrbapqhrbapqhrb_49e11b1a.png";
-const BG_VALLEY     = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Gemini_Generated_Image_wiwv66wiwv66wiwv_e6c72c61.png";
-const BG_AURORA     = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Gemini_Generated_Image_gforu2gforu2gfor_cd2fb985.png";
 
 // ── FADE-IN ANIMATION ────────────────────────────────────────────────────────
 function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
