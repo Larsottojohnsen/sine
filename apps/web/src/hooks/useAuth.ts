@@ -45,14 +45,36 @@ export function useAuth() {
   }
 
   useEffect(() => {
+    // Dev bypass: if localStorage has sine_dev_bypass=true, skip Supabase auth
+    if (localStorage.getItem('sine_dev_bypass') === 'true') {
+      setUser({
+        id: 'dev-user',
+        email: 'dev@sine.no',
+        name: 'Dev User',
+        role: 'admin',
+        isAdmin: true,
+      })
+      setLoading(false)
+      return
+    }
+
     const supabase = getSupabase()
 
-    // Hent nåværende sesjon
+    // Hent nåværende sesjon med timeout
+    const sessionTimeout = setTimeout(() => {
+      // If Supabase doesn't respond within 8s, stop loading
+      setLoading(false)
+    }, 8000)
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      clearTimeout(sessionTimeout)
       if (session?.user) {
         const enriched = await fetchUserRole(session.user)
         setUser(enriched)
       }
+      setLoading(false)
+    }).catch(() => {
+      clearTimeout(sessionTimeout)
       setLoading(false)
     })
 
@@ -67,7 +89,10 @@ export function useAuth() {
       setLoading(false)
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(sessionTimeout)
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signOut = async () => {
