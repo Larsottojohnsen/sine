@@ -227,7 +227,7 @@ export function AgentChatMessage({ message, onOpenFile, onSuggestion }: AgentCha
       {/* Avatar – full logo (ikon + tekst) + badge i samme rad */}
       <div className="message-avatar-row">
         <img
-          src="/sine/Sinev5.svg"
+          src="/sine/Sinestar.svg"
           alt="Sine"
           className="message-logo-img"
         />

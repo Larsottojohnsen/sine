@@ -185,7 +185,7 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId }: 
         <div className="sidebar-logo">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 4 }}>
             <img
-              src="/sine/Sinev5.svg"
+              src="/sine/Sinestar.svg"
               alt="Sine"
               style={{ height: 22, width: 'auto', opacity: 1 }}
             />
@@ -269,10 +269,10 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId }: 
             </p>
           ) : (
             <>
-              <ConvGroup label="I dag" conversations={groups.today} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={setActiveConversationId} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
-              <ConvGroup label="I går" conversations={groups.yesterday} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={setActiveConversationId} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
-              <ConvGroup label="Siste 7 dager" conversations={groups.week} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={setActiveConversationId} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
-              <ConvGroup label="Eldre" conversations={groups.older} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={setActiveConversationId} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
+              <ConvGroup label="I dag" conversations={groups.today} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { setActiveConversationId(id); onNavigate?.('chat') }} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
+              <ConvGroup label="I går" conversations={groups.yesterday} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { setActiveConversationId(id); onNavigate?.('chat') }} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
+              <ConvGroup label="Siste 7 dager" conversations={groups.week} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { setActiveConversationId(id); onNavigate?.('chat') }} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
+              <ConvGroup label="Eldre" conversations={groups.older} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { setActiveConversationId(id); onNavigate?.('chat') }} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
             </>
           )}
         </div>

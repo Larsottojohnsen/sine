@@ -42,7 +42,7 @@ export function ChatMessage({ message, onRegenerate, isLast, conversationHasSkil
       {/* Avatar – full logo (ikon + tekst) + badge i samme rad */}
       <div className="message-avatar-row">
         <img
-          src="/sine/Sinev5.svg"
+          src="/sine/Sinestar.svg"
           alt="Sine"
           className="message-logo-img"
         />
