@@ -141,7 +141,7 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
 
       {/* Logo øverst til venstre */}
       <div className="login-logo">
-        <img src="/sine/Sinestar.svg" alt="Sine" className="login-logo-img" />
+        <img src="/sine/Sinev6.svg" alt="Sine" className="login-logo-img" />
       </div>
 
       {/* Innloggingskort */}

@@ -185,7 +185,7 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId }: 
         <div className="sidebar-logo">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 4 }}>
             <img
-              src="/sine/Sinestar.svg"
+              src="/sine/Sinev6.svg"
               alt="Sine"
               style={{ height: 22, width: 'auto', opacity: 1 }}
             />

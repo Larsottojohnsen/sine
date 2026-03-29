@@ -171,6 +171,22 @@ function SettingsContent({
 
   return (
     <div>
+      {/* Logo header — Manus style */}
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        paddingTop: 8, paddingBottom: 24, gap: 10,
+      }}>
+        <img
+          src="/sine/Sinev6.svg"
+          alt="Sine"
+          style={{ width: 120, height: 'auto', opacity: 0.9 }}
+        />
+        <span style={{
+          fontSize: 11, color: '#4A4A4A', letterSpacing: '0.05em',
+          fontWeight: 500,
+        }}>versjon 1.0</span>
+      </div>
+
       <h2 className="settings-title">Innstillinger</h2>
 
       {/* General section */}

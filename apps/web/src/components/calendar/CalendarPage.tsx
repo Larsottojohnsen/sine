@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import React, { useState, useMemo, useCallback } from 'react'
 import {
   ChevronLeft, ChevronRight, Plus, Play, Pause,
   Trash2, X, Clock, Calendar, Repeat,
@@ -367,13 +367,34 @@ function WeekView({
 }) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
   const hours = Array.from({ length: 16 }, (_, i) => i + 7) // 07:00 – 22:00
+  const HOUR_HEIGHT = 60 // px per hour
+
+  // Live now-line: update every minute
+  const [nowMinutes, setNowMinutes] = React.useState(() => {
+    const n = new Date()
+    return n.getHours() * 60 + n.getMinutes()
+  })
+  React.useEffect(() => {
+    const id = setInterval(() => {
+      const n = new Date()
+      setNowMinutes(n.getHours() * 60 + n.getMinutes())
+    }, 60_000)
+    return () => clearInterval(id)
+  }, [])
+
+  const nowHour = Math.floor(nowMinutes / 60)
+  const nowMin = nowMinutes % 60
+  const isThisWeek = days.some(d => isToday(d))
+  // Position of now-line relative to grid start (hour 7)
+  const nowTopPx = (nowMinutes - 7 * 60) * (HOUR_HEIGHT / 60)
+  const nowTimeLabel = `${String(nowHour).padStart(2,'0')}:${String(nowMin).padStart(2,'0')}`
 
   return (
     <div style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
       {/* Day headers */}
       <div style={{
         display: 'grid', gridTemplateColumns: '52px repeat(7, 1fr)',
-        borderBottom: '1px solid #2A2A2A', position: 'sticky', top: 0,
+        borderBottom: '1px solid #252525', position: 'sticky', top: 0,
         background: '#161616', zIndex: 2,
       }}>
         <div />
@@ -386,7 +407,7 @@ function WeekView({
               border: 'none', cursor: 'pointer', fontFamily: 'inherit',
               borderBottom: sel ? `2px solid #1A93FE` : '2px solid transparent',
             }}>
-              <div style={{ fontSize: 10, color: '#5A5A5A', fontWeight: 500, textTransform: 'uppercase' }}>
+              <div style={{ fontSize: 10, color: '#5A5A5A', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 {WEEKDAYS_NO[(d.getDay() + 6) % 7]}
               </div>
               <div style={{
@@ -403,34 +424,79 @@ function WeekView({
         })}
       </div>
 
-      {/* Time grid */}
-      {hours.map(h => (
-        <div key={h} style={{
-          display: 'grid', gridTemplateColumns: '52px repeat(7, 1fr)',
-          borderBottom: '1px solid #1E1E1E', minHeight: 52,
-        }}>
-          <div style={{ fontSize: 10, color: '#3A3A3A', padding: '4px 8px 0', textAlign: 'right', flexShrink: 0 }}>
-            {String(h).padStart(2,'0')}:00
+      {/* Time grid — relative container for now-line */}
+      <div style={{ position: 'relative' }}>
+        {hours.map((h, hi) => (
+          <div key={h} style={{
+            display: 'grid', gridTemplateColumns: '52px repeat(7, 1fr)',
+            borderBottom: '1px solid #1F1F1F',
+            minHeight: HOUR_HEIGHT,
+            // Subtle alternating block tint
+            background: hi % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.012)',
+          }}>
+            <div style={{
+              fontSize: 10, color: '#3C3C3C', padding: '5px 8px 0',
+              textAlign: 'right', flexShrink: 0, userSelect: 'none',
+              fontVariantNumeric: 'tabular-nums',
+            }}>
+              {String(h).padStart(2,'0')}:00
+            </div>
+            {days.map(d => {
+              const dayTasks = tasks.filter(t => {
+                if (!taskOccursOn(t, d)) return false
+                const [th] = t.timeOfDay.split(':').map(Number)
+                return th === h
+              })
+              return (
+                <div key={d.toISOString()} style={{
+                  borderLeft: '1px solid #1F1F1F', padding: '3px 4px',
+                  background: isSameDay(d, selectedDate) ? 'rgba(26,147,254,0.04)' : 'transparent',
+                }}>
+                  {dayTasks.map(t => (
+                    <EventCard key={t.id} task={t} onClick={() => onSelectTask(t)} />
+                  ))}
+                </div>
+              )
+            })}
           </div>
-          {days.map(d => {
-            const dayTasks = tasks.filter(t => {
-              if (!taskOccursOn(t, d)) return false
-              const [th] = t.timeOfDay.split(':').map(Number)
-              return th === h
-            })
-            return (
-              <div key={d.toISOString()} style={{
-                borderLeft: '1px solid #1E1E1E', padding: '3px 4px',
-                background: isSameDay(d, selectedDate) ? '#1A1A1A' : 'transparent',
-              }}>
-                {dayTasks.map(t => (
-                  <EventCard key={t.id} task={t} onClick={() => onSelectTask(t)} />
-                ))}
-              </div>
-            )
-          })}
-        </div>
-      ))}
+        ))}
+
+        {/* Red now-line — only visible when current time is in the displayed range */}
+        {isThisWeek && nowTopPx >= 0 && nowTopPx <= HOUR_HEIGHT * hours.length && (
+          <div style={{
+            position: 'absolute',
+            top: nowTopPx,
+            left: 0,
+            right: 0,
+            zIndex: 3,
+            pointerEvents: 'none',
+            display: 'flex',
+            alignItems: 'center',
+          }}>
+            {/* Time label */}
+            <div style={{
+              width: 52, textAlign: 'right', paddingRight: 6,
+              fontSize: 10, color: '#EF4444', fontWeight: 600,
+              fontVariantNumeric: 'tabular-nums', flexShrink: 0,
+              lineHeight: 1,
+            }}>
+              {nowTimeLabel}
+            </div>
+            {/* Red dot */}
+            <div style={{
+              width: 8, height: 8, borderRadius: '50%',
+              background: '#EF4444', flexShrink: 0,
+              marginRight: -4, zIndex: 1,
+            }} />
+            {/* Dashed red line */}
+            <div style={{
+              flex: 1,
+              borderTop: '1.5px dashed #EF4444',
+              opacity: 0.75,
+            }} />
+          </div>
+        )}
+      </div>
     </div>
   )
 }
