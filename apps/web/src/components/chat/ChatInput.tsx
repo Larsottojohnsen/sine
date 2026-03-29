@@ -1,14 +1,16 @@
-import { useState, useRef, useCallback, type KeyboardEvent, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from 'react'
 import {
   GitBranch, Monitor, Mic, ArrowUp, Square,
   ChevronDown, Globe, Cpu, Bot, BotOff,
-  Plus, Settings2, Paperclip, ChevronRight
+  Plus, Paperclip, ChevronRight,
+  Plug, Zap, Check, ToggleRight, ToggleLeft
 } from 'lucide-react'
-import type { SineModel } from '@/types'
+import type { SineModel, Skill } from '@/types'
 import { getTranslations } from '@/i18n'
 import type { AgentMode, AgentState } from '@/hooks/useAgent'
 import { AgentSettingsPopover, type AgentSettings } from './AgentSettingsPopover'
 import type { UserMemory } from '@/types'
+import { useApp } from '@/store/AppContext'
 
 interface ChatInputProps {
   onSend: (message: string, mode?: AgentMode) => void
@@ -26,14 +28,136 @@ interface ChatInputProps {
   compact?: boolean
   agentState?: AgentState
   onOpenTerminal?: () => void
-  // Ny: agent-innstillinger
   agentSettings?: AgentSettings
   onAgentSettingsChange?: (s: AgentSettings) => void
-  // Minne
   memory?: UserMemory[]
   onAddMemory?: (key: string, value: string) => void
   onRemoveMemory?: (id: string) => void
   onClearMemory?: () => void
+}
+
+// ─── Skills dropdown i chat ───────────────────────────────────
+function SkillsDropdown({
+  skills,
+  onToggle,
+  onClose,
+  onOpenSettings,
+}: {
+  skills: Skill[]
+  onToggle: (id: string) => void
+  onClose: () => void
+  onOpenSettings: () => void
+}) {
+  return (
+    <div className="chat-skills-dropdown">
+      <div className="chat-skills-header">
+        <span>Aktive Skills</span>
+        <button
+          className="chat-skills-manage"
+          onClick={() => { onOpenSettings(); onClose() }}
+        >
+          Administrer
+        </button>
+      </div>
+      {skills.length === 0 ? (
+        <div className="chat-skills-empty">
+          <p>Ingen skills lagt til ennå.</p>
+          <button
+            className="chat-skills-add-link"
+            onClick={() => { onOpenSettings(); onClose() }}
+          >
+            Legg til skills →
+          </button>
+        </div>
+      ) : (
+        <div className="chat-skills-list">
+          {skills.map(skill => (
+            <button
+              key={skill.id}
+              className={`chat-skill-item${skill.enabled ? ' active' : ''}`}
+              onClick={() => onToggle(skill.id)}
+            >
+              <span className="chat-skill-icon">
+                {skill.icon ? <span style={{ fontSize: 14 }}>{skill.icon}</span> : <Zap size={13} />}
+              </span>
+              <span className="chat-skill-name">{skill.name}</span>
+              {skill.enabled
+                ? <ToggleRight size={16} style={{ color: '#1A93FE', marginLeft: 'auto', flexShrink: 0 }} />
+                : <ToggleLeft size={16} style={{ color: '#3A3A3A', marginLeft: 'auto', flexShrink: 0 }} />
+              }
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Connectors popup i chat ──────────────────────────────────
+const APP_CONNECTORS_MINI = [
+  { id: 'github', name: 'GitHub', icon: '🐙' },
+  { id: 'gmail', name: 'Gmail', icon: '📧' },
+  { id: 'meta-ads', name: 'Meta Ads', icon: '📘' },
+  { id: 'instagram', name: 'Instagram', icon: '📸' },
+  { id: 'google-calendar', name: 'Google Kalender', icon: '📅' },
+  { id: 'outlook-mail', name: 'Outlook Mail', icon: '📨' },
+  { id: 'outlook-calendar', name: 'Outlook Kalender', icon: '🗓️' },
+]
+
+function ConnectorsPopup({
+  statuses,
+  onClose,
+  onOpenSettings,
+}: {
+  statuses: Record<string, string>
+  onClose: () => void
+  onOpenSettings: () => void
+}) {
+  const connected = APP_CONNECTORS_MINI.filter(c => statuses[c.id] === 'connected')
+  const disconnected = APP_CONNECTORS_MINI.filter(c => statuses[c.id] !== 'connected')
+
+  return (
+    <div className="chat-connectors-popup">
+      <div className="chat-skills-header">
+        <span>Tilkoblinger</span>
+        <button
+          className="chat-skills-manage"
+          onClick={() => { onOpenSettings(); onClose() }}
+        >
+          Administrer
+        </button>
+      </div>
+      {connected.length > 0 && (
+        <div>
+          <p className="chat-connector-section-label">Tilkoblet</p>
+          {connected.map(c => (
+            <div key={c.id} className="chat-connector-item">
+              <span style={{ fontSize: 14 }}>{c.icon}</span>
+              <span className="chat-skill-name">{c.name}</span>
+              <Check size={12} style={{ color: '#4ADE80', marginLeft: 'auto' }} />
+            </div>
+          ))}
+        </div>
+      )}
+      {disconnected.length > 0 && (
+        <div>
+          <p className="chat-connector-section-label">Ikke tilkoblet</p>
+          {disconnected.map(c => (
+            <div key={c.id} className="chat-connector-item" style={{ opacity: 0.5 }}>
+              <span style={{ fontSize: 14 }}>{c.icon}</span>
+              <span className="chat-skill-name">{c.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <button
+        className="chat-connector-manage-btn"
+        onClick={() => { onOpenSettings(); onClose() }}
+      >
+        Koble til apper →
+      </button>
+    </div>
+  )
 }
 
 export function ChatInput({
@@ -61,12 +185,21 @@ export function ChatInput({
 }: ChatInputProps) {
   const [value, setValue] = useState('')
   const [showPlusMenu, setShowPlusMenu] = useState(false)
+  const [showSkillsDropdown, setShowSkillsDropdown] = useState(false)
+  const [showConnectorsPopup, setShowConnectorsPopup] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const plusMenuRef = useRef<HTMLDivElement>(null)
+  const skillsRef = useRef<HTMLDivElement>(null)
+  const connectorsRef = useRef<HTMLDivElement>(null)
   const t = getTranslations(language)
 
-  // Default agent settings
+  const { settings, updateSettings, setSettingsOpen } = useApp()
+  const skills: Skill[] = settings.skills ?? []
+  const connectorStatuses = settings.connectorStatuses ?? {}
+  const connectedCount = Object.values(connectorStatuses).filter(s => s === 'connected').length
+  const enabledSkillsCount = skills.filter(s => s.enabled).length
+
   const effectiveAgentSettings: AgentSettings = agentSettings ?? {
     agentType: 'code',
     agentMode: agentMode,
@@ -76,16 +209,35 @@ export function ChatInput({
     autoSave: false,
   }
 
-  // Lukk plus-meny ved klikk utenfor
+  // Close menus on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (plusMenuRef.current && !plusMenuRef.current.contains(e.target as Node)) {
         setShowPlusMenu(false)
       }
+      if (skillsRef.current && !skillsRef.current.contains(e.target as Node)) {
+        setShowSkillsDropdown(false)
+      }
+      if (connectorsRef.current && !connectorsRef.current.contains(e.target as Node)) {
+        setShowConnectorsPopup(false)
+      }
     }
-    if (showPlusMenu) document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [showPlusMenu])
+  }, [])
+
+  // Listen for prefill-chat event (from "Build with Sine")
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      if (detail?.prompt) {
+        setValue(detail.prompt)
+        setTimeout(() => textareaRef.current?.focus(), 100)
+      }
+    }
+    window.addEventListener('sine:prefill-chat', handler)
+    return () => window.removeEventListener('sine:prefill-chat', handler)
+  }, [])
 
   const adjustHeight = useCallback(() => {
     const ta = textareaRef.current
@@ -118,6 +270,11 @@ export function ChatInput({
     setValue(prev => prev ? `${prev} [${fileNames}]` : `[${fileNames}]`)
     setShowPlusMenu(false)
     textareaRef.current?.focus()
+  }
+
+  const handleSkillToggle = (id: string) => {
+    const updated = skills.map(s => s.id === id ? { ...s, enabled: !s.enabled } : s)
+    updateSettings({ skills: updated })
   }
 
   const canSend = value.trim().length > 0 && !disabled
@@ -226,10 +383,16 @@ export function ChatInput({
                 <div className="plus-menu">
                   <button
                     className="plus-menu-item"
-                    onClick={() => setShowPlusMenu(false)}
+                    onClick={() => {
+                      setShowPlusMenu(false)
+                      setShowSkillsDropdown(v => !v)
+                    }}
                   >
-                    <Settings2 size={14} className="plus-menu-icon" />
+                    <Zap size={14} className="plus-menu-icon" />
                     <span>Bruk Skills</span>
+                    {enabledSkillsCount > 0 && (
+                      <span className="plus-menu-badge">{enabledSkillsCount}</span>
+                    )}
                     <ChevronRight size={12} style={{ marginLeft: 'auto', color: '#4A4A4A' }} />
                   </button>
                   <button
@@ -251,6 +414,72 @@ export function ChatInput({
               onChange={handleFileUpload}
               accept="*/*"
             />
+
+            {/* Skills-knapp */}
+            <div style={{ position: 'relative' }} ref={skillsRef}>
+              <button
+                className={`toolbar-btn${enabledSkillsCount > 0 ? ' skill-active' : ''}`}
+                title="Skills"
+                onClick={() => {
+                  setShowSkillsDropdown(v => !v)
+                  setShowConnectorsPopup(false)
+                }}
+                style={{
+                  background: showSkillsDropdown ? '#2E2E2E' : undefined,
+                  color: showSkillsDropdown ? '#C0C0C0' : enabledSkillsCount > 0 ? '#1A93FE' : undefined,
+                  position: 'relative',
+                }}
+              >
+                <Zap size={18} />
+                {enabledSkillsCount > 0 && (
+                  <span className="toolbar-badge">{enabledSkillsCount}</span>
+                )}
+              </button>
+              {showSkillsDropdown && (
+                <SkillsDropdown
+                  skills={skills}
+                  onToggle={handleSkillToggle}
+                  onClose={() => setShowSkillsDropdown(false)}
+                  onOpenSettings={() => {
+                    setSettingsOpen(true)
+                    // Navigate to skills tab via event
+                    window.dispatchEvent(new CustomEvent('sine:open-settings-tab', { detail: { tab: 'skills' } }))
+                  }}
+                />
+              )}
+            </div>
+
+            {/* Connectors-knapp */}
+            <div style={{ position: 'relative' }} ref={connectorsRef}>
+              <button
+                className={`toolbar-btn${connectedCount > 0 ? ' connector-active' : ''}`}
+                title="Tilkoblinger"
+                onClick={() => {
+                  setShowConnectorsPopup(v => !v)
+                  setShowSkillsDropdown(false)
+                }}
+                style={{
+                  background: showConnectorsPopup ? '#2E2E2E' : undefined,
+                  color: showConnectorsPopup ? '#C0C0C0' : connectedCount > 0 ? '#4ADE80' : undefined,
+                  position: 'relative',
+                }}
+              >
+                <Plug size={18} />
+                {connectedCount > 0 && (
+                  <span className="toolbar-badge connector-badge">{connectedCount}</span>
+                )}
+              </button>
+              {showConnectorsPopup && (
+                <ConnectorsPopup
+                  statuses={connectorStatuses}
+                  onClose={() => setShowConnectorsPopup(false)}
+                  onOpenSettings={() => {
+                    setSettingsOpen(true)
+                    window.dispatchEvent(new CustomEvent('sine:open-settings-tab', { detail: { tab: 'connectors' } }))
+                  }}
+                />
+              )}
+            </div>
 
             <button className="toolbar-btn" title="GitHub">
               <GitBranch size={18} />
@@ -281,7 +510,7 @@ export function ChatInput({
               </button>
             )}
 
-            {/* Agent-innstillinger (erstatter Safe-knappen) */}
+            {/* Agent-innstillinger */}
             {useAgentMode && onAgentSettingsChange && (
               <AgentSettingsPopover
                 settings={effectiveAgentSettings}
@@ -349,44 +578,33 @@ function ModelSelector({ model, onModelChange }: { model: SineModel; onModelChan
           <div style={{
             position: 'absolute',
             bottom: '100%',
-            marginBottom: 8,
             right: 0,
+            marginBottom: 6,
+            background: '#1E1E1E',
+            border: '1px solid #2A2A2A',
             borderRadius: 10,
-            overflow: 'hidden',
+            padding: 4,
             zIndex: 50,
-            minWidth: 200,
-            background: '#1A1A1A',
-            border: '1px solid #2E2E2E',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
-            padding: '4px 0',
+            minWidth: 180,
           }}>
-            {(['sine-1', 'sine-pro'] as SineModel[]).map(m => (
+            {(Object.entries(labels) as [SineModel, typeof labels[SineModel]][]).map(([id, info]) => (
               <button
-                key={m}
-                onClick={() => { onModelChange(m); setOpen(false) }}
+                key={id}
+                onClick={() => { onModelChange(id); setOpen(false) }}
                 style={{
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '9px 14px',
-                  background: model === m ? '#242424' : 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  fontFamily: 'inherit',
-                  transition: 'background 0.1s',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  width: '100%', padding: '8px 12px', borderRadius: 7,
+                  background: model === id ? '#252525' : 'transparent',
+                  border: 'none', cursor: 'pointer', color: '#E5E5E5',
+                  fontFamily: 'inherit', textAlign: 'left',
                 }}
-                onMouseEnter={e => { if (model !== m) e.currentTarget.style.background = '#1E1E1E' }}
-                onMouseLeave={e => { if (model !== m) e.currentTarget.style.background = 'transparent' }}
               >
-                <span style={{ color: model === m ? '#1A93FE' : '#5A5A5A' }}>{labels[m].icon}</span>
+                <span style={{ color: '#5A5A5A' }}>{info.icon}</span>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: model === m ? '#E5E5E5' : '#C0C0C0' }}>
-                    {labels[m].name}
-                  </div>
-                  <div style={{ fontSize: 11, color: '#5A5A5A', marginTop: 1 }}>{labels[m].desc}</div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{info.name}</div>
+                  <div style={{ fontSize: 11, color: '#5A5A5A' }}>{info.desc}</div>
                 </div>
+                {model === id && <Check size={12} style={{ marginLeft: 'auto', color: '#1A93FE' }} />}
               </button>
             ))}
           </div>

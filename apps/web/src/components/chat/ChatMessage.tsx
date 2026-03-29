@@ -5,16 +5,19 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { Copy, Check, RefreshCw, ThumbsUp, ThumbsDown } from 'lucide-react'
 import type { Message } from '@/types'
+import { SaveSkillBox } from './SaveSkillBox'
 
 interface ChatMessageProps {
   message: Message
   onRegenerate?: () => void
   isLast?: boolean
+  conversationHasSkillCreator?: boolean
 }
 
-export function ChatMessage({ message, onRegenerate, isLast }: ChatMessageProps) {
+export function ChatMessage({ message, onRegenerate, isLast, conversationHasSkillCreator }: ChatMessageProps) {
   const [copied, setCopied] = useState(false)
   const [liked, setLiked] = useState<boolean | null>(null)
+  const [showSaveSkill, setShowSaveSkill] = useState(true)
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(message.content)
@@ -131,6 +134,16 @@ export function ChatMessage({ message, onRegenerate, isLast }: ChatMessageProps)
             </ReactMarkdown>
           )}
         </div>
+
+        {/* SaveSkillBox – vises etter siste assistent-melding i /skill-creator samtaler */}
+        {isLast && conversationHasSkillCreator && !message.isStreaming && message.role === 'assistant' && showSaveSkill && (
+          <SaveSkillBox
+            suggestedName=""
+            suggestedDescription=""
+            suggestedSystemPrompt={message.content.slice(0, 500)}
+            onDismiss={() => setShowSaveSkill(false)}
+          />
+        )}
 
         {/* Action buttons */}
         {!message.isStreaming && message.content && (

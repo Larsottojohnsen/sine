@@ -474,12 +474,18 @@ export function ChatView() {
                 )
               }
 
+              // Sjekk om noen bruker-melding i samtalen inneholder /skill-creator
+              const hasSkillCreator = activeConversation.messages.some(
+                m => m.role === 'user' && m.content.toLowerCase().includes('/skill-creator')
+              )
+
               return (
                 <ChatMessage
                   key={msg.id}
                   message={msg}
                   isLast={isLast}
                   onRegenerate={isLast ? handleRegenerate : undefined}
+                  conversationHasSkillCreator={hasSkillCreator}
                 />
               )
             })}

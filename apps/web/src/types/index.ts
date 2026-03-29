@@ -89,6 +89,55 @@ export interface AppSettings {
   // Agent-standardinnstillinger
   defaultAgentType?: 'code' | 'writing'
   defaultSafeMode?: boolean
+  // Skills
+  skills?: Skill[]
+  // Connectors
+  customApiConnectors?: CustomApiConnector[]
+  customMcpConnectors?: CustomMcpConnector[]
+  connectorStatuses?: Record<string, ConnectorStatus>
+}
+
+// ─── Skills ──────────────────────────────────────────────────
+export interface Skill {
+  id: string
+  name: string
+  description: string
+  enabled: boolean
+  source: 'official' | 'github' | 'upload' | 'custom'
+  githubUrl?: string
+  systemPrompt?: string
+  icon?: string
+  createdAt: Date
+}
+
+// ─── Connectors ───────────────────────────────────────────────
+export type ConnectorStatus = 'connected' | 'disconnected' | 'pending'
+
+export interface AppConnector {
+  id: string
+  name: string
+  description: string
+  icon: string
+  status: ConnectorStatus
+  type: 'oauth' | 'api_key'
+  scopes?: string[]
+  connectedAt?: Date
+}
+
+export interface CustomApiConnector {
+  id: string
+  name: string
+  icon?: string
+  note?: string
+  secrets: { name: string; value: string }[]
+  createdAt: Date
+}
+
+export interface CustomMcpConnector {
+  id: string
+  name: string
+  config: string // JSON string
+  createdAt: Date
 }
 
 export interface NavItem {

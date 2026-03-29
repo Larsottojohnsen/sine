@@ -73,6 +73,16 @@ export function useChat() {
         if (stored) userMemory = JSON.parse(stored)
       } catch { /* ignore */ }
 
+      // Bygg aktive skills for system prompt injeksjon
+      const activeSkills = (settings.skills ?? [])
+        .filter(s => s.enabled)
+        .map(s => ({ name: s.name, description: s.description, system_prompt: s.systemPrompt }))
+
+      // Bygg tilkoblede apper
+      const connectedApps = Object.entries(settings.connectorStatuses ?? {})
+        .filter(([, status]) => status === 'connected')
+        .map(([id]) => id)
+
       const response = await fetch(`${API_BASE}/api/chat/stream`, {
         method: 'POST',
         headers: {
@@ -84,6 +94,8 @@ export function useChat() {
           language: 'no',
           user_memory: userMemory,
           conversation_id: convId,
+          active_skills: activeSkills,
+          connected_apps: connectedApps,
         }),
         signal: abortRef.current.signal,
       })

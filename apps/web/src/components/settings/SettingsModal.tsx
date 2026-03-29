@@ -6,6 +6,8 @@ import {
 } from 'lucide-react'
 import { useApp } from '@/store/AppContext'
 import { getTranslations } from '@/i18n'
+import { SkillsContent } from './SkillsContent'
+import { ConnectorsContent } from './ConnectorsContent'
 
 type SettingsTab =
   | 'account' | 'settings' | 'usage' | 'billing'
@@ -103,8 +105,18 @@ export function SettingsModal() {
           {activeTab === 'personalization' && (
             <PersonalizationContent />
           )}
+          {activeTab === 'skills' && (
+            <SkillsContent onNavigateToChat={(prompt) => {
+              setSettingsOpen(false)
+              // Dispatch custom event to pre-fill chat
+              window.dispatchEvent(new CustomEvent('sine:prefill-chat', { detail: { prompt } }))
+            }} />
+          )}
+          {activeTab === 'connectors' && (
+            <ConnectorsContent />
+          )}
           {(activeTab === 'scheduled' || activeTab === 'mail' || activeTab === 'data' ||
-            activeTab === 'skills' || activeTab === 'connectors' || activeTab === 'integrations') && (
+            activeTab === 'integrations') && (
             <PlaceholderContent
               title={tabs.find(t => t.id === activeTab)?.label ?? ''}
               description="Denne funksjonen er under utvikling og kommer snart."

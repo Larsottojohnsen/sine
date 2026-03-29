@@ -33,16 +33,42 @@ class ChatMessage(BaseModel):
     content: str
 
 
+class SkillData(BaseModel):
+    name: str
+    description: str
+    system_prompt: str | None = None
+
+
 class ChatRequest(BaseModel):
     messages: list[ChatMessage]
     model: str = "sine-1"
     language: str = "no"
     user_memory: list[dict] = []
     conversation_id: str | None = None
+    active_skills: list[SkillData] = []
+    connected_apps: list[str] = []
 
 
-def _build_system(language: str, user_memory: list[dict]) -> str:
+def _build_system(language: str, user_memory: list[dict], active_skills: list = [], connected_apps: list = []) -> str:
     base = SYSTEM_PROMPT_NO if language == "no" else SYSTEM_PROMPT_EN
+
+    # Inject active skill system prompts
+    if active_skills:
+        skill_sections = []
+        for skill in active_skills:
+            if skill.system_prompt:
+                skill_sections.append(f"### Skill: {skill.name}\n{skill.system_prompt}")
+            else:
+                skill_sections.append(f"### Skill: {skill.name}\n{skill.description}")
+        if skill_sections:
+            base += "\n\n## Aktive Skills\nDu har følgende skills aktivert som påvirker hvordan du svarer:\n\n"
+            base += "\n\n".join(skill_sections)
+
+    # Inject connected apps context
+    if connected_apps:
+        apps_str = ", ".join(connected_apps)
+        base += f"\n\n## Tilkoblede apper\nBrukeren har koblet til følgende apper: {apps_str}. Du kan referere til disse når det er relevant."
+
     if user_memory:
         mem_lines = "\n".join(f"- {m.get('key', '')}: {m.get('value', '')}" for m in user_memory)
         base += f"\n\n## Brukerminne\nHusk dette om brukeren:\n{mem_lines}"
@@ -51,7 +77,7 @@ def _build_system(language: str, user_memory: list[dict]) -> str:
 
 async def _stream_chat(request: ChatRequest) -> AsyncGenerator[str, None]:
     model = MODEL_MAP.get(request.model, "claude-3-5-haiku-20241022")
-    system = _build_system(request.language, request.user_memory)
+    system = _build_system(request.language, request.user_memory, request.active_skills, request.connected_apps)
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
 
     try:
