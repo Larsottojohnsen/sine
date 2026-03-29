@@ -107,6 +107,7 @@ export interface Skill {
   githubUrl?: string
   systemPrompt?: string
   icon?: string
+  updatedAt?: string
   createdAt: Date
 }
 

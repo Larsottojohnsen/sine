@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import {
-  Zap, Plus, ChevronDown, X, Search, Upload, GitBranch,
-  MessageSquare, Check, MoreHorizontal, Sparkles, Shield,
-  ToggleLeft, ToggleRight, ArrowLeft, Loader2
+  Plus, ChevronDown, X, Search, Upload, GitBranch,
+  MessageSquare, Check, MoreHorizontal, Shield,
+  Loader2, SlidersHorizontal, Sparkles
 } from 'lucide-react'
 import type { Skill } from '@/types'
 import { useApp } from '@/store/AppContext'
@@ -12,9 +12,10 @@ import { v4 as uuidv4 } from 'uuid'
 const OFFICIAL_SKILLS: Omit<Skill, 'id' | 'enabled' | 'createdAt'>[] = [
   {
     name: 'norsk-skriveassistent',
-    description: 'Hjelper med å skrive profesjonelle norske tekster, e-poster, rapporter og dokumenter med korrekt norsk grammatikk, stil og tone. Bruk når du trenger hjelp med norsk skriving.',
+    description: 'Hjelper med å skrive profesjonelle norske tekster, e-poster, rapporter og dokumenter med korrekt norsk grammatikk, stil og tone.',
     source: 'official',
     icon: '✍️',
+    updatedAt: 'Mar 13, 2026',
     systemPrompt: 'Du er en ekspert norsk skriveassistent. Hjelp brukeren med å skrive klare, profesjonelle og korrekte norske tekster. Gi konkrete forslag til forbedringer av grammatikk, stil og struktur. Bruk alltid korrekt bokmål med mindre brukeren spesifiserer nynorsk.',
   },
   {
@@ -22,32 +23,49 @@ const OFFICIAL_SKILLS: Omit<Skill, 'id' | 'enabled' | 'createdAt'>[] = [
     description: 'Lager Excel-filer (.xlsx) med formler, diagrammer og dataanalyse fra beskrivelser eller CSV-data. Bruk når brukeren ber om regneark, tabeller eller dataanalyse.',
     source: 'official',
     icon: '📊',
+    updatedAt: 'Feb 20, 2026',
     systemPrompt: 'Du er en ekspert på Excel og regneark. Når brukeren ber om data i tabellform, lag alltid strukturerte Excel-filer med riktige formler, formatering og eventuelt diagrammer. Forklar hva du har laget og hvordan formlene fungerer.',
   },
   {
     name: 'web-researcher',
-    description: 'Søker på nettet, sammenstiller informasjon fra flere kilder og lager strukturerte rapporter med kildehenvisninger. Bruk for research-oppgaver og informasjonsinnhenting.',
+    description: 'Søker på nettet, sammenstiller informasjon fra flere kilder og lager strukturerte rapporter med kildehenvisninger. Bruk for research-oppgaver.',
     source: 'official',
     icon: '🔍',
+    updatedAt: 'Jan 23, 2026',
     systemPrompt: 'Du er en grundig web-researcher. Søk alltid etter informasjon fra flere troverdige kilder. Sammenstill funnene i en strukturert rapport med tydelige kildehenvisninger. Vær kritisk til kildene og påpek usikkerhet der det finnes.',
   },
   {
     name: 'kode-reviewer',
-    description: 'Gjennomgår kode, finner bugs, foreslår forbedringer og forklarer koden på norsk. Bruk når brukeren deler kode som skal analyseres, forbedres eller forklares.',
+    description: 'Gjennomgår kode, finner bugs, foreslår forbedringer og forklarer koden på norsk. Bruk når brukeren deler kode som skal analyseres eller forbedres.',
     source: 'official',
     icon: '🔧',
+    updatedAt: 'Jan 23, 2026',
     systemPrompt: 'Du er en erfaren kode-reviewer. Analyser koden grundig: finn potensielle bugs, sikkerhetssvakheter og ytelsesproblemer. Foreslå konkrete forbedringer med kodeeksempler. Forklar alltid hvorfor en endring er bedre. Bruk norsk i forklaringene.',
   },
   {
     name: 'presentasjon-builder',
-    description: 'Lager profesjonelle presentasjoner og slides fra et tema, et dokument eller en beskrivelse. Bruk når brukeren ber om PowerPoint, slides eller en presentasjon.',
+    description: 'Lager profesjonelle presentasjoner og slides fra et tema, et dokument eller en beskrivelse. Bruk når brukeren ber om PowerPoint eller slides.',
     source: 'official',
     icon: '🎯',
-    systemPrompt: 'Du er en ekspert på å lage presentasjoner. Strukturer innholdet logisk med en klar innledning, hoveddel og avslutning. Lag konsise bullet points, foreslå visuelle elementer og sørg for at presentasjonen forteller en klar historie. Tilpass stilen til målgruppen.',
+    updatedAt: 'Mar 1, 2026',
+    systemPrompt: 'Du er en ekspert på å lage presentasjoner. Strukturer innholdet logisk med en klar innledning, hoveddel og avslutning. Lag konsise bullet points, foreslå visuelle elementer og sørg for at presentasjonen forteller en klar historie.',
   },
 ]
 
-// ─── Skill-kort ───────────────────────────────────────────────
+// ─── iOS-style Toggle ─────────────────────────────────────────
+function Toggle({ enabled, onChange }: { enabled: boolean; onChange: () => void }) {
+  return (
+    <button
+      className={`skill-ios-toggle${enabled ? ' on' : ''}`}
+      onClick={e => { e.stopPropagation(); onChange() }}
+      aria-label={enabled ? 'Deaktiver' : 'Aktiver'}
+    >
+      <span className="skill-ios-thumb" />
+    </button>
+  )
+}
+
+// ─── Skill-kort (2-kolonne grid) ──────────────────────────────
 function SkillCard({
   skill,
   onToggle,
@@ -58,56 +76,66 @@ function SkillCard({
   onDelete: (id: string) => void
 }) {
   const [showMenu, setShowMenu] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showMenu) return
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showMenu])
 
   return (
-    <div className="skill-card">
-      <div className="skill-card-left">
-        <div className="skill-card-icon">
-          {skill.icon ? (
-            <span style={{ fontSize: 18 }}>{skill.icon}</span>
-          ) : (
-            <Zap size={16} style={{ color: '#5A5A5A' }} />
+    <div className="skill-card-v2">
+      {/* Top row: name + toggle */}
+      <div className="skill-card-v2-top">
+        <span className="skill-card-v2-name">
+          {skill.name}
+          {skill.source === 'official' && skill.icon === '🔍' && (
+            <Sparkles size={12} className="skill-sparkle" />
+          )}
+          {skill.source === 'official' && skill.icon === '📊' && (
+            <Sparkles size={12} className="skill-sparkle" />
+          )}
+        </span>
+        <Toggle enabled={skill.enabled} onChange={() => onToggle(skill.id)} />
+      </div>
+
+      {/* Description */}
+      <p className="skill-card-v2-desc">{skill.description}</p>
+
+      {/* Bottom row: official badge + date + menu */}
+      <div className="skill-card-v2-footer">
+        <div className="skill-card-v2-meta">
+          <Shield size={11} style={{ color: '#5A5A5A', flexShrink: 0 }} />
+          <span className="skill-card-v2-source">
+            {skill.source === 'official' ? 'Official' : skill.source === 'github' ? 'GitHub' : 'Custom'}
+          </span>
+          {skill.updatedAt && (
+            <>
+              <span className="skill-card-v2-dot">•</span>
+              <span className="skill-card-v2-date">Updated on {skill.updatedAt}</span>
+            </>
           )}
         </div>
-        <div className="skill-card-info">
-          <div className="skill-card-name">
-            {skill.name}
-            {skill.source === 'official' && (
-              <span className="skill-badge-official">
-                <Sparkles size={9} />
-                Offisiell
-              </span>
-            )}
-          </div>
-          <div className="skill-card-desc">{skill.description}</div>
-        </div>
-      </div>
-      <div className="skill-card-right">
-        <button
-          className={`skill-toggle${skill.enabled ? ' active' : ''}`}
-          onClick={() => onToggle(skill.id)}
-          title={skill.enabled ? 'Deaktiver' : 'Aktiver'}
-        >
-          {skill.enabled
-            ? <ToggleRight size={22} style={{ color: '#1A93FE' }} />
-            : <ToggleLeft size={22} style={{ color: '#3A3A3A' }} />
-          }
-        </button>
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative' }} ref={menuRef}>
           <button
-            className="skill-menu-btn"
-            onClick={() => setShowMenu(v => !v)}
+            className="skill-card-v2-menu-btn"
+            onClick={e => { e.stopPropagation(); setShowMenu(v => !v) }}
           >
             <MoreHorizontal size={14} />
           </button>
           {showMenu && (
-            <div className="skill-dropdown-menu">
+            <div className="skill-card-v2-dropdown">
               <button
-                className="skill-dropdown-item"
+                className="skill-card-v2-dropdown-item danger"
                 onClick={() => { onDelete(skill.id); setShowMenu(false) }}
-                style={{ color: '#ef4444' }}
               >
-                <X size={13} />
+                <X size={12} />
                 Fjern skill
               </button>
             </div>
@@ -131,7 +159,6 @@ function ImportGithubModal({ onClose, onImport }: {
     if (!url.trim()) return
     setLoading(true)
     setError('')
-    // Simuler import (i produksjon: kall backend)
     await new Promise(r => setTimeout(r, 1200))
     if (!url.includes('github.com')) {
       setError('Ugyldig GitHub-URL. Bruk format: https://github.com/bruker/repo')
@@ -146,20 +173,17 @@ function ImportGithubModal({ onClose, onImport }: {
     <div className="skill-modal-overlay" onClick={onClose}>
       <div className="skill-modal" onClick={e => e.stopPropagation()}>
         <button className="skill-modal-close" onClick={onClose}><X size={15} /></button>
-
         <div className="skill-modal-icons">
-          <div className="skill-modal-icon-box" style={{ background: '#1a1a1a' }}>
+          <div className="skill-modal-icon-box">
             <GitBranch size={20} style={{ color: '#E5E5E5' }} />
           </div>
           <div className="skill-modal-icon-arrow">⇄</div>
-          <div className="skill-modal-icon-box" style={{ background: '#1a1a1a' }}>
+          <div className="skill-modal-icon-box">
             <span style={{ fontSize: 18 }}>⚡</span>
           </div>
         </div>
-
         <h3 className="skill-modal-title">Importer fra GitHub</h3>
         <p className="skill-modal-sub">Importer en skill direkte fra et offentlig GitHub-repositorium.</p>
-
         <div className="skill-modal-field">
           <label className="skill-modal-label">URL</label>
           <input
@@ -172,13 +196,8 @@ function ImportGithubModal({ onClose, onImport }: {
           />
           {error && <p style={{ fontSize: 12, color: '#ef4444', marginTop: 6 }}>{error}</p>}
         </div>
-
-        <button
-          className="skill-modal-btn"
-          onClick={handleImport}
-          disabled={!url.trim() || loading}
-        >
-          {loading ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : null}
+        <button className="skill-modal-btn" onClick={handleImport} disabled={!url.trim() || loading}>
+          {loading && <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />}
           {loading ? 'Importerer...' : 'Importer'}
         </button>
       </div>
@@ -195,137 +214,36 @@ function UploadSkillModal({ onClose, onUpload }: {
   const [file, setFile] = useState<File | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setDragging(false)
-    const f = e.dataTransfer.files[0]
-    if (f) setFile(f)
-  }
-
-  const handleUpload = () => {
-    if (!file) return
-    onUpload(file.name.replace(/\.(zip|skill)$/, ''))
-  }
-
   return (
     <div className="skill-modal-overlay" onClick={onClose}>
       <div className="skill-modal" onClick={e => e.stopPropagation()}>
         <button className="skill-modal-close" onClick={onClose}><X size={15} /></button>
         <h3 className="skill-modal-title">Last opp skill</h3>
-
         <div
           className={`skill-upload-zone${dragging ? ' dragging' : ''}`}
           onDragOver={e => { e.preventDefault(); setDragging(true) }}
           onDragLeave={() => setDragging(false)}
-          onDrop={handleDrop}
+          onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) setFile(f) }}
           onClick={() => inputRef.current?.click()}
         >
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".zip,.skill"
-            style={{ display: 'none' }}
-            onChange={e => e.target.files?.[0] && setFile(e.target.files[0])}
-          />
-          <div className="skill-upload-icon">
-            <Upload size={24} style={{ color: '#5A5A5A' }} />
-          </div>
-          {file ? (
-            <p style={{ fontSize: 13, color: '#E5E5E5', marginTop: 8 }}>{file.name}</p>
-          ) : (
-            <p style={{ fontSize: 13, color: '#5A5A5A', marginTop: 8 }}>Dra og slipp eller klikk for å laste opp</p>
-          )}
+          <input ref={inputRef} type="file" accept=".zip,.skill" style={{ display: 'none' }}
+            onChange={e => e.target.files?.[0] && setFile(e.target.files[0])} />
+          <div className="skill-upload-icon"><Upload size={24} style={{ color: '#5A5A5A' }} /></div>
+          {file
+            ? <p style={{ fontSize: 13, color: '#E5E5E5', marginTop: 8 }}>{file.name}</p>
+            : <p style={{ fontSize: 13, color: '#5A5A5A', marginTop: 8 }}>Dra og slipp eller klikk for å laste opp</p>
+          }
         </div>
-
         <div className="skill-upload-requirements">
           <p style={{ fontSize: 12, fontWeight: 600, color: '#9A9A9A', marginBottom: 8 }}>Filkrav</p>
           <ul style={{ fontSize: 12, color: '#5A5A5A', paddingLeft: 16, lineHeight: 1.8, margin: 0 }}>
-            <li>.zip eller .skill fil som inneholder en SKILL.md fil på rotnivå</li>
-            <li>SKILL.md inneholder navn og beskrivelse formatert i YAML</li>
+            <li>.zip eller .skill fil med en SKILL.md fil på rotnivå</li>
+            <li>SKILL.md inneholder navn og beskrivelse i YAML-format</li>
           </ul>
         </div>
-
-        <button
-          className="skill-modal-btn"
-          onClick={handleUpload}
-          disabled={!file}
-        >
+        <button className="skill-modal-btn" onClick={() => file && onUpload(file.name.replace(/\.(zip|skill)$/, ''))} disabled={!file}>
           Last opp
         </button>
-      </div>
-    </div>
-  )
-}
-
-// ─── Offisiell bibliotek panel ────────────────────────────────
-function OfficialLibraryPanel({
-  onClose,
-  installedSkillNames,
-  onAdd,
-}: {
-  onClose: () => void
-  installedSkillNames: string[]
-  onAdd: (skill: Omit<Skill, 'id' | 'enabled' | 'createdAt'>) => void
-}) {
-  const [search, setSearch] = useState('')
-
-  const filtered = OFFICIAL_SKILLS.filter(s =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.description.toLowerCase().includes(search.toLowerCase())
-  )
-
-  return (
-    <div className="skill-library-panel">
-      <div className="skill-library-header">
-        <button className="skill-library-back" onClick={onClose}>
-          <ArrowLeft size={14} />
-        </button>
-        <h3 className="skill-library-title">Offisielt bibliotek</h3>
-        <button className="skill-modal-close" onClick={onClose}><X size={15} /></button>
-      </div>
-
-      <div className="skill-library-search">
-        <Search size={13} style={{ color: '#5A5A5A', flexShrink: 0 }} />
-        <input
-          className="skill-library-search-input"
-          placeholder="Søk etter skill"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-      </div>
-
-      <div className="skill-library-list">
-        {filtered.map(skill => {
-          const isAdded = installedSkillNames.includes(skill.name)
-          return (
-            <div key={skill.name} className="skill-library-item">
-              <div className="skill-library-item-info">
-                <div className="skill-library-item-name">
-                  {skill.name}
-                  {skill.source === 'official' && (
-                    <Sparkles size={10} style={{ color: '#1A93FE', marginLeft: 4 }} />
-                  )}
-                </div>
-                <div className="skill-library-item-desc">{skill.description}</div>
-              </div>
-              <div>
-                {isAdded ? (
-                  <span className="skill-library-added">
-                    <Check size={11} />
-                    Lagt til
-                  </span>
-                ) : (
-                  <button
-                    className="skill-library-add-btn"
-                    onClick={() => onAdd(skill)}
-                  >
-                    + Legg til
-                  </button>
-                )}
-              </div>
-            </div>
-          )
-        })}
       </div>
     </div>
   )
@@ -342,9 +260,10 @@ function BuildWithSineModal({ onClose, onNavigateToChat }: {
         <button className="skill-modal-close" onClick={onClose}><X size={15} /></button>
         <div style={{ textAlign: 'center', padding: '8px 0 16px' }}>
           <div style={{
-            width: 56, height: 56, borderRadius: 16, background: 'linear-gradient(135deg, #1A93FE22, #8B5CF622)',
-            border: '1px solid #2A2A2A', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 16px',
+            width: 56, height: 56, borderRadius: 16,
+            background: 'linear-gradient(135deg, #1A93FE22, #8B5CF622)',
+            border: '1px solid #2A2A2A', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', margin: '0 auto 16px',
           }}>
             <MessageSquare size={24} style={{ color: '#1A93FE' }} />
           </div>
@@ -354,13 +273,10 @@ function BuildWithSineModal({ onClose, onNavigateToChat }: {
             Du blir tatt til chat-vinduet der du kan beskrive hva skillen skal gjøre.
           </p>
         </div>
-        <button
-          className="skill-modal-btn"
-          onClick={() => {
-            onNavigateToChat('Hjelp meg å lage en skill sammen ved hjelp av /skill-creator. Still meg først spørsmål om hva skillen skal gjøre.')
-            onClose()
-          }}
-        >
+        <button className="skill-modal-btn" onClick={() => {
+          onNavigateToChat('Hjelp meg å lage en skill sammen ved hjelp av /skill-creator. Still meg først spørsmål om hva skillen skal gjøre.')
+          onClose()
+        }}>
           Start samtale med Sine
         </button>
       </div>
@@ -373,24 +289,33 @@ export function SkillsContent({ onNavigateToChat }: { onNavigateToChat?: (prompt
   const { settings, updateSettings } = useApp()
   const skills: Skill[] = settings.skills ?? []
 
+  const [search, setSearch] = useState('')
+  const [filterOfficial, setFilterOfficial] = useState(false)
   const [showAddMenu, setShowAddMenu] = useState(false)
   const [showGithubModal, setShowGithubModal] = useState(false)
   const [showUploadModal, setShowUploadModal] = useState(false)
-  const [showLibrary, setShowLibrary] = useState(false)
   const [showBuildModal, setShowBuildModal] = useState(false)
   const addMenuRef = useRef<HTMLDivElement>(null)
 
-  const saveSkills = (updated: Skill[]) => {
-    updateSettings({ skills: updated })
-  }
+  // Close add menu on outside click
+  useEffect(() => {
+    if (!showAddMenu) return
+    const handler = (e: MouseEvent) => {
+      if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) {
+        setShowAddMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showAddMenu])
 
-  const handleToggle = (id: string) => {
+  const saveSkills = (updated: Skill[]) => updateSettings({ skills: updated })
+
+  const handleToggle = (id: string) =>
     saveSkills(skills.map(s => s.id === id ? { ...s, enabled: !s.enabled } : s))
-  }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: string) =>
     saveSkills(skills.filter(s => s.id !== id))
-  }
 
   const handleAddSkill = (skillData: Omit<Skill, 'id' | 'enabled' | 'createdAt'>) => {
     const newSkill: Skill = {
@@ -403,103 +328,104 @@ export function SkillsContent({ onNavigateToChat }: { onNavigateToChat?: (prompt
   }
 
   const handleGithubImport = (url: string) => {
-    // Ekstraher repo-navn fra URL
     const parts = url.split('/')
     const repoName = parts[parts.length - 1] || 'github-skill'
-    handleAddSkill({
-      name: repoName,
-      description: `Importert fra GitHub: ${url}`,
-      source: 'github',
-      githubUrl: url,
-      icon: '⚙️',
-    })
+    handleAddSkill({ name: repoName, description: `Importert fra GitHub: ${url}`, source: 'github', githubUrl: url, icon: '⚙️' })
     setShowGithubModal(false)
   }
 
   const handleUpload = (name: string) => {
-    handleAddSkill({
-      name,
-      description: 'Lastet opp skill',
-      source: 'upload',
-      icon: '📦',
-    })
+    handleAddSkill({ name, description: 'Lastet opp skill', source: 'upload', icon: '📦' })
     setShowUploadModal(false)
   }
 
-  const enabledCount = skills.filter(s => s.enabled).length
+  // Filter skills
+  const filteredSkills = skills.filter(s => {
+    const matchSearch = !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.description.toLowerCase().includes(search.toLowerCase())
+    const matchOfficial = !filterOfficial || s.source === 'official'
+    return matchSearch && matchOfficial
+  })
 
   return (
-    <div style={{ position: 'relative' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div>
-          <h2 className="settings-title" style={{ marginBottom: 4 }}>Ferdigheter</h2>
-          <p style={{ fontSize: 13, color: '#5A5A5A' }}>
-            {enabledCount > 0
-              ? `${enabledCount} aktiv${enabledCount === 1 ? '' : 'e'} skill${enabledCount === 1 ? '' : 's'} påvirker svarene dine`
-              : 'Skills utvider hva Sine kan gjøre for deg og teamet ditt'}
-          </p>
+    <div className="skills-v2-container">
+      {/* ── Toolbar ── */}
+      <div className="skills-v2-toolbar">
+        <button className="skills-v2-filter-btn" title="Filtrer">
+          <SlidersHorizontal size={14} />
+        </button>
+        <div className="skills-v2-search-wrap">
+          <Search size={13} style={{ color: '#5A5A5A', flexShrink: 0 }} />
+          <input
+            className="skills-v2-search"
+            placeholder="Søk etter skill"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
         </div>
+        <button
+          className={`skills-v2-official-btn${filterOfficial ? ' active' : ''}`}
+          onClick={() => setFilterOfficial(v => !v)}
+        >
+          <Shield size={13} />
+          Official
+        </button>
+      </div>
 
-        {/* + Add dropdown */}
-        <div style={{ position: 'relative' }} ref={addMenuRef}>
+      {/* ── Add custom Skills banner ── */}
+      <div className="skills-v2-add-banner">
+        <div className="skills-v2-add-banner-icons">
+          <div className="skills-v2-banner-icon-stack">
+            <div className="skills-v2-banner-icon top">⚙️</div>
+            <div className="skills-v2-banner-icon bot">⚙️</div>
+          </div>
+        </div>
+        <div className="skills-v2-add-banner-text">
+          <span className="skills-v2-add-banner-title">Legg til egendefinerte skills</span>
+          <span className="skills-v2-add-banner-sub">Legg til en skill for å låse opp nye muligheter for deg eller teamet ditt.</span>
+        </div>
+        <div style={{ position: 'relative', flexShrink: 0 }} ref={addMenuRef}>
           <button
-            className="skill-add-btn"
+            className="skills-v2-add-btn"
             onClick={() => setShowAddMenu(v => !v)}
           >
-            <Plus size={14} />
+            <Plus size={13} />
             Legg til
-            <ChevronDown size={12} />
+            <ChevronDown size={11} />
           </button>
-
           {showAddMenu && (
-            <div className="skill-add-menu">
-              <button
-                className="skill-add-menu-item"
-                onClick={() => { setShowBuildModal(true); setShowAddMenu(false) }}
-              >
-                <div className="skill-add-menu-icon">
-                  <MessageSquare size={14} style={{ color: '#9A9A9A' }} />
-                </div>
+            <div className="skills-v2-add-menu">
+              <button className="skills-v2-add-menu-item" onClick={() => { setShowBuildModal(true); setShowAddMenu(false) }}>
+                <div className="skills-v2-add-menu-icon"><MessageSquare size={14} /></div>
                 <div>
-                  <div className="skill-add-menu-label">Bygg med Sine</div>
-                  <div className="skill-add-menu-sub">Bygg gode skills gjennom samtale</div>
+                  <div className="skills-v2-add-menu-label">Bygg med Sine</div>
+                  <div className="skills-v2-add-menu-sub">Bygg gode skills gjennom samtale</div>
                 </div>
               </button>
-              <button
-                className="skill-add-menu-item"
-                onClick={() => { setShowUploadModal(true); setShowAddMenu(false) }}
-              >
-                <div className="skill-add-menu-icon">
-                  <Upload size={14} style={{ color: '#9A9A9A' }} />
-                </div>
+              <button className="skills-v2-add-menu-item" onClick={() => { setShowUploadModal(true); setShowAddMenu(false) }}>
+                <div className="skills-v2-add-menu-icon"><Upload size={14} /></div>
                 <div>
-                  <div className="skill-add-menu-label">Last opp en skill</div>
-                  <div className="skill-add-menu-sub">Last opp .zip, .skill eller mappe</div>
+                  <div className="skills-v2-add-menu-label">Last opp en skill</div>
+                  <div className="skills-v2-add-menu-sub">Last opp .zip, .skill eller mappe</div>
                 </div>
               </button>
-              <button
-                className="skill-add-menu-item"
-                onClick={() => { setShowLibrary(true); setShowAddMenu(false) }}
-              >
-                <div className="skill-add-menu-icon">
-                  <Shield size={14} style={{ color: '#9A9A9A' }} />
-                </div>
+              <button className="skills-v2-add-menu-item" onClick={() => {
+                // Add all official skills not yet installed
+                OFFICIAL_SKILLS.forEach(s => {
+                  if (!skills.find(sk => sk.name === s.name)) handleAddSkill(s)
+                })
+                setShowAddMenu(false)
+              }}>
+                <div className="skills-v2-add-menu-icon"><Shield size={14} /></div>
                 <div>
-                  <div className="skill-add-menu-label">Legg til fra offisielt bibliotek</div>
-                  <div className="skill-add-menu-sub">Forhåndsbygde skills vedlikeholdt av Sine</div>
+                  <div className="skills-v2-add-menu-label">Legg til fra offisielt bibliotek</div>
+                  <div className="skills-v2-add-menu-sub">Forhåndsbygde skills vedlikeholdt av Sine</div>
                 </div>
               </button>
-              <button
-                className="skill-add-menu-item"
-                onClick={() => { setShowGithubModal(true); setShowAddMenu(false) }}
-              >
-                <div className="skill-add-menu-icon">
-                  <GitBranch size={14} style={{ color: '#9A9A9A' }} />
-                </div>
+              <button className="skills-v2-add-menu-item" onClick={() => { setShowGithubModal(true); setShowAddMenu(false) }}>
+                <div className="skills-v2-add-menu-icon"><GitBranch size={14} /></div>
                 <div>
-                  <div className="skill-add-menu-label">Importer fra GitHub</div>
-                  <div className="skill-add-menu-sub">Lim inn en repositoriums-lenke for å komme i gang</div>
+                  <div className="skills-v2-add-menu-label">Importer fra GitHub</div>
+                  <div className="skills-v2-add-menu-sub">Lim inn en repositoriums-lenke for å komme i gang</div>
                 </div>
               </button>
             </div>
@@ -507,27 +433,29 @@ export function SkillsContent({ onNavigateToChat }: { onNavigateToChat?: (prompt
         </div>
       </div>
 
-      {/* Skills list */}
-      {skills.length === 0 ? (
-        <div className="skill-empty">
-          <div className="skill-empty-icon">
-            <Zap size={28} style={{ color: '#3A3A3A' }} />
-          </div>
-          <p className="skill-empty-title">Ingen skills ennå</p>
-          <p className="skill-empty-sub">
+      {/* ── Skills grid ── */}
+      {filteredSkills.length === 0 ? (
+        <div className="skills-v2-empty">
+          <div className="skills-v2-empty-icon">⚙️</div>
+          <p className="skills-v2-empty-title">Ingen skills ennå</p>
+          <p className="skills-v2-empty-sub">
             Legg til skills for å utvide hva Sine kan gjøre.
-            Start med det offisielle biblioteket.
           </p>
           <button
-            className="skill-empty-cta"
-            onClick={() => setShowLibrary(true)}
+            className="skills-v2-empty-cta"
+            onClick={() => {
+              OFFICIAL_SKILLS.forEach(s => {
+                if (!skills.find(sk => sk.name === s.name)) handleAddSkill(s)
+              })
+            }}
           >
-            Utforsk offisielt bibliotek
+            <Check size={13} />
+            Legg til alle offisielle skills
           </button>
         </div>
       ) : (
-        <div className="skill-list">
-          {skills.map(skill => (
+        <div className="skills-v2-grid">
+          {filteredSkills.map(skill => (
             <SkillCard
               key={skill.id}
               skill={skill}
@@ -538,31 +466,15 @@ export function SkillsContent({ onNavigateToChat }: { onNavigateToChat?: (prompt
         </div>
       )}
 
-      {/* Modals */}
+      {/* ── Modals ── */}
       {showGithubModal && (
-        <ImportGithubModal
-          onClose={() => setShowGithubModal(false)}
-          onImport={handleGithubImport}
-        />
+        <ImportGithubModal onClose={() => setShowGithubModal(false)} onImport={handleGithubImport} />
       )}
       {showUploadModal && (
-        <UploadSkillModal
-          onClose={() => setShowUploadModal(false)}
-          onUpload={handleUpload}
-        />
-      )}
-      {showLibrary && (
-        <OfficialLibraryPanel
-          onClose={() => setShowLibrary(false)}
-          installedSkillNames={skills.map(s => s.name)}
-          onAdd={(skill) => { handleAddSkill(skill) }}
-        />
+        <UploadSkillModal onClose={() => setShowUploadModal(false)} onUpload={handleUpload} />
       )}
       {showBuildModal && (
-        <BuildWithSineModal
-          onClose={() => setShowBuildModal(false)}
-          onNavigateToChat={onNavigateToChat ?? (() => {})}
-        />
+        <BuildWithSineModal onClose={() => setShowBuildModal(false)} onNavigateToChat={onNavigateToChat ?? (() => {})} />
       )}
     </div>
   )
