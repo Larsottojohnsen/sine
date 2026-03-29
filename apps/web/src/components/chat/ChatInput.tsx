@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from 'react'
 import {
-  GitBranch, Monitor, Mic, ArrowUp, Square,
+  Monitor, Mic, ArrowUp, Square,
   ChevronDown, Globe, Cpu, Bot, BotOff,
   Plus, Paperclip, ChevronRight,
-  Plug, Zap, Check, ToggleRight, ToggleLeft
+  Plug, Zap, Check, ToggleRight, ToggleLeft, Settings
 } from 'lucide-react'
 import type { SineModel, Skill } from '@/types'
 import { getTranslations } from '@/i18n'
@@ -93,16 +93,47 @@ function SkillsDropdown({
   )
 }
 
-// ─── Connectors popup i chat ──────────────────────────────────
+// ─── Connectors popup i chat — matches reference design ──────
 const APP_CONNECTORS_MINI = [
-  { id: 'github', name: 'GitHub', icon: '🐙' },
-  { id: 'gmail', name: 'Gmail', icon: '📧' },
-  { id: 'meta-ads', name: 'Meta Ads', icon: '📘' },
-  { id: 'instagram', name: 'Instagram', icon: '📸' },
-  { id: 'google-calendar', name: 'Google Kalender', icon: '📅' },
-  { id: 'outlook-mail', name: 'Outlook Mail', icon: '📨' },
-  { id: 'outlook-calendar', name: 'Outlook Kalender', icon: '🗓️' },
+  { id: 'github',    name: 'GitHub',                      icon: '/connector-icons/github.svg',    hasSub: true },
+  { id: 'gmail',     name: 'Gmail',                       icon: '/connector-icons/gmail.svg',     hasSub: false },
+  { id: 'meta-ads',  name: 'Meta Ads Manager',            icon: '/connector-icons/meta.svg',      hasSub: false, beta: true },
+  { id: 'instagram', name: 'Instagram',                   icon: '/connector-icons/instagram.svg', hasSub: false, beta: true },
+  { id: 'instagram-creator', name: 'Instagram Creator Marketplace', icon: '/connector-icons/instagram.svg', hasSub: false, beta: true },
+  { id: 'outlook-mail', name: 'Outlook Mail',             icon: '/connector-icons/outlook.svg',   hasSub: false },
+  { id: 'google-calendar', name: 'Google Calendar',       icon: '/connector-icons/gcal.svg',      hasSub: false },
+  { id: 'outlook-calendar', name: 'Outlook Calendar',     icon: '/connector-icons/outlook.svg',   hasSub: false },
 ]
+
+// Emoji fallbacks for connectors (used if SVG not found)
+const CONNECTOR_EMOJI: Record<string, string> = {
+  github: '🐙',
+  gmail: '✉️',
+  'meta-ads': '📘',
+  instagram: '📸',
+  'instagram-creator': '⭐',
+  'outlook-mail': '📨',
+  'google-calendar': '📅',
+  'outlook-calendar': '🗓️',
+}
+
+function ConnectorIcon({ id, size = 16 }: { id: string; size?: number }) {
+  const [failed, setFailed] = useState(false)
+  const src = `/connector-icons/${id}.svg`
+  if (failed) {
+    return <span style={{ fontSize: size - 2, lineHeight: 1 }}>{CONNECTOR_EMOJI[id] ?? '🔌'}</span>
+  }
+  return (
+    <img
+      src={src}
+      alt={id}
+      width={size}
+      height={size}
+      onError={() => setFailed(true)}
+      style={{ objectFit: 'contain', flexShrink: 0 }}
+    />
+  )
+}
 
 function ConnectorsPopup({
   statuses,
@@ -113,49 +144,81 @@ function ConnectorsPopup({
   onClose: () => void
   onOpenSettings: () => void
 }) {
-  const connected = APP_CONNECTORS_MINI.filter(c => statuses[c.id] === 'connected')
-  const disconnected = APP_CONNECTORS_MINI.filter(c => statuses[c.id] !== 'connected')
-
   return (
-    <div className="chat-connectors-popup">
-      <div className="chat-skills-header">
-        <span>Tilkoblinger</span>
-        <button
-          className="chat-skills-manage"
-          onClick={() => { onOpenSettings(); onClose() }}
-        >
-          Administrer
-        </button>
-      </div>
-      {connected.length > 0 && (
-        <div>
-          <p className="chat-connector-section-label">Tilkoblet</p>
-          {connected.map(c => (
-            <div key={c.id} className="chat-connector-item">
-              <span style={{ fontSize: 14 }}>{c.icon}</span>
-              <span className="chat-skill-name">{c.name}</span>
-              <Check size={12} style={{ color: '#4ADE80', marginLeft: 'auto' }} />
+    <div className="connectors-mini-popup">
+      {APP_CONNECTORS_MINI.map(c => {
+        const isConnected = statuses[c.id] === 'connected'
+        return (
+          <div key={c.id} className="connectors-mini-row">
+            <div className="connectors-mini-icon">
+              <ConnectorIcon id={c.id} size={16} />
             </div>
-          ))}
-        </div>
-      )}
-      {disconnected.length > 0 && (
-        <div>
-          <p className="chat-connector-section-label">Ikke tilkoblet</p>
-          {disconnected.map(c => (
-            <div key={c.id} className="chat-connector-item" style={{ opacity: 0.5 }}>
-              <span style={{ fontSize: 14 }}>{c.icon}</span>
-              <span className="chat-skill-name">{c.name}</span>
-            </div>
-          ))}
-        </div>
-      )}
+            <span className="connectors-mini-name">
+              {c.name}
+              {c.beta && <span className="connectors-mini-beta">Beta</span>}
+            </span>
+            {isConnected ? (
+              <div className="connectors-mini-right">
+                {c.hasSub && (
+                  <button className="connectors-mini-sub">
+                    Repositories <ChevronRight size={11} />
+                  </button>
+                )}
+                {/* Toggle switch */}
+                <label className="connectors-mini-toggle">
+                  <input
+                    type="checkbox"
+                    defaultChecked
+                    onChange={() => {}}
+                    style={{ display: 'none' }}
+                  />
+                  <span className="connectors-mini-toggle-track on" />
+                </label>
+              </div>
+            ) : (
+              <button
+                className="connectors-mini-connect"
+                onClick={() => { onOpenSettings(); onClose() }}
+              >
+                Connect
+              </button>
+            )}
+          </div>
+        )
+      })}
+
+      <div className="connectors-mini-divider" />
+
       <button
-        className="chat-connector-manage-btn"
+        className="connectors-mini-add"
         onClick={() => { onOpenSettings(); onClose() }}
       >
-        Koble til apper →
+        <Plus size={13} />
+        <span>Add connectors</span>
+        <div className="connectors-mini-add-icons">
+          <span style={{ fontSize: 11 }}>☁️</span>
+          <span style={{ fontSize: 11 }}>📋</span>
+          <span className="connectors-mini-add-count">+70</span>
+        </div>
       </button>
+
+      <button
+        className="connectors-mini-manage"
+        onClick={() => { onOpenSettings(); onClose() }}
+      >
+        <Settings size={12} />
+        <span>Manage connectors</span>
+      </button>
+
+      {/* Bottom icons bar */}
+      <div className="connectors-mini-footer">
+        <button className="connectors-mini-footer-btn active">
+          <ConnectorIcon id="github" size={14} />
+        </button>
+        <button className="connectors-mini-footer-btn">
+          <Monitor size={14} />
+        </button>
+      </div>
     </div>
   )
 }
@@ -302,8 +365,8 @@ export function ChatInput({
       {showLiveTask && !compact && (
         <div className="live-task-bar" onClick={onOpenTerminal}>
           <div className="live-task-thumb">
-            <div className="live-task-thumb-inner">
-              {agentState?.logs.slice(-3).map((log, i) => (
+            <div className="live-task-logs">
+              {agentState?.logs?.slice(-3).map((log, i) => (
                 <div key={i} style={{
                   fontSize: 9,
                   color: log.type === 'tool_result' && log.success ? '#4ADE80'
@@ -415,39 +478,38 @@ export function ChatInput({
               accept="*/*"
             />
 
-            {/* Skills-knapp */}
-            <div style={{ position: 'relative' }} ref={skillsRef}>
-              <button
-                className={`toolbar-btn${enabledSkillsCount > 0 ? ' skill-active' : ''}`}
-                title="Skills"
-                onClick={() => {
-                  setShowSkillsDropdown(v => !v)
-                  setShowConnectorsPopup(false)
-                }}
-                style={{
-                  background: showSkillsDropdown ? '#2E2E2E' : undefined,
-                  color: showSkillsDropdown ? '#C0C0C0' : enabledSkillsCount > 0 ? '#1A93FE' : undefined,
-                  position: 'relative',
-                }}
-              >
-                <Zap size={18} />
-                {enabledSkillsCount > 0 && (
-                  <span className="toolbar-badge">{enabledSkillsCount}</span>
-                )}
-              </button>
-              {showSkillsDropdown && (
-                <SkillsDropdown
-                  skills={skills}
-                  onToggle={handleSkillToggle}
-                  onClose={() => setShowSkillsDropdown(false)}
-                  onOpenSettings={() => {
-                    setSettingsOpen(true)
-                    // Navigate to skills tab via event
-                    window.dispatchEvent(new CustomEvent('sine:open-settings-tab', { detail: { tab: 'skills' } }))
+            {/* Skills-knapp — hidden unless skills are active */}
+            {enabledSkillsCount > 0 && (
+              <div style={{ position: 'relative' }} ref={skillsRef}>
+                <button
+                  className="toolbar-btn skill-active"
+                  title="Skills"
+                  onClick={() => {
+                    setShowSkillsDropdown(v => !v)
+                    setShowConnectorsPopup(false)
                   }}
-                />
-              )}
-            </div>
+                  style={{
+                    background: showSkillsDropdown ? '#1A3A5C' : 'transparent',
+                    color: '#1A93FE',
+                    position: 'relative',
+                  }}
+                >
+                  <Zap size={18} />
+                  <span className="toolbar-badge">{enabledSkillsCount}</span>
+                </button>
+                {showSkillsDropdown && (
+                  <SkillsDropdown
+                    skills={skills}
+                    onToggle={handleSkillToggle}
+                    onClose={() => setShowSkillsDropdown(false)}
+                    onOpenSettings={() => {
+                      setSettingsOpen(true)
+                      window.dispatchEvent(new CustomEvent('sine:open-settings-tab', { detail: { tab: 'skills' } }))
+                    }}
+                  />
+                )}
+              </div>
+            )}
 
             {/* Connectors-knapp */}
             <div style={{ position: 'relative' }} ref={connectorsRef}>
@@ -480,10 +542,6 @@ export function ChatInput({
                 />
               )}
             </div>
-
-            <button className="toolbar-btn" title="GitHub">
-              <GitBranch size={18} />
-            </button>
 
             <button
               className="toolbar-btn"

@@ -4757,3 +4757,333 @@ button { font-family: inherit; }
   font-weight: 500;
   flex-shrink: 0;
 }
+
+/* ═══════════════════════════════════════════════════════
+   SKILL RESULT CARD (in chat, after /skill-creator)
+═══════════════════════════════════════════════════════ */
+.skill-result-card-wrapper {
+  margin: 12px 0 4px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #2A2A2A;
+  background: #1C1C1C;
+}
+
+.skill-result-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #1C1C1C;
+  border-radius: 10px;
+}
+
+.skill-result-card.saved {
+  border: 1px solid #2A2A2A;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #1C1C1C;
+  margin: 12px 0 4px;
+}
+
+.skill-result-icon-wrap {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #252525;
+  border: 1px solid #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.skill-result-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.skill-result-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #E5E5E5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.skill-result-label {
+  font-size: 11px;
+  color: #5A5A5A;
+}
+
+.skill-result-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.skill-result-download {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #252525;
+  border: 1px solid #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7A7A7A;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.skill-result-download:hover {
+  color: #E5E5E5;
+  background: #2E2E2E;
+}
+
+.skill-result-add-btn {
+  padding: 6px 14px;
+  border-radius: 7px;
+  background: #E5E5E5;
+  color: #111;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.skill-result-add-btn:hover {
+  background: #fff;
+}
+
+.skill-result-close {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: transparent;
+  border: none;
+  color: #4A4A4A;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+}
+.skill-result-close:hover { color: #9A9A9A; }
+
+.skill-result-expand {
+  padding: 12px 14px 14px;
+  border-top: 1px solid #2A2A2A;
+  background: #1A1A1A;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   CONNECTORS MINI POPUP (reference design)
+═══════════════════════════════════════════════════════ */
+.connectors-mini-popup {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  width: 280px;
+  background: #1E1E1E;
+  border: 1px solid #2A2A2A;
+  border-radius: 12px;
+  padding: 6px 0;
+  z-index: 100;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+.connectors-mini-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  transition: background 0.1s;
+}
+.connectors-mini-row:hover {
+  background: #252525;
+}
+
+.connectors-mini-icon {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.connectors-mini-name {
+  flex: 1;
+  font-size: 13px;
+  color: #D0D0D0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.connectors-mini-beta {
+  font-size: 10px;
+  color: #7A7A7A;
+  background: #2A2A2A;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-weight: 500;
+}
+
+.connectors-mini-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.connectors-mini-sub {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  color: #7A7A7A;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.connectors-mini-sub:hover { color: #C0C0C0; }
+
+/* Toggle switch */
+.connectors-mini-toggle {
+  cursor: pointer;
+}
+.connectors-mini-toggle-track {
+  display: block;
+  width: 32px;
+  height: 18px;
+  border-radius: 9px;
+  background: #3A3A3A;
+  position: relative;
+  transition: background 0.2s;
+}
+.connectors-mini-toggle-track.on {
+  background: #1A93FE;
+}
+.connectors-mini-toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s;
+}
+.connectors-mini-toggle-track.on::after {
+  transform: translateX(14px);
+}
+
+.connectors-mini-connect {
+  font-size: 12px;
+  color: #9A9A9A;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+.connectors-mini-connect:hover { color: #E5E5E5; }
+
+.connectors-mini-divider {
+  height: 1px;
+  background: #2A2A2A;
+  margin: 4px 0;
+}
+
+.connectors-mini-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #D0D0D0;
+  font-size: 13px;
+  text-align: left;
+  transition: background 0.1s;
+}
+.connectors-mini-add:hover { background: #252525; }
+
+.connectors-mini-add-icons {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+}
+
+.connectors-mini-add-count {
+  font-size: 11px;
+  color: #7A7A7A;
+  background: #2A2A2A;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.connectors-mini-manage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9A9A9A;
+  font-size: 13px;
+  text-align: left;
+  transition: background 0.1s;
+}
+.connectors-mini-manage:hover { background: #252525; color: #D0D0D0; }
+
+.connectors-mini-footer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px 4px;
+  border-top: 1px solid #2A2A2A;
+  margin-top: 2px;
+}
+
+.connectors-mini-footer-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #5A5A5A;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.connectors-mini-footer-btn:hover,
+.connectors-mini-footer-btn.active {
+  background: #252525;
+  color: #D0D0D0;
+}
