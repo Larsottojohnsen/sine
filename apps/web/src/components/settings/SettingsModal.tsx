@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   X, User, Settings, BarChart2, CreditCard, HelpCircle,
   Calendar, Mail, Database, Globe, Zap, Plug,
-  ExternalLink, ChevronDown, Cloud, Palette, Monitor
+  ExternalLink, ChevronDown, Cloud, Palette, Monitor,
+  Check, TrendingUp, AlertCircle, LogOut
 } from 'lucide-react'
 import { useApp } from '@/store/AppContext'
 import { getTranslations } from '@/i18n'
 import { SkillsContent } from './SkillsContent'
 import { ConnectorsContent } from './ConnectorsContent'
+import { useAuth } from '@/hooks/useAuth'
+import { useCredits } from '@/hooks/useCredits'
 
 type SettingsTab =
   | 'account' | 'settings' | 'usage' | 'billing'
@@ -15,9 +18,21 @@ type SettingsTab =
   | 'skills' | 'connectors' | 'integrations'
 
 export function SettingsModal() {
-  const { settingsOpen, setSettingsOpen, settings, updateSettings } = useApp()
+  const { settingsOpen, setSettingsOpen, settings, updateSettings, settingsInitialTab, setSettingsInitialTab } = useApp()
   const t = getTranslations(settings.language)
   const [activeTab, setActiveTab] = useState<SettingsTab>('settings')
+  const { user } = useAuth()
+  const { profile } = useCredits(user?.id ?? null)
+  const displayName = user?.name || user?.email?.split('@')[0] || 'Bruker'
+  const initial = (user?.name || user?.email || 'U')[0].toUpperCase()
+  const isPro = profile?.plan === 'pro'
+
+  useEffect(() => {
+    if (settingsOpen && settingsInitialTab) {
+      setActiveTab(settingsInitialTab as SettingsTab)
+      setSettingsInitialTab(undefined)
+    }
+  }, [settingsOpen, settingsInitialTab, setSettingsInitialTab])
 
   if (!settingsOpen) return null
 
@@ -50,16 +65,28 @@ export function SettingsModal() {
         <div className="modal-sidebar">
           {/* User header */}
           <div className="modal-sidebar-user">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
               <div style={{
-                width: 32, height: 32, borderRadius: '50%',
-                background: 'linear-gradient(135deg, #1A93FE, #0066CC)',
+                width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                background: user?.avatarUrl ? 'transparent' : 'linear-gradient(135deg, #1A93FE, #0066CC)',
+                overflow: 'hidden',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 13, fontWeight: 700, color: 'white', flexShrink: 0,
+                fontSize: 13, fontWeight: 700, color: 'white',
               }}>
-                S
+                {user?.avatarUrl
+                  ? <img src={user.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : initial
+                }
               </div>
-              <span className="modal-sidebar-username">Bruker</span>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span className="modal-sidebar-username" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
+                  {isPro && (
+                    <span style={{ fontSize: 9, fontWeight: 700, color: '#1A93FE', background: 'rgba(26,147,254,0.12)', borderRadius: 4, padding: '1px 5px', flexShrink: 0 }}>PRO</span>
+                  )}
+                </div>
+                <div style={{ fontSize: 10, color: '#5A5A5A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</div>
+              </div>
             </div>
             <ChevronDown size={13} style={{ color: '#4A4A4A', flexShrink: 0 }} />
           </div>
@@ -299,15 +326,46 @@ function ToggleSetting({
 }
 
 function AccountContent() {
+  const { user, signOut } = useAuth()
+  const { profile } = useCredits(user?.id ?? null)
+  const displayName = user?.name || user?.email?.split('@')[0] || 'Bruker'
+  const initial = (user?.name || user?.email || 'U')[0].toUpperCase()
+  const joinDate = profile?.created_at
+    ? new Date(profile.created_at).toLocaleDateString('no-NO', { year: 'numeric', month: 'long', day: 'numeric' })
+    : 'Ukjent'
+
   return (
     <div>
       <h2 className="settings-title">Konto</h2>
+
+      {/* Profile card */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px',
+        background: '#222222', borderRadius: 12, border: '1px solid #2A2A2A', marginBottom: 20,
+      }}>
+        <div style={{
+          width: 52, height: 52, borderRadius: '50%', flexShrink: 0,
+          background: user?.avatarUrl ? 'transparent' : 'linear-gradient(135deg, #1A93FE, #0055CC)',
+          overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {user?.avatarUrl
+            ? <img src={user.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : <span style={{ fontSize: 20, fontWeight: 700, color: 'white' }}>{initial}</span>
+          }
+        </div>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: '#E5E5E5' }}>{displayName}</div>
+          <div style={{ fontSize: 12, color: '#5A5A5A', marginTop: 2 }}>{user?.email}</div>
+          <div style={{ fontSize: 11, color: '#3A3A3A', marginTop: 4 }}>Medlem siden {joinDate}</div>
+        </div>
+      </div>
+
       <div className="settings-section">
         <p className="settings-section-label">Profilinformasjon</p>
         <div className="settings-row">
           <div>
             <div className="settings-row-label">E-postadresse</div>
-            <div className="settings-row-desc">bruker@eksempel.no</div>
+            <div className="settings-row-desc">{user?.email || 'Ikke tilgjengelig'}</div>
           </div>
           <button style={{
             padding: '6px 14px', borderRadius: 8, border: '1px solid #2E2E2E',
@@ -320,7 +378,7 @@ function AccountContent() {
         <div className="settings-row">
           <div>
             <div className="settings-row-label">Passord</div>
-            <div className="settings-row-desc">Sist endret for 30 dager siden</div>
+            <div className="settings-row-desc">Endre kontopassordet ditt</div>
           </div>
           <button style={{
             padding: '6px 14px', borderRadius: 8, border: '1px solid #2E2E2E',
@@ -331,7 +389,33 @@ function AccountContent() {
           </button>
         </div>
       </div>
+
       <div style={{ height: 1, background: '#222222', margin: '8px 0 24px' }} />
+
+      <div className="settings-section">
+        <p className="settings-section-label">Økt</p>
+        <div className="settings-row">
+          <div>
+            <div className="settings-row-label">Logg ut</div>
+            <div className="settings-row-desc">Logg ut av Sine på denne enheten</div>
+          </div>
+          <button
+            onClick={() => signOut()}
+            style={{
+              padding: '6px 14px', borderRadius: 8, border: '1px solid #2E2E2E',
+              background: 'transparent', color: '#9A9A9A', fontSize: 13,
+              cursor: 'pointer', fontFamily: 'inherit',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            <LogOut size={13} />
+            Logg ut
+          </button>
+        </div>
+      </div>
+
+      <div style={{ height: 1, background: '#222222', margin: '8px 0 24px' }} />
+
       <div className="settings-section">
         <p className="settings-section-label">Faresone</p>
         <div className="settings-row">
@@ -353,69 +437,265 @@ function AccountContent() {
 }
 
 function UsageContent() {
+  const { user } = useAuth()
+  const { profile, transactions } = useCredits(user?.id ?? null)
+  const totalCredits = profile?.plan === 'pro' ? profile.credits : 1000
+  const usedCredits = profile ? (profile.plan === 'free' ? 1000 - profile.credits : 0) : 0
+  const usedPct = totalCredits > 0 ? Math.min(100, (usedCredits / totalCredits) * 100) : 0
+
   return (
     <div>
       <h2 className="settings-title">Bruk</h2>
+
+      {/* Credit balance card */}
+      <div style={{
+        padding: 20, borderRadius: 12, background: '#222222',
+        border: '1px solid #2A2A2A', marginBottom: 16,
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+          <div>
+            <div style={{ fontSize: 13, color: '#9A9A9A', marginBottom: 4 }}>Tilgjengelige kreditter</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: '#E5E5E5' }}>
+              {(profile?.credits ?? 0).toLocaleString('no-NO')}
+            </div>
+          </div>
+          <div style={{
+            padding: '4px 10px', borderRadius: 20,
+            background: profile?.plan === 'pro' ? 'rgba(26,147,254,0.15)' : '#1A1A1A',
+            border: `1px solid ${profile?.plan === 'pro' ? '#1A93FE' : '#2E2E2E'}`,
+            fontSize: 11, color: profile?.plan === 'pro' ? '#1A93FE' : '#9A9A9A',
+            fontWeight: 600,
+          }}>
+            {profile?.plan === 'pro' ? 'Pro' : 'Gratis'}
+          </div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+          <span style={{ fontSize: 12, color: '#5A5A5A' }}>Brukt denne måneden</span>
+          <span style={{ fontSize: 12, color: '#9A9A9A' }}>{usedCredits.toLocaleString('no-NO')} / {totalCredits.toLocaleString('no-NO')}</span>
+        </div>
+        <div style={{ height: 6, borderRadius: 3, background: '#2E2E2E', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${usedPct}%`, background: usedPct > 80 ? '#ef4444' : '#1A93FE', borderRadius: 3, transition: 'width 0.5s' }} />
+        </div>
+        {usedPct > 80 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+            <AlertCircle size={12} style={{ color: '#ef4444' }} />
+            <span style={{ fontSize: 11, color: '#ef4444' }}>Du nærmer deg grensen for denne måneden</span>
+          </div>
+        )}
+      </div>
+
+      {/* Transaction history */}
       <div className="settings-section">
-        <p className="settings-section-label">Denne måneden</p>
-        <div style={{
-          padding: 16, borderRadius: 10, background: '#222222',
-          border: '1px solid #2A2A2A', marginBottom: 12,
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-            <span style={{ fontSize: 13, color: '#9A9A9A' }}>Kreditter brukt</span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#E5E5E5' }}>0 / 1 000</span>
+        <p className="settings-section-label">Transaksjonshistorikk</p>
+        {transactions.length === 0 ? (
+          <div style={{ padding: '24px 0', textAlign: 'center', color: '#5A5A5A', fontSize: 13 }}>
+            Ingen transaksjoner ennå
           </div>
-          <div style={{ height: 6, borderRadius: 3, background: '#2E2E2E', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: '0%', background: '#1A93FE', borderRadius: 3 }} />
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {transactions.map(tx => (
+              <div key={tx.id} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '10px 14px', borderRadius: 8, background: '#222222',
+                border: '1px solid #2A2A2A',
+              }}>
+                <div>
+                  <div style={{ fontSize: 13, color: '#E5E5E5' }}>{tx.description || tx.type}</div>
+                  <div style={{ fontSize: 11, color: '#5A5A5A', marginTop: 2 }}>
+                    {new Date(tx.created_at).toLocaleDateString('no-NO', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </div>
+                </div>
+                <div style={{
+                  fontSize: 14, fontWeight: 600,
+                  color: tx.amount > 0 ? '#22c55e' : '#ef4444',
+                }}>
+                  {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString('no-NO')}
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-        <div style={{
-          padding: 16, borderRadius: 10, background: '#222222',
-          border: '1px solid #2A2A2A',
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 13, color: '#9A9A9A' }}>Totale samtaler</span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#E5E5E5' }}>0</span>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   )
 }
 
 function BillingContent() {
+  const { user } = useAuth()
+  const { profile } = useCredits(user?.id ?? null)
+  const isPro = profile?.plan === 'pro'
+  const [selectedPack, setSelectedPack] = useState('2000')
+  const [purchasing, setPurchasing] = useState(false)
+
+  const creditPacks = [
+    { id: '2000',  label: '2 000 kreditter',  price: 'kr 49',  priceId: 'price_2000_nok' },
+    { id: '5000',  label: '5 000 kreditter',  price: 'kr 99',  priceId: 'price_5000_nok' },
+    { id: '10000', label: '10 000 kreditter', price: 'kr 179', priceId: 'price_10000_nok' },
+  ]
+
+  const handleBuyCredits = async () => {
+    setPurchasing(true)
+    try {
+      const pack = creditPacks.find(p => p.id === selectedPack)
+      if (!pack) return
+      // In production: call backend to create Stripe checkout session
+      alert(`Stripe-betaling for ${pack.label} (${pack.price}) — kobles til Stripe i produksjon`)
+    } finally {
+      setPurchasing(false)
+    }
+  }
+
+  const handleUpgradePro = async () => {
+    alert('Stripe Pro-abonnement — kobles til Stripe i produksjon')
+  }
+
   return (
     <div>
       <h2 className="settings-title">Fakturering</h2>
+
+      {/* Current plan */}
       <div className="settings-section">
         <p className="settings-section-label">Nåværende plan</p>
-        <div style={{
-          padding: 20, borderRadius: 12, background: '#222222',
-          border: '1px solid #2A2A2A', marginBottom: 16,
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 600, color: '#E5E5E5' }}>Gratis</div>
-              <div style={{ fontSize: 13, color: '#5A5A5A', marginTop: 2 }}>1 000 kreditter / måned</div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+          {/* Free plan */}
+          <div style={{
+            padding: 16, borderRadius: 12, background: '#1A1A1A',
+            border: `1px solid ${!isPro ? '#1A93FE' : '#2A2A2A'}`,
+            position: 'relative', cursor: 'pointer',
+          }}>
+            {!isPro && (
+              <div style={{
+                position: 'absolute', top: 10, right: 10,
+                width: 18, height: 18, borderRadius: '50%',
+                background: '#1A93FE', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Check size={11} color="white" />
+              </div>
+            )}
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#E5E5E5', marginBottom: 4 }}>Gratis</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#E5E5E5', marginBottom: 2 }}>kr 0<span style={{ fontSize: 13, fontWeight: 400, color: '#5A5A5A' }}>/mnd</span></div>
+            <div style={{ fontSize: 12, color: '#5A5A5A', marginBottom: 10 }}>1 000 kreditter/mnd</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              {['Tilgang til Sine Chat', 'Grunnleggende skills', '1 000 kreditter/mnd'].map(f => (
+                <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Check size={11} style={{ color: '#5A5A5A', flexShrink: 0 }} />
+                  <span style={{ fontSize: 11, color: '#9A9A9A' }}>{f}</span>
+                </div>
+              ))}
             </div>
-            <span style={{
-              padding: '4px 10px', borderRadius: 20, background: '#1A1A1A',
-              border: '1px solid #2E2E2E', fontSize: 11, color: '#9A9A9A',
-            }}>Aktiv</span>
+          </div>
+
+          {/* Pro plan */}
+          <div style={{
+            padding: 16, borderRadius: 12,
+            background: isPro ? 'linear-gradient(135deg, rgba(26,147,254,0.12), rgba(0,85,204,0.08))' : '#1A1A1A',
+            border: `1px solid ${isPro ? '#1A93FE' : '#2A2A2A'}`,
+            position: 'relative', cursor: 'pointer',
+          }}>
+            {isPro && (
+              <div style={{
+                position: 'absolute', top: 10, right: 10,
+                width: 18, height: 18, borderRadius: '50%',
+                background: '#1A93FE', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Check size={11} color="white" />
+              </div>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#E5E5E5' }}>Pro</span>
+              <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: '#1A93FE', color: 'white', fontWeight: 600 }}>POPULÆR</span>
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#E5E5E5', marginBottom: 2 }}>kr 149<span style={{ fontSize: 13, fontWeight: 400, color: '#5A5A5A' }}>/mnd</span></div>
+            <div style={{ fontSize: 12, color: '#5A5A5A', marginBottom: 10 }}>1 000 kreditter inkl. + påfyll</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              {['Alt i Gratis', 'Prioritert support', 'Avanserte skills', 'Alle connectors', '1 000 kreditter/mnd inkl.'].map(f => (
+                <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Check size={11} style={{ color: '#1A93FE', flexShrink: 0 }} />
+                  <span style={{ fontSize: 11, color: '#9A9A9A' }}>{f}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-        <button style={{
-          width: '100%', padding: '10px 16px', borderRadius: 10,
-          background: '#1A93FE', border: 'none', color: 'white',
-          fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-          transition: 'background 0.1s',
-        }}
-          onMouseEnter={e => (e.currentTarget.style.background = '#0077E6')}
-          onMouseLeave={e => (e.currentTarget.style.background = '#1A93FE')}
+
+        {!isPro && (
+          <button
+            onClick={handleUpgradePro}
+            style={{
+              width: '100%', padding: '11px 16px', borderRadius: 10,
+              background: '#1A93FE', border: 'none', color: 'white',
+              fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+              transition: 'background 0.15s', marginBottom: 20,
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#0077E6')}
+            onMouseLeave={e => (e.currentTarget.style.background = '#1A93FE')}
+          >
+            Oppgrader til Pro – kr 149/mnd
+          </button>
+        )}
+      </div>
+
+      {/* Buy credits */}
+      <div style={{ height: 1, background: '#222222', margin: '4px 0 20px' }} />
+      <div className="settings-section">
+        <p className="settings-section-label">Kjøp kreditter</p>
+        <div style={{ fontSize: 12, color: '#5A5A5A', marginBottom: 12 }}>
+          Kreditter utløper ikke og kan brukes når som helst.
+        </div>
+
+        {/* Credit pack selector */}
+        <div style={{ position: 'relative', marginBottom: 12 }}>
+          <select
+            value={selectedPack}
+            onChange={e => setSelectedPack(e.target.value)}
+            style={{
+              width: '100%', padding: '10px 36px 10px 14px',
+              background: '#222222', border: '1px solid #2E2E2E',
+              borderRadius: 10, color: '#E5E5E5', fontSize: 14,
+              appearance: 'none', cursor: 'pointer', fontFamily: 'inherit',
+              outline: 'none',
+            }}
+          >
+            {creditPacks.map(p => (
+              <option key={p.id} value={p.id}>{p.label} — {p.price}</option>
+            ))}
+          </select>
+          <ChevronDown size={14} style={{
+            position: 'absolute', right: 12, top: '50%',
+            transform: 'translateY(-50%)', color: '#5A5A5A', pointerEvents: 'none',
+          }} />
+        </div>
+
+        <button
+          onClick={handleBuyCredits}
+          disabled={purchasing}
+          style={{
+            width: '100%', padding: '10px 16px', borderRadius: 10,
+            background: purchasing ? '#1A1A1A' : '#222222',
+            border: '1px solid #2E2E2E', color: '#E5E5E5',
+            fontSize: 14, fontWeight: 500, cursor: purchasing ? 'not-allowed' : 'pointer',
+            fontFamily: 'inherit', transition: 'all 0.15s',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}
+          onMouseEnter={e => { if (!purchasing) e.currentTarget.style.borderColor = '#1A93FE' }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = '#2E2E2E' }}
         >
-          Oppgrader til Pro
+          <TrendingUp size={15} />
+          {purchasing ? 'Behandler...' : `Kjøp ${creditPacks.find(p => p.id === selectedPack)?.label} — ${creditPacks.find(p => p.id === selectedPack)?.price}`}
         </button>
+      </div>
+
+      {/* Current balance */}
+      <div style={{ height: 1, background: '#222222', margin: '4px 0 20px' }} />
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '12px 16px', borderRadius: 10, background: '#222222', border: '1px solid #2A2A2A',
+      }}>
+        <span style={{ fontSize: 13, color: '#9A9A9A' }}>Nåværende saldo</span>
+        <span style={{ fontSize: 16, fontWeight: 700, color: '#E5E5E5' }}>
+          {(profile?.credits ?? 0).toLocaleString('no-NO')} kreditter
+        </span>
       </div>
     </div>
   )

@@ -6,7 +6,7 @@ import { UserAvatarDropdown } from './UserAvatarDropdown'
 import { CollaboratePanel } from './CollaboratePanel'
 
 export function Header() {
-  const { activeConversation, settings, setSettingsOpen } = useApp()
+  const { activeConversation, settings, openSettingsTab } = useApp()
   const t = getTranslations(settings.language)
   const [collaborateOpen, setCollaborateOpen] = useState(false)
   const collaborateRef = useRef<HTMLButtonElement>(null)
@@ -38,7 +38,7 @@ export function Header() {
 
         <button
           className="header-credits-btn"
-          onClick={() => setSettingsOpen(true)}
+          onClick={() => openSettingsTab('billing')}
           title="Kreditter"
         >
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
@@ -72,7 +72,7 @@ export function Header() {
 
         {/* Bruker-avatar med dropdown */}
         <div style={{ marginLeft: 4 }}>
-          <UserAvatarDropdown onOpenSettings={() => setSettingsOpen(true)} />
+          <UserAvatarDropdown onOpenSettings={(tab) => openSettingsTab(tab)} />
         </div>
       </div>
 

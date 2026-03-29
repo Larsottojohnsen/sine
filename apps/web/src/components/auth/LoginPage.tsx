@@ -91,6 +91,32 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
     }
   }
 
+  const handleCreateAccount = async () => {
+    if (!password.trim() || password.length < 8) {
+      setError('Passordet må være minst 8 tegn')
+      return
+    }
+    setLoading(true)
+    setError('')
+    try {
+      const supabase = getSupabase()
+      const { error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          emailRedirectTo: window.location.origin + (import.meta.env.BASE_URL || '/'),
+          data: { display_name: email.split('@')[0] },
+        }
+      })
+      if (error) setError(error.message)
+      else setStep('email-sent')
+    } catch {
+      setError('Registrering feilet. Prøv igjen.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="login-page">
       {/* PixelBlast bakgrunn – fyller hele siden */}
@@ -173,6 +199,16 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
                 </button>
               </div>
 
+              <div style={{ textAlign: 'center', marginTop: 12 }}>
+                <span style={{ fontSize: 12, color: '#5A5A5A' }}>Ny bruker? </span>
+                <button
+                  onClick={() => { setStep('create-account') }}
+                  style={{ fontSize: 12, color: '#1A93FE', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}
+                >
+                  Opprett konto
+                </button>
+              </div>
+
               <button className="login-dev-btn" onClick={devLogin} title="Kun for utvikling – hopper over innlogging">
                 ⚡ Fortsett uten innlogging (dev)
               </button>
@@ -224,8 +260,12 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
                   </div>
                 </div>
                 {error && <p className="login-error">{error}</p>}
-                <button className="login-continue-btn" onClick={handlePasswordLogin} disabled={loading || !password.trim()}>
-                  {loading ? <span className="login-spinner" /> : step === 'create-account' ? 'Opprett konto' : 'Fortsett'}
+                <button
+                  className="login-continue-btn"
+                  onClick={step === 'create-account' ? handleCreateAccount : handlePasswordLogin}
+                  disabled={loading || !password.trim()}
+                >
+                  {loading ? <span className="login-spinner" /> : step === 'create-account' ? 'Opprett konto' : 'Logg inn'}
                 </button>
                 <button className="login-back-btn" onClick={() => setStep('main')}>Tilbake</button>
               </div>

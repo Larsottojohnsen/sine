@@ -42,6 +42,12 @@ export function useAppStore() {
   )
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsInitialTab, setSettingsInitialTab] = useState<string | undefined>(undefined)
+
+  const openSettingsTab = useCallback((tab?: string) => {
+    setSettingsInitialTab(tab)
+    setSettingsOpen(true)
+  }, [])
 
   const activeConversation = conversations.find(c => c.id === activeConversationId) ?? null
 
@@ -159,6 +165,9 @@ export function useAppStore() {
     setSidebarOpen,
     settingsOpen,
     setSettingsOpen,
+    settingsInitialTab,
+    setSettingsInitialTab,
+    openSettingsTab,
   }
 }
 
