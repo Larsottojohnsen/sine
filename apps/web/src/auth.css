@@ -88,10 +88,10 @@
 /* ---- Card ---- */
 .login-card {
   width: 100%;
-  background: rgba(18, 18, 20, 0.75);
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(14, 14, 16, 0.92);
+  backdrop-filter: blur(32px) saturate(1.6);
+  -webkit-backdrop-filter: blur(32px) saturate(1.6);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: 20px;
   padding: 36px 32px 32px;
   display: flex;
@@ -99,9 +99,9 @@
   align-items: center;
   gap: 0;
   box-shadow:
-    0 0 0 1px rgba(0,255,159,0.04),
-    0 20px 60px rgba(0,0,0,0.6),
-    0 0 80px rgba(0,212,255,0.04);
+    0 0 0 1px rgba(0,255,159,0.06),
+    0 24px 64px rgba(0,0,0,0.8),
+    0 0 100px rgba(0,212,255,0.06);
 }
 
 /* ---- Icon ---- */

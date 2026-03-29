@@ -6,10 +6,10 @@ const LOGO_DARK  = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRN
 const LOGO_LIGHT = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Sine-hvit-svg_cc029234.svg";
 
 // App mockup images (generated)
-const IMG_CHAT       = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/sine-chat-mockup-XRAzHw7WWN2rsKZJ9SuDwA.webp";
-const IMG_CALENDAR   = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/sine-calendar-mockup-Fgi4TaLJuZWTdDutqSr9PW.webp";
-const IMG_CONNECTORS = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/sine-connectors-mockup-o34cJpsDvuaJEKhveWHp68.webp";
-const IMG_LIBRARY    = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/sine-library-mockup-UBMJQGRPoQ5Dd7nL3jrkJg.webp";
+const IMG_CHAT       = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663215301248/YkpnzUkzSXVYzpto.png";
+const IMG_CALENDAR   = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663215301248/FbEbaGEHEIfEGOUz.png";
+const IMG_CONNECTORS = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663215301248/zjkzGKkIINFXvItR.png";
+const IMG_LIBRARY    = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663215301248/bblKtloaKQTmDEJe.png";
 
 // ── FADE-IN ANIMATION ────────────────────────────────────────────────────────
 function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
@@ -116,7 +116,7 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ onEnterApp }: LandingPageProps) {
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [lang, setLang] = useState<"no" | "en">("no");
@@ -209,7 +209,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
             </a>
           </div>
 
-          {/* Chat box */}
+          {/* Chat box — styled like the app's chat-input-box */}
           <div className="s-chat-box">
             <div className="s-chat-pills">
               {PILLS.map((pill) => (
@@ -222,24 +222,36 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 </button>
               ))}
             </div>
-            <form className="s-chat-form" onSubmit={handleSubmit}>
-              <input
-                className="s-chat-input"
+            <div className="s-chat-input-box">
+              <textarea
+                className="s-chat-textarea"
                 placeholder={t("Hva vil du at Sine skal gjøre?", "What would you like Sine to do?")}
                 value={chatInput}
                 onChange={e => setChatInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e as unknown as React.FormEvent); } }}
+                rows={1}
               />
-              <button type="button" className="s-chat-icon-btn" title={t("Last opp fil", "Upload file")}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
-              </button>
-              <button
-                type="submit"
-                className="s-chat-send"
-                data-active={chatInput.length > 0 ? "true" : "false"}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-              </button>
-            </form>
+              <div className="s-chat-toolbar">
+                <div className="s-chat-toolbar-left">
+                  <button type="button" className="s-chat-tool-btn" title={t("Legg til", "Add")}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  </button>
+                  <button type="button" className="s-chat-tool-btn" title={t("Last opp fil", "Upload file")}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+                  </button>
+                </div>
+                <div className="s-chat-toolbar-right">
+                  <button
+                    type="button"
+                    className={`s-chat-send-btn${chatInput.trim().length > 0 ? ' active' : ''}`}
+                    onClick={handleSubmit}
+                    disabled={chatInput.trim().length === 0}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
