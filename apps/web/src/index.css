@@ -630,8 +630,8 @@ button { font-family: inherit; }
   border-radius: 14px;
   width: 900px;
   max-width: calc(100vw - 48px);
-  height: 640px;
-  max-height: calc(100vh - 48px);
+  height: 720px;
+  max-height: calc(100vh - 32px);
   display: flex;
   overflow: hidden;
   box-shadow: 0 24px 80px rgba(0,0,0,0.7);
@@ -685,6 +685,7 @@ button { font-family: inherit; }
   overflow-y: auto;
   background: #1C1C1C;
   min-height: 0;
+  height: 100%;
 }
 .modal-close {
   position: absolute;
@@ -5112,7 +5113,7 @@ button { font-family: inherit; }
 .conn-toggle--on .conn-toggle-thumb{transform:translateX(16px)}
 
 /* SKILLS V2 — Manus-style design */
-.skills-v2-container{display:flex;flex-direction:column;gap:16px}
+.skills-v2-container{display:flex;flex-direction:column;gap:16px;padding-bottom:24px}
 .skills-v2-toolbar{display:flex;align-items:center;gap:8px}
 .skills-v2-filter-btn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:transparent;border:1px solid #2A2A2A;color:#9A9A9A;cursor:pointer;flex-shrink:0;transition:background 0.15s,color 0.15s}
 .skills-v2-filter-btn:hover{background:#2A2A2A;color:#E5E5E5}
