@@ -263,7 +263,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  margin-bottom: 0.75rem;
+  margin-top: 0.75rem;
   justify-content: center;
 }
 
@@ -283,15 +283,19 @@
 .sine-page.dark .s-chat-pill { background: #1a1a1a; border-color: #2a2a2a; color: #aaa; }
 .sine-page.dark .s-chat-pill:hover { background: #222; }
 
-/* App-style chat input box */
+/* Landing page chat input box — white/light themed */
 .s-chat-input-box {
-  background: #242424;
-  border: 1px solid #2E2E2E;
+  background: #ffffff;
+  border: 1.5px solid #e2e2e2;
   border-radius: 16px;
   overflow: hidden;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
 }
-.s-chat-input-box:focus-within { border-color: #3E3E3E; }
+.s-chat-input-box:focus-within {
+  border-color: #c0c0c0;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+}
 
 .s-chat-textarea {
   width: 100%;
@@ -299,18 +303,18 @@
   border: none;
   outline: none;
   resize: none;
-  color: #E5E5E5;
-  font-size: 14px;
+  color: #1a1a1a;
+  font-size: 15px;
   font-family: inherit;
   line-height: 1.6;
-  padding: 14px 16px 8px;
-  min-height: 52px;
-  max-height: 160px;
+  padding: 16px 16px 6px;
+  min-height: 56px;
+  max-height: 180px;
   overflow-y: auto;
   display: block;
   box-sizing: border-box;
 }
-.s-chat-textarea::placeholder { color: #666; }
+.s-chat-textarea::placeholder { color: #999; }
 
 .s-chat-toolbar {
   display: flex;
@@ -325,36 +329,51 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 7px;
-  border: none;
-  background: transparent;
-  color: #6A6A6A;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1.5px solid #e2e2e2;
+  background: #fff;
+  color: #555;
   cursor: pointer;
-  transition: background 0.1s, color 0.1s;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
 }
-.s-chat-tool-btn:hover { background: #2E2E2E; color: #C0C0C0; }
+.s-chat-tool-btn:hover { background: #f5f5f5; color: #1a1a1a; border-color: #ccc; }
 
 .s-chat-send-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
-  background: #2E2E2E;
+  background: #e8e8e8;
   border: none;
-  color: #555;
+  color: #aaa;
   cursor: not-allowed;
   transition: background 0.15s, color 0.15s;
 }
 .s-chat-send-btn.active {
-  background: #f0f0f0;
-  color: #0a0a0a;
+  background: #1a1a1a;
+  color: #fff;
   cursor: pointer;
 }
-.s-chat-send-btn.active:hover { background: #fff; }
+.s-chat-send-btn.active:hover { background: #333; }
+/* Dark mode overrides for chat input */
+.sine-page.dark .s-chat-input-box {
+  background: #1e1e1e;
+  border-color: #2e2e2e;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.3);
+}
+.sine-page.dark .s-chat-input-box:focus-within { border-color: #444; }
+.sine-page.dark .s-chat-textarea { color: #e5e5e5; }
+.sine-page.dark .s-chat-textarea::placeholder { color: #555; }
+.sine-page.dark .s-chat-tool-btn { background: #2a2a2a; border-color: #3a3a3a; color: #888; }
+.sine-page.dark .s-chat-tool-btn:hover { background: #333; color: #ccc; border-color: #555; }
+.sine-page.dark .s-chat-send-btn { background: #2a2a2a; color: #555; }
+.sine-page.dark .s-chat-send-btn.active { background: #f0f0f0; color: #0a0a0a; }
+.sine-page.dark .s-chat-send-btn.active:hover { background: #fff; }
+
 
 /* ── SHARED SECTION STYLES ───────────────────────────────────────────────── */
 .s-section {
@@ -555,6 +574,30 @@
 }
 
 .s-feature-text {}
+
+/* ── NATURE BACKGROUND WRAPPER ───────────────────────────────────────────── */
+.s-nature-bg {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  padding: 24px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.s-nature-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+  display: block;
+}
 
 .s-h3 {
   font-family: "Instrument Serif", Georgia, serif;

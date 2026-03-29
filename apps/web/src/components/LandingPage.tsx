@@ -11,6 +11,16 @@ const IMG_CALENDAR   = "/sine/sine-calendar-mockup.png";
 const IMG_CONNECTORS = "/sine/sine-connectors-mockup.png";
 const IMG_LIBRARY    = "/sine/sine-library-mockup.png";
 
+// Nature background paintings (Gemini-generated Norwegian landscapes)
+const BG_MOUNTAIN   = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Gemini_Generated_Image_3ol3u3ol3u3ol3u3_bb6304dd.png";
+const BG_STAVE      = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Gemini_Generated_Image_g0v8hog0v8hog0v8_8c9d434c.png";
+const BG_FJORD      = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Gemini_Generated_Image_vtlyktvtlyktvtly_b84d3a15.png";
+const BG_WATERFALL  = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Gemini_Generated_Image_x181mgx181mgx181_a6ac7765.png";
+const BG_FOREST     = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Gemini_Generated_Image_hzytp9hzytp9hzyt_84c118d6.png";
+const BG_COASTAL    = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Gemini_Generated_Image_qhrbapqhrbapqhrb_49e11b1a.png";
+const BG_VALLEY     = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Gemini_Generated_Image_wiwv66wiwv66wiwv_e6c72c61.png";
+const BG_AURORA     = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Gemini_Generated_Image_gforu2gforu2gfor_cd2fb985.png";
+
 // ── FADE-IN ANIMATION ────────────────────────────────────────────────────────
 function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -199,29 +209,10 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
             )}
           </p>
 
-          <div className="s-hero-btns">
-            <button onClick={onEnterApp} className="s-btn-primary">
-              {t("Kom i gang gratis", "Get started free")}
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </button>
-            <a href="#features" className="s-btn-ghost">
-              {t("Se hvordan det fungerer", "See how it works")}
-            </a>
-          </div>
+          {/* CTA buttons removed — Manus style: chat input is the primary CTA */}
 
-          {/* Chat box — styled like the app's chat-input-box */}
+          {/* Chat box — Manus style: input first, pills below */}
           <div className="s-chat-box">
-            <div className="s-chat-pills">
-              {PILLS.map((pill) => (
-                <button
-                  key={pill}
-                  className="s-chat-pill"
-                  onClick={() => setChatInput(pill)}
-                >
-                  {pill}
-                </button>
-              ))}
-            </div>
             <div className="s-chat-input-box">
               <textarea
                 className="s-chat-textarea"
@@ -229,15 +220,12 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                 value={chatInput}
                 onChange={e => setChatInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e as unknown as React.FormEvent); } }}
-                rows={1}
+                rows={2}
               />
               <div className="s-chat-toolbar">
                 <div className="s-chat-toolbar-left">
                   <button type="button" className="s-chat-tool-btn" title={t("Legg til", "Add")}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  </button>
-                  <button type="button" className="s-chat-tool-btn" title={t("Last opp fil", "Upload file")}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   </button>
                 </div>
                 <div className="s-chat-toolbar-right">
@@ -251,6 +239,17 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
                   </button>
                 </div>
               </div>
+            </div>
+            <div className="s-chat-pills">
+              {PILLS.map((pill) => (
+                <button
+                  key={pill}
+                  className="s-chat-pill"
+                  onClick={() => setChatInput(pill)}
+                >
+                  {pill}
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -310,7 +309,9 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
         <FadeIn>
           <div className="s-feature-grid s-container">
             <div className="s-feature-img">
-              <img src={IMG_CHAT} alt="Sine AI Chat" />
+              <div className="s-nature-bg" style={{backgroundImage: `url(${BG_FJORD})`}}>
+                <img src={IMG_CHAT} alt="Sine AI Chat" />
+              </div>
             </div>
             <div className="s-feature-text">
               <p className="s-label">{t("AI-agent", "AI Agent")}</p>
@@ -335,7 +336,9 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
         <FadeIn>
           <div className="s-feature-grid s-feature-grid--rev s-container">
             <div className="s-feature-img">
-              <img src={IMG_CALENDAR} alt="Sine Agentisk Kalender" />
+              <div className="s-nature-bg" style={{backgroundImage: `url(${BG_MOUNTAIN})`}}>
+                <img src={IMG_CALENDAR} alt="Sine Agentisk Kalender" />
+              </div>
             </div>
             <div className="s-feature-text">
               <p className="s-label">{t("Agentisk kalender", "Agentic Calendar")}</p>
@@ -360,7 +363,9 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
         <FadeIn>
           <div className="s-feature-grid s-container">
             <div className="s-feature-img">
-              <img src={IMG_CONNECTORS} alt="Sine Connectors" />
+              <div className="s-nature-bg" style={{backgroundImage: `url(${BG_WATERFALL})`}}>
+                <img src={IMG_CONNECTORS} alt="Sine Connectors" />
+              </div>
             </div>
             <div className="s-feature-text">
               <p className="s-label">{t("Connectors", "Connectors")}</p>
@@ -385,7 +390,9 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
         <FadeIn>
           <div className="s-feature-grid s-feature-grid--rev s-container">
             <div className="s-feature-img">
-              <img src={IMG_LIBRARY} alt="Sine Bibliotek" />
+              <div className="s-nature-bg" style={{backgroundImage: `url(${BG_STAVE})`}}>
+                <img src={IMG_LIBRARY} alt="Sine Bibliotek" />
+              </div>
             </div>
             <div className="s-feature-text">
               <p className="s-label">{t("Bibliotek", "Library")}</p>
