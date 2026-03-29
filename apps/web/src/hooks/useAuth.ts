@@ -4,9 +4,6 @@ import { createClient, type User, type SupabaseClient } from '@supabase/supabase
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://cauaqoqvpvjpeghejgvj.supabase.co'
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhdWFxb3F2cHZqcGVnaGVqZ3ZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2Mzc3MDAsImV4cCI6MjA5MDIxMzcwMH0.eT_KvHh6ZoS5hlLILkhzTyogTP91OAX-pKwG57OeFHI'
 
-// Dev-bypass: lagres i localStorage
-const DEV_BYPASS_KEY = 'sine_dev_bypass'
-
 let _supabase: SupabaseClient | null = null
 
 export function getSupabase() {
@@ -21,49 +18,51 @@ export interface AuthUser {
   email: string
   name?: string
   avatarUrl?: string
-  isDevUser?: boolean
-}
-
-const DEV_USER: AuthUser = {
-  id: 'dev-user-local',
-  email: 'dev@sine.no',
-  name: 'Dev',
-  isDevUser: true,
+  role?: string
+  isAdmin?: boolean
 }
 
 export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    // Sjekk dev-bypass først
-    if (localStorage.getItem(DEV_BYPASS_KEY) === 'true') {
-      setUser(DEV_USER)
-      setLoading(false)
-      return
+  async function fetchUserRole(supabaseUser: User): Promise<AuthUser> {
+    const base = mapUser(supabaseUser)
+    try {
+      const supabase = getSupabase()
+      const { data } = await supabase
+        .from('users')
+        .select('role, plan')
+        .eq('id', supabaseUser.id)
+        .single()
+      if (data?.role) {
+        return { ...base, role: data.role, isAdmin: data.role === 'admin' }
+      }
+    } catch {
+      // If users table doesn't exist or no row, fall back to base user
     }
+    return base
+  }
 
+  useEffect(() => {
     const supabase = getSupabase()
 
     // Hent nåværende sesjon
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        setUser(mapUser(session.user))
+        const enriched = await fetchUserRole(session.user)
+        setUser(enriched)
       }
       setLoading(false)
     })
 
     // Lytt på auth-endringer
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        setUser(mapUser(session.user))
+        const enriched = await fetchUserRole(session.user)
+        setUser(enriched)
       } else {
-        // Sjekk dev-bypass igjen ved sign-out
-        if (localStorage.getItem(DEV_BYPASS_KEY) === 'true') {
-          setUser(DEV_USER)
-        } else {
-          setUser(null)
-        }
+        setUser(null)
       }
       setLoading(false)
     })
@@ -72,18 +71,12 @@ export function useAuth() {
   }, [])
 
   const signOut = async () => {
-    localStorage.removeItem(DEV_BYPASS_KEY)
     const supabase = getSupabase()
     await supabase.auth.signOut()
     setUser(null)
   }
 
-  const devLogin = () => {
-    localStorage.setItem(DEV_BYPASS_KEY, 'true')
-    setUser(DEV_USER)
-  }
-
-  return { user, loading, signOut, devLogin }
+  return { user, loading, signOut }
 }
 
 function mapUser(u: User): AuthUser {
@@ -92,5 +85,7 @@ function mapUser(u: User): AuthUser {
     email: u.email || '',
     name: u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split('@')[0],
     avatarUrl: u.user_metadata?.avatar_url,
+    role: 'user',
+    isAdmin: false,
   }
 }

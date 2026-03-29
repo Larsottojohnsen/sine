@@ -1,0 +1,433 @@
+/* ============================================================
+   ADMIN PANEL — Sine AI
+   ============================================================ */
+
+.admin-panel {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  background: #0f0f11;
+  color: #e0e0e0;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  overflow: hidden;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────── */
+.admin-sidebar {
+  width: 220px;
+  min-width: 220px;
+  background: #141416;
+  border-right: 1px solid rgba(255,255,255,0.07);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.admin-sidebar-header {
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(0,212,255,0.12);
+  color: #00d4ff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 99px;
+  border: 1px solid rgba(0,212,255,0.2);
+  width: fit-content;
+}
+
+.admin-user-email {
+  font-size: 11px;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 8px;
+  gap: 2px;
+}
+
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #888;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  text-align: left;
+  width: 100%;
+  font-family: inherit;
+}
+
+.admin-nav-item:hover {
+  background: rgba(255,255,255,0.05);
+  color: #ccc;
+}
+
+.admin-nav-item.active {
+  background: rgba(0,212,255,0.08);
+  color: #00d4ff;
+}
+
+.admin-nav-icon {
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+/* ── Main content ────────────────────────────────────────── */
+.admin-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.admin-content {
+  padding: 32px 36px;
+  max-width: 900px;
+}
+
+.admin-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #f0f0f0;
+  margin: 0 0 24px;
+  letter-spacing: -0.3px;
+}
+
+.admin-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ccc;
+  margin: 0 0 12px;
+}
+
+/* ── Stats grid ──────────────────────────────────────────── */
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.admin-stat-card {
+  background: #1a1a1e;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+
+.admin-stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #f0f0f0;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.admin-stat-label {
+  font-size: 11px;
+  color: #666;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ── Info box ────────────────────────────────────────────── */
+.admin-info-box {
+  background: rgba(0,212,255,0.04);
+  border: 1px solid rgba(0,212,255,0.12);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 24px;
+}
+
+.admin-info-box p {
+  margin: 0;
+  font-size: 13px;
+  color: #aaa;
+  line-height: 1.6;
+}
+
+/* ── Loading ─────────────────────────────────────────────── */
+.admin-loading {
+  color: #666;
+  font-size: 13px;
+  padding: 24px 0;
+}
+
+/* ── Table ───────────────────────────────────────────────── */
+.admin-table-wrap {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.07);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.admin-table th {
+  background: #1a1a1e;
+  color: #888;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+
+.admin-table td {
+  padding: 11px 14px;
+  color: #ccc;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-table tr:hover td {
+  background: rgba(255,255,255,0.02);
+}
+
+.admin-role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(255,255,255,0.06);
+  color: #888;
+}
+
+.admin-role-badge.admin {
+  background: rgba(0,212,255,0.1);
+  color: #00d4ff;
+}
+
+/* ── Action buttons ──────────────────────────────────────── */
+.admin-action-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: #aaa;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  margin-right: 6px;
+}
+
+.admin-action-btn:hover {
+  background: rgba(255,255,255,0.09);
+  color: #e0e0e0;
+}
+
+.admin-action-btn.danger {
+  border-color: rgba(255,100,100,0.2);
+  color: #ff6b6b;
+}
+
+.admin-action-btn.danger:hover {
+  background: rgba(255,100,100,0.08);
+}
+
+/* ── Blog editor ─────────────────────────────────────────── */
+.admin-blog-editor {
+  background: #1a1a1e;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: #e0e0e0;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.admin-input:focus {
+  border-color: rgba(0,212,255,0.3);
+}
+
+.admin-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: #e0e0e0;
+  font-size: 13px;
+  font-family: 'Menlo', 'Monaco', monospace;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+  line-height: 1.6;
+}
+
+.admin-textarea:focus {
+  border-color: rgba(0,212,255,0.3);
+}
+
+.admin-editor-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-btn-primary {
+  padding: 9px 18px;
+  background: rgba(0,212,255,0.12);
+  border: 1px solid rgba(0,212,255,0.25);
+  border-radius: 8px;
+  color: #00d4ff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.admin-btn-primary:hover:not(:disabled) {
+  background: rgba(0,212,255,0.18);
+}
+
+.admin-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-btn-ghost {
+  padding: 9px 18px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: #888;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.admin-btn-ghost:hover {
+  background: rgba(255,255,255,0.05);
+  color: #ccc;
+}
+
+.admin-msg {
+  font-size: 12px;
+  color: #00d4ff;
+  margin: 0;
+}
+
+.admin-msg.error {
+  color: #ff6b6b;
+}
+
+/* ── Post list ───────────────────────────────────────────── */
+.admin-post-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-post-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #1a1a1e;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-post-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.admin-post-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #e0e0e0;
+}
+
+.admin-post-status {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(255,255,255,0.06);
+  color: #888;
+}
+
+.admin-post-status.published {
+  background: rgba(0,255,100,0.08);
+  color: #00c853;
+}
+
+.admin-post-date {
+  font-size: 11px;
+  color: #555;
+}
+
+.admin-post-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .admin-sidebar {
+    width: 180px;
+    min-width: 180px;
+  }
+  .admin-content {
+    padding: 20px 16px;
+  }
+}

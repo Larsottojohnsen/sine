@@ -3,10 +3,13 @@ import {
   Plus, Search, BookOpen, FolderPlus, Trash2,
   Bot, PanelLeftClose, PanelLeftOpen, CalendarDays,
   LayoutGrid, Monitor, Terminal, ChevronRight, SlidersHorizontal,
-  MessageSquare, X, Copy, Mail, Check
+  MessageSquare, X, Copy, Mail, Check, ShieldCheck
 } from 'lucide-react'
 import { useApp } from '@/store/AppContext'
 import { getTranslations } from '@/i18n'
+import { useAuth } from '@/hooks/useAuth'
+
+const LOGO_LIGHT = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Sine-hvit-svg_cc029234.svg"
 
 interface SidebarProps {
   onNavigate?: (page: string) => void
@@ -111,6 +114,7 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId }: 
     setSidebarOpen,
     setSettingsOpen,
   } = useApp()
+  const { user } = useAuth()
 
   const t = getTranslations(settings.language)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
@@ -185,7 +189,7 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId }: 
         <div className="sidebar-logo">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 4 }}>
             <img
-              src="/sine/Sinev6.svg"
+              src={LOGO_LIGHT}
               alt="Sine"
               style={{ height: 22, width: 'auto', opacity: 1 }}
             />
@@ -230,6 +234,16 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId }: 
             <CalendarDays size={18} style={{ flexShrink: 0 }} />
             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Kalender</span>
           </button>
+          {user?.isAdmin && (
+            <button
+              className={`nav-item${currentPage === 'admin' ? ' active' : ''}`}
+              onClick={() => onNavigate?.('admin')}
+              style={{ color: currentPage === 'admin' ? '#00d4ff' : '#888' }}
+            >
+              <ShieldCheck size={18} style={{ flexShrink: 0 }} />
+              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Admin</span>
+            </button>
+          )}
         </div>
 
         <div className="sidebar-divider" />

@@ -9,9 +9,11 @@ import { SearchModal } from './components/search/SearchModal'
 import { LibraryView } from './components/library/LibraryView'
 import { CalendarPage } from './components/calendar/CalendarPage'
 import { LoginPage } from './components/auth/LoginPage'
+import { LandingPage } from './components/LandingPage'
+import { AdminPanel } from './components/admin/AdminPanel'
 import { useAuth } from './hooks/useAuth'
 
-export type AppPage = 'chat' | 'agents' | 'search' | 'library' | 'calendar'
+export type AppPage = 'chat' | 'agents' | 'search' | 'library' | 'calendar' | 'admin'
 
 // Delt navigasjonskontekst
 interface NavContextType {
@@ -62,6 +64,8 @@ function AppLayout() {
       setSearchOpen(true)
     } else if (p === 'calendar') {
       setCurrentPage('calendar')
+    } else if (p === 'admin') {
+      setCurrentPage('admin')
     } else {
       setCurrentPage(p as AppPage)
     }
@@ -82,12 +86,14 @@ function AppLayout() {
       <div className="app-layout">
         <Sidebar onNavigate={handleNavigate} currentPage={currentPage} />
         <div className="main-content">
-          {currentPage !== 'calendar' && <Header />}
+          {currentPage !== 'calendar' && currentPage !== 'admin' && <Header />}
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             {currentPage === 'library' ? (
               <LibraryView />
             ) : currentPage === 'calendar' ? (
               <CalendarPage />
+            ) : currentPage === 'admin' ? (
+              <AdminPanel />
             ) : (
               <ChatView />
             )}
@@ -105,8 +111,18 @@ function AppLayout() {
   )
 }
 
+type AppView = 'landing' | 'login' | 'app'
+
 function AuthGate() {
   const { user, loading } = useAuth()
+  const [view, setView] = useState<AppView>('landing')
+
+  // When user is authenticated, always show the app
+  useEffect(() => {
+    if (!loading && user) {
+      setView('app')
+    }
+  }, [user, loading])
 
   if (loading) {
     return (
@@ -116,15 +132,21 @@ function AuthGate() {
     )
   }
 
-  if (!user) {
-    return <LoginPage />
+  // If authenticated, show the app directly
+  if (user) {
+    return (
+      <AppProvider>
+        <AppLayout />
+      </AppProvider>
+    )
   }
 
-  return (
-    <AppProvider>
-      <AppLayout />
-    </AppProvider>
-  )
+  // Not authenticated — show landing or login
+  if (view === 'landing') {
+    return <LandingPage onEnterApp={() => setView('login')} />
+  }
+
+  return <LoginPage />
 }
 
 export default function App() {

@@ -1,21 +1,20 @@
 import { useState } from 'react'
 import PixelBlast from './PixelBlast'
-import { getSupabase, useAuth } from '../../hooks/useAuth'
+import { getSupabase } from '../../hooks/useAuth'
 
-type LoginStep = 'main' | 'email-password' | 'email-sent' | 'create-account'
+// CDN logo URLs
+const LOGO_LIGHT = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Sine-hvit-svg_cc029234.svg"
+const ICON_LIGHT = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Sine-svg-ikon-hvit_3c0f0e3c.svg"
 
-interface LoginPageProps {
-  onLogin?: (user: { email: string; name?: string }) => void
-}
+type LoginStep = 'main' | 'email-password' | 'create-account'
 
-export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
+export function LoginPage() {
   const [step, setStep] = useState<LoginStep>('main')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const { devLogin } = useAuth()
 
   const handleGoogleLogin = async () => {
     setLoading(true)
@@ -59,16 +58,9 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
     setLoading(true)
     setError('')
     try {
-      const supabase = getSupabase()
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: {
-          emailRedirectTo: window.location.origin + (import.meta.env.BASE_URL || '/'),
-          shouldCreateUser: true,
-        }
-      })
-      if (error) setError(error.message)
-      else setStep('email-sent')
+      // Try password login first — if user exists, go to password step
+      // We just move to password step without checking existence (more secure)
+      setStep('email-password')
     } catch {
       setError('Noe gikk galt. Prøv igjen.')
     } finally {
@@ -109,7 +101,7 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
         }
       })
       if (error) setError(error.message)
-      else setStep('email-sent')
+      // On success, Supabase will trigger onAuthStateChange and log the user in
     } catch {
       setError('Registrering feilet. Prøv igjen.')
     } finally {
@@ -119,7 +111,7 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
 
   return (
     <div className="login-page">
-      {/* PixelBlast bakgrunn – fyller hele siden */}
+      {/* PixelBlast bakgrunn */}
       <div className="login-pixel-bg">
         <PixelBlast
           variant="square"
@@ -141,19 +133,20 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
 
       {/* Logo øverst til venstre */}
       <div className="login-logo">
-        <img src="/sine/Sinev6.svg" alt="Sine" className="login-logo-img" />
+        <img src={LOGO_LIGHT} alt="Sine" className="login-logo-img" style={{ filter: 'none' }} />
       </div>
 
       {/* Innloggingskort */}
       <div className="login-card-wrapper">
         <div className="login-card">
 
-          {/* Sine favicon-ikon */}
+          {/* Sine ikon */}
           <div className="login-icon">
             <img
-              src="/sine/Sinefaviconsvg.svg"
+              src={ICON_LIGHT}
               alt="Sine ikon"
               className="login-favicon-icon"
+              style={{ filter: 'none' }}
             />
           </div>
 
@@ -208,35 +201,18 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
                   Opprett konto
                 </button>
               </div>
-
-              <button className="login-dev-btn" onClick={devLogin} title="Kun for utvikling – hopper over innlogging">
-                ⚡ Fortsett uten innlogging (dev)
-              </button>
             </>
           )}
 
-          {step === 'email-sent' && (
+          {step === 'email-password' && (
             <>
-              <h1 className="login-title">Sjekk e-posten din</h1>
-              <p className="login-subtitle">
-                Vi har sendt en innloggingslenke til<br />
-                <strong style={{ color: '#e0e0e0' }}>{email}</strong>
-              </p>
-              <button className="login-back-btn" style={{ marginTop: '24px' }} onClick={() => setStep('main')}>
-                Tilbake
-              </button>
-            </>
-          )}
-
-          {(step === 'email-password' || step === 'create-account') && (
-            <>
-              <h1 className="login-title">{step === 'create-account' ? 'Opprett konto' : 'Logg inn'}</h1>
+              <h1 className="login-title">Logg inn</h1>
               <div className="login-email-section">
                 <div className="login-input-group">
                   <label className="login-label">E-post</label>
                   <div className="login-input-with-action">
                     <input type="email" className="login-input" value={email} readOnly />
-                    <button className="login-edit-btn" onClick={() => setStep('main')}>Endre</button>
+                    <button className="login-edit-btn" onClick={() => { setStep('main'); setError('') }}>Endre</button>
                   </div>
                 </div>
                 <div className="login-input-group">
@@ -252,6 +228,60 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
                       autoFocus
                     />
                     <button className="login-eye-btn" onClick={() => setShowPassword(p => !p)} type="button">
+                      {showPassword ? (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
+                          <line x1="1" y1="1" x2="23" y2="23"/>
+                        </svg>
+                      ) : (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                          <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+                {error && <p className="login-error">{error}</p>}
+                <button
+                  className="login-continue-btn"
+                  onClick={handlePasswordLogin}
+                  disabled={loading || !password.trim()}
+                >
+                  {loading ? <span className="login-spinner" /> : 'Logg inn'}
+                </button>
+                <button className="login-back-btn" onClick={() => { setStep('main'); setError('') }}>Tilbake</button>
+              </div>
+            </>
+          )}
+
+          {step === 'create-account' && (
+            <>
+              <h1 className="login-title">Opprett konto</h1>
+              <div className="login-email-section">
+                <div className="login-input-group">
+                  <label className="login-label">E-post</label>
+                  <input
+                    type="email"
+                    className="login-input"
+                    placeholder="Skriv inn e-postadresse"
+                    value={email}
+                    onChange={e => { setEmail(e.target.value); setError('') }}
+                    autoComplete="email"
+                  />
+                </div>
+                <div className="login-input-group">
+                  <label className="login-label">Passord (minst 8 tegn)</label>
+                  <div className="login-input-with-action">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      className="login-input"
+                      placeholder="Velg et passord"
+                      value={password}
+                      onChange={e => { setPassword(e.target.value); setError('') }}
+                      onKeyDown={e => e.key === 'Enter' && handleCreateAccount()}
+                    />
+                    <button className="login-eye-btn" onClick={() => setShowPassword(p => !p)} type="button">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                         <circle cx="12" cy="12" r="3"/>
@@ -262,12 +292,12 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
                 {error && <p className="login-error">{error}</p>}
                 <button
                   className="login-continue-btn"
-                  onClick={step === 'create-account' ? handleCreateAccount : handlePasswordLogin}
-                  disabled={loading || !password.trim()}
+                  onClick={handleCreateAccount}
+                  disabled={loading || !password.trim() || !email.trim()}
                 >
-                  {loading ? <span className="login-spinner" /> : step === 'create-account' ? 'Opprett konto' : 'Logg inn'}
+                  {loading ? <span className="login-spinner" /> : 'Opprett konto'}
                 </button>
-                <button className="login-back-btn" onClick={() => setStep('main')}>Tilbake</button>
+                <button className="login-back-btn" onClick={() => { setStep('main'); setError('') }}>Tilbake</button>
               </div>
             </>
           )}
@@ -279,9 +309,11 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
         </div>
       </div>
 
-      {/* Johnsen Technology logo – bunn av siden */}
-      <div className="login-bottom-brand">
-        <img src="/sine/jtg-logo-white.png" alt="Johnsen Technology" className="login-jtg-logo" />
+      {/* Johnsen Technology branding – bunn av siden */}
+      <div className="login-bottom-brand" style={{ pointerEvents: 'auto' }}>
+        <a href="https://jtec.no" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px', fontWeight: 600, textDecoration: 'none', letterSpacing: '0.02em' }}>
+          Johnsen Technology
+        </a>
       </div>
     </div>
   )
