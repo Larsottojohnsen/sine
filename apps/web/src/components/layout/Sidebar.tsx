@@ -9,7 +9,7 @@ import { useApp } from '@/store/AppContext'
 import { getTranslations } from '@/i18n'
 import { useAuth } from '@/hooks/useAuth'
 
-const LOGO_LIGHT = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Sine-hvit-svg_cc029234.svg"
+const LOGO_LIGHT = "/sine/Sine-hvit.svg"
 
 interface SidebarProps {
   onNavigate?: (page: string) => void

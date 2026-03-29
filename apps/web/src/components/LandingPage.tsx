@@ -2,14 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import "../landing.css";
 
 // ── CDN ASSETS ──────────────────────────────────────────────────────────────
-const LOGO_DARK  = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Sine-sort-svg_23ef6de1.svg";
-const LOGO_LIGHT = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Sine-hvit-svg_cc029234.svg";
+const LOGO_DARK  = "/sine/Sine-sort.svg";
+const LOGO_LIGHT = "/sine/Sine-hvit.svg";
 
 // App mockup images (generated)
-const IMG_CHAT       = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663215301248/YkpnzUkzSXVYzpto.png";
-const IMG_CALENDAR   = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663215301248/FbEbaGEHEIfEGOUz.png";
-const IMG_CONNECTORS = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663215301248/zjkzGKkIINFXvItR.png";
-const IMG_LIBRARY    = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663215301248/bblKtloaKQTmDEJe.png";
+const IMG_CHAT       = "/sine/sine-chat-mockup.png";
+const IMG_CALENDAR   = "/sine/sine-calendar-mockup.png";
+const IMG_CONNECTORS = "/sine/sine-connectors-mockup.png";
+const IMG_LIBRARY    = "/sine/sine-library-mockup.png";
 
 // ── FADE-IN ANIMATION ────────────────────────────────────────────────────────
 function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
