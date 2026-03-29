@@ -110,7 +110,6 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
     conversations,
     activeConversationId,
     setActiveConversationId,
-    createConversation,
     deleteConversation,
     settings,
     sidebarOpen,

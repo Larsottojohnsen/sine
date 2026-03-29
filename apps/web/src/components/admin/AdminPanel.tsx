@@ -142,7 +142,6 @@ export function AdminPanel() {
   // Settings state
   const [maintenanceMode, setMaintenanceMode] = useState(false)
   const [registrationOpen, setRegistrationOpen] = useState(true)
-  const [savingSettings, setSavingSettings] = useState(false)
 
   useEffect(() => {
     if (tab === 'users') loadUsers()
