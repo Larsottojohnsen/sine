@@ -7,7 +7,7 @@ const LOGO_LIGHT = "/sine/Sine-hvit.svg"
 const ICON_LIGHT = "/sine/Sine-ikon-hvit.svg"
 const JTG_LOGO = "/sine/jtg-logo-white.png"
 
-type LoginStep = 'main' | 'email-password' | 'create-account'
+type LoginStep = 'main' | 'email-password' | 'create-account' | 'forgot-password' | 'forgot-password-sent'
 
 export function LoginPage() {
   const [step, setStep] = useState<LoginStep>('main')
@@ -16,6 +16,7 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [resetEmail, setResetEmail] = useState('')
 
   const handleGoogleLogin = async () => {
     setLoading(true)
@@ -59,8 +60,6 @@ export function LoginPage() {
     setLoading(true)
     setError('')
     try {
-      // Try password login first — if user exists, go to password step
-      // We just move to password step without checking existence (more secure)
       setStep('email-password')
     } catch {
       setError('Noe gikk galt. Prøv igjen.')
@@ -102,9 +101,34 @@ export function LoginPage() {
         }
       })
       if (error) setError(error.message)
-      // On success, Supabase will trigger onAuthStateChange and log the user in
     } catch {
       setError('Registrering feilet. Prøv igjen.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleForgotPassword = async () => {
+    const addr = resetEmail.trim() || email.trim()
+    if (!addr || !addr.includes('@')) {
+      setError('Skriv inn en gyldig e-postadresse')
+      return
+    }
+    setLoading(true)
+    setError('')
+    try {
+      const supabase = getSupabase()
+      const { error } = await supabase.auth.resetPasswordForEmail(addr, {
+        redirectTo: window.location.origin + (import.meta.env.BASE_URL || '/') + 'reset-password',
+      })
+      if (error) {
+        setError(error.message)
+      } else {
+        setResetEmail(addr)
+        setStep('forgot-password-sent')
+      }
+    } catch {
+      setError('Noe gikk galt. Prøv igjen.')
     } finally {
       setLoading(false)
     }
@@ -217,7 +241,16 @@ export function LoginPage() {
                   </div>
                 </div>
                 <div className="login-input-group">
-                  <label className="login-label">Passord</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label className="login-label">Passord</label>
+                    <button
+                      type="button"
+                      onClick={() => { setResetEmail(email); setStep('forgot-password'); setError('') }}
+                      style={{ fontSize: 12, color: '#1A93FE', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}
+                    >
+                      Glemt passord?
+                    </button>
+                  </div>
                   <div className="login-input-with-action">
                     <input
                       type={showPassword ? 'text' : 'password'}
@@ -252,6 +285,62 @@ export function LoginPage() {
                   {loading ? <span className="login-spinner" /> : 'Logg inn'}
                 </button>
                 <button className="login-back-btn" onClick={() => { setStep('main'); setError('') }}>Tilbake</button>
+              </div>
+            </>
+          )}
+
+          {step === 'forgot-password' && (
+            <>
+              <h1 className="login-title">Glemt passord</h1>
+              <p className="login-subtitle" style={{ marginBottom: 20 }}>
+                Skriv inn e-postadressen din, så sender vi deg en lenke for å tilbakestille passordet.
+              </p>
+              <div className="login-email-section">
+                <div className="login-input-group">
+                  <label className="login-label">E-post</label>
+                  <input
+                    type="email"
+                    className="login-input"
+                    placeholder="Skriv inn e-postadresse"
+                    value={resetEmail}
+                    onChange={e => { setResetEmail(e.target.value); setError('') }}
+                    onKeyDown={e => e.key === 'Enter' && handleForgotPassword()}
+                    autoFocus
+                    autoComplete="email"
+                  />
+                </div>
+                {error && <p className="login-error">{error}</p>}
+                <button
+                  className="login-continue-btn"
+                  onClick={handleForgotPassword}
+                  disabled={loading || !resetEmail.trim()}
+                >
+                  {loading ? <span className="login-spinner" /> : 'Send tilbakestillingslenke'}
+                </button>
+                <button className="login-back-btn" onClick={() => { setStep('email-password'); setError('') }}>Tilbake</button>
+              </div>
+            </>
+          )}
+
+          {step === 'forgot-password-sent' && (
+            <>
+              <div style={{ textAlign: 'center', padding: '8px 0 16px' }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>📧</div>
+                <h1 className="login-title">Sjekk e-posten din</h1>
+                <p className="login-subtitle" style={{ marginBottom: 20 }}>
+                  Vi har sendt en tilbakestillingslenke til<br />
+                  <strong style={{ color: '#f0f0f0' }}>{resetEmail}</strong>
+                </p>
+                <p style={{ fontSize: 12, color: '#5A5A5A', marginBottom: 20 }}>
+                  Ikke fått e-post? Sjekk søppelpost, eller{' '}
+                  <button
+                    onClick={() => { setStep('forgot-password'); setError('') }}
+                    style={{ fontSize: 12, color: '#1A93FE', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}
+                  >
+                    prøv igjen
+                  </button>
+                </p>
+                <button className="login-back-btn" onClick={() => { setStep('main'); setError('') }}>Tilbake til innlogging</button>
               </div>
             </>
           )}
