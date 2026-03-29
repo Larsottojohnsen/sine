@@ -166,6 +166,8 @@ function SettingsContent({
   const [emailUpdates, setEmailUpdates] = useState(true)
   const [emailTask, setEmailTask] = useState(true)
   const [appearance, setAppearance] = useState<'light' | 'dark' | 'system'>('dark')
+  const [autoApproveCalendar, setAutoApproveCalendar] = useState(false)
+  const [pushNotifications, setPushNotifications] = useState(true)
 
   return (
     <div>
@@ -274,6 +276,25 @@ function SettingsContent({
           description="Når aktivert sender vi deg en e-post når oppgaven din er ferdig i kø og begynner å behandles."
           value={emailTask}
           onChange={setEmailTask}
+        />
+        <ToggleSetting
+          label="Push-varsler for kalenderoppgaver"
+          description="Motta varsler i appen når en agentisk oppgave er i ferd med å kjøre eller er fullført."
+          value={pushNotifications}
+          onChange={setPushNotifications}
+        />
+      </div>
+
+      <div style={{ height: 1, background: '#222222', margin: '8px 0 24px' }} />
+
+      {/* Agentic calendar */}
+      <div className="settings-section">
+        <p className="settings-section-label">Agentisk kalender</p>
+        <ToggleSetting
+          label="Automatisk godkjenning av kalenderoppgaver"
+          description="Når aktivert kan Sine automatisk legge til repeterende oppgaver i kalenderen uten manuell bekreftelse. Anbefales kun for erfarne brukere."
+          value={autoApproveCalendar}
+          onChange={setAutoApproveCalendar}
         />
       </div>
 

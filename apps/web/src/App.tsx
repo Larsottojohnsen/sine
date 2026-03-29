@@ -7,10 +7,11 @@ import { SettingsModal } from './components/settings/SettingsModal'
 import { useApp } from './store/AppContext'
 import { SearchModal } from './components/search/SearchModal'
 import { LibraryView } from './components/library/LibraryView'
+import { CalendarPage } from './components/calendar/CalendarPage'
 import { LoginPage } from './components/auth/LoginPage'
 import { useAuth } from './hooks/useAuth'
 
-export type AppPage = 'chat' | 'agents' | 'search' | 'library'
+export type AppPage = 'chat' | 'agents' | 'search' | 'library' | 'calendar'
 
 // Delt navigasjonskontekst
 interface NavContextType {
@@ -59,6 +60,8 @@ function AppLayout() {
       setCurrentPage('chat')
     } else if (p === 'search') {
       setSearchOpen(true)
+    } else if (p === 'calendar') {
+      setCurrentPage('calendar')
     } else {
       setCurrentPage(p as AppPage)
     }
@@ -79,10 +82,12 @@ function AppLayout() {
       <div className="app-layout">
         <Sidebar onNavigate={handleNavigate} currentPage={currentPage} />
         <div className="main-content">
-          <Header />
+          {currentPage !== 'calendar' && <Header />}
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             {currentPage === 'library' ? (
               <LibraryView />
+            ) : currentPage === 'calendar' ? (
+              <CalendarPage />
             ) : (
               <ChatView />
             )}

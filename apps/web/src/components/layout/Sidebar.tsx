@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   Plus, Search, BookOpen, FolderPlus, Trash2,
-  Bot, PanelLeftClose, PanelLeftOpen,
+  Bot, PanelLeftClose, PanelLeftOpen, CalendarDays,
   LayoutGrid, Monitor, Terminal, ChevronRight, SlidersHorizontal,
   MessageSquare, X, Copy, Mail, Check
 } from 'lucide-react'
@@ -171,6 +171,9 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId }: 
         <button className="icon-btn" onClick={() => onNavigate?.('library')} title={t.app.library}>
           <BookOpen size={18} />
         </button>
+        <button className="icon-btn" onClick={() => onNavigate?.('calendar')} title="Kalender">
+          <CalendarDays size={18} />
+        </button>
       </div>
     )
   }
@@ -219,6 +222,13 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId }: 
           >
             <BookOpen size={18} style={{ flexShrink: 0 }} />
             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.app.library}</span>
+          </button>
+          <button
+            className={`nav-item${currentPage === 'calendar' ? ' active' : ''}`}
+            onClick={() => onNavigate?.('calendar')}
+          >
+            <CalendarDays size={18} style={{ flexShrink: 0 }} />
+            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Kalender</span>
           </button>
         </div>
 
