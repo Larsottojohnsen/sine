@@ -415,11 +415,64 @@
 
 /* ---- Responsive ---- */
 @media (max-width: 480px) {
-  .login-card {
-    padding: 28px 20px 24px;
-    border-radius: 16px;
+  /* Full-screen login on mobile */
+  .login-page {
+    align-items: flex-end;
   }
+
+  .login-logo {
+    top: 20px;
+    left: 20px;
+  }
+
+  .login-bottom-brand {
+    display: none;
+  }
+
   .login-card-wrapper {
-    padding: 0 12px;
+    padding: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .login-card {
+    padding: 28px 20px max(28px, env(safe-area-inset-bottom));
+    border-radius: 24px 24px 0 0;
+    border-bottom: none;
+    /* Drag handle */
+    position: relative;
+  }
+
+  .login-card::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+
+  .login-title {
+    font-size: 22px;
+  }
+
+  .login-oauth-btn {
+    padding: 13px 16px;
+    font-size: 15px;
+  }
+
+  .login-input {
+    font-size: 16px; /* Prevent iOS zoom */
+    padding: 13px 14px;
+  }
+
+  .login-continue-btn {
+    padding: 14px;
+    font-size: 15px;
+  }
+
+  .login-footer {
+    justify-content: center;
   }
 }

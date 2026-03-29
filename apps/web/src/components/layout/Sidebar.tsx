@@ -357,7 +357,7 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
         className="mobile-fab"
         onClick={handleNewChat}
         title="Ny samtale"
-        style={{ display: 'none' }} /* hidden by default, shown via mobile.css */
+        /* visibility controlled by mobile.css */
       >
         <Plus size={22} />
       </button>
