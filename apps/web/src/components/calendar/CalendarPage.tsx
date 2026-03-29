@@ -644,30 +644,18 @@ export function CalendarPage() {
       {/* ── Body ── */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden', gap: 0 }}>
         {/* Calendar grid */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {loading ? (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5A5A5A', fontSize: 14 }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+          {loading && (
+            <div style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 10, background: '#252525', borderRadius: 6, padding: '4px 12px', fontSize: 12, color: '#5A5A5A' }}>
               Laster oppgaver...
             </div>
-          ) : tasks.length === 0 ? (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-              <CalendarClock size={40} style={{ color: '#2A2A2A' }} />
-              <div style={{ fontSize: 15, color: '#5A5A5A', fontWeight: 600 }}>Ingen repeterende oppgaver ennå</div>
-              <div style={{ fontSize: 13, color: '#3A3A3A', textAlign: 'center', maxWidth: 280 }}>
-                Be Sine om å lage en oppgave i chat, eller klikk "Ny oppgave" for å legge til manuelt.
-              </div>
-              <button onClick={() => setShowCreateModal(true)} style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '8px 16px', borderRadius: 8,
-                background: '#1A93FE', border: 'none', color: '#fff',
-                fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-                marginTop: 8,
-              }}>
-                <Plus size={14} />
-                Legg til oppgave
-              </button>
+          )}
+          {tasks.length === 0 && !loading && (
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 5, textAlign: 'center', pointerEvents: 'none' }}>
+              <div style={{ fontSize: 13, color: '#3A3A3A' }}>Ingen oppgaver ennå — klikk "Ny oppgave" for å legge til</div>
             </div>
-          ) : view === 'week' ? (
+          )}
+          {view === 'week' ? (
             <WeekView
               weekStart={weekStart}
               tasks={tasks}
@@ -754,14 +742,3 @@ export function CalendarPage() {
   )
 }
 
-// Re-export for use in CalendarPage empty state
-function CalendarClock({ size, style }: { size: number; style?: React.CSSProperties }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={style}>
-      <path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5" />
-      <path d="M16 2v4M8 2v4M3 10h5" />
-      <circle cx="17.5" cy="17.5" r="4.5" />
-      <path d="M17.5 15.5v2l1 1" />
-    </svg>
-  )
-}
