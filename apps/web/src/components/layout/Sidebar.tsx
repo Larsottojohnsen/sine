@@ -3,7 +3,8 @@ import {
   Plus, Search, BookOpen, FolderPlus, Trash2,
   Bot, PanelLeftClose, PanelLeftOpen, CalendarDays,
   LayoutGrid, Monitor, Terminal, ChevronRight, SlidersHorizontal,
-  MessageSquare, X, Copy, Mail, Check, ShieldCheck
+  MessageSquare, X, Copy, Mail, Check, ShieldCheck,
+  Bell, User
 } from 'lucide-react'
 import { useApp } from '@/store/AppContext'
 import { getTranslations } from '@/i18n'
@@ -15,6 +16,8 @@ interface SidebarProps {
   onNavigate?: (page: string) => void
   currentPage?: string
   activeAgentRunId?: string | null
+  onSelectConversation?: (id: string) => void
+  onNewChat?: () => void
 }
 
 // ─── Slett-bekreftelsesdialog ─────────────────────────────────
@@ -102,7 +105,7 @@ function DeleteConfirmDialog({
   )
 }
 
-export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId }: SidebarProps) {
+export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, onSelectConversation, onNewChat: onNewChatProp }: SidebarProps) {
   const {
     conversations,
     activeConversationId,
@@ -122,8 +125,12 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId }: 
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null)
 
   const handleNewChat = () => {
-    createConversation()
-    onNavigate?.('chat')
+    if (onNewChatProp) {
+      onNewChatProp()
+    } else {
+      createConversation()
+      onNavigate?.('chat')
+    }
   }
 
   const handleDeleteRequest = (id: string, title: string) => {
@@ -185,8 +192,24 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId }: 
   return (
     <>
       <div className="sidebar">
-        {/* Logo + collapse */}
-        <div className="sidebar-logo">
+        {/* Mobile topbar — only visible on mobile via CSS */}
+        <div className="mobile-topbar">
+          <button className="mobile-avatar-btn" onClick={() => setSettingsOpen(true)} title="Profil">
+            {user?.email ? user.email[0].toUpperCase() : <User size={16} />}
+          </button>
+          <span className="mobile-topbar-center">sine</span>
+          <div className="mobile-topbar-right">
+            <button className="mobile-topbar-btn" title="Varsler">
+              <Bell size={20} />
+            </button>
+            <button className="mobile-topbar-btn" onClick={() => onNavigate?.('search')} title="Søk">
+              <Search size={20} />
+            </button>
+          </div>
+        </div>
+
+        {/* Desktop: Logo + collapse */}
+        <div className="sidebar-logo sidebar-logo-desktop">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 4 }}>
             <img
               src={LOGO_LIGHT}
@@ -283,10 +306,10 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId }: 
             </p>
           ) : (
             <>
-              <ConvGroup label="I dag" conversations={groups.today} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { setActiveConversationId(id); onNavigate?.('chat') }} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
-              <ConvGroup label="I går" conversations={groups.yesterday} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { setActiveConversationId(id); onNavigate?.('chat') }} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
-              <ConvGroup label="Siste 7 dager" conversations={groups.week} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { setActiveConversationId(id); onNavigate?.('chat') }} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
-              <ConvGroup label="Eldre" conversations={groups.older} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { setActiveConversationId(id); onNavigate?.('chat') }} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
+              <ConvGroup label="I dag" conversations={groups.today} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { if (onSelectConversation) { onSelectConversation(id) } else { setActiveConversationId(id); onNavigate?.('chat') } }} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
+              <ConvGroup label="I går" conversations={groups.yesterday} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { if (onSelectConversation) { onSelectConversation(id) } else { setActiveConversationId(id); onNavigate?.('chat') } }} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
+              <ConvGroup label="Siste 7 dager" conversations={groups.week} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { if (onSelectConversation) { onSelectConversation(id) } else { setActiveConversationId(id); onNavigate?.('chat') } }} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
+              <ConvGroup label="Eldre" conversations={groups.older} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { if (onSelectConversation) { onSelectConversation(id) } else { setActiveConversationId(id); onNavigate?.('chat') } }} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
             </>
           )}
         </div>
@@ -328,6 +351,16 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId }: 
           </div>
         </div>
       </div>
+
+      {/* Mobile FAB — new chat button, only visible on mobile via CSS */}
+      <button
+        className="mobile-fab"
+        onClick={handleNewChat}
+        title="Ny samtale"
+        style={{ display: 'none' }} /* hidden by default, shown via mobile.css */
+      >
+        <Plus size={22} />
+      </button>
 
       {/* Referral Modal */}
       {referralOpen && <ReferralModal onClose={() => setReferralOpen(false)} />}

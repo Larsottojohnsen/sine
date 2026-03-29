@@ -1,11 +1,15 @@
 import { useState, useRef } from 'react'
-import { ChevronDown, Share2, MoreHorizontal, Bell, Users } from 'lucide-react'
+import { ChevronDown, Share2, MoreHorizontal, Bell, Users, ChevronLeft } from 'lucide-react'
 import { useApp } from '@/store/AppContext'
 import { getTranslations } from '@/i18n'
 import { UserAvatarDropdown } from './UserAvatarDropdown'
 import { CollaboratePanel } from './CollaboratePanel'
 
-export function Header() {
+interface HeaderProps {
+  onMobileBack?: () => void
+}
+
+export function Header({ onMobileBack }: HeaderProps) {
   const { activeConversation, settings, openSettingsTab } = useApp()
   const t = getTranslations(settings.language)
   const [collaborateOpen, setCollaborateOpen] = useState(false)
@@ -22,8 +26,17 @@ export function Header() {
 
   return (
     <header className="header">
-      {/* Left: model selector */}
-      <div style={{ display: 'flex', alignItems: 'center' }}>
+      {/* Left: back button (mobile) + model selector */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        {/* Mobile back button — only visible on mobile via CSS */}
+        <button
+          className="mobile-back-btn"
+          onClick={onMobileBack}
+          aria-label="Tilbake"
+        >
+          <ChevronLeft size={20} />
+          <span style={{ fontSize: 16 }}>Tilbake</span>
+        </button>
         <button className="header-model-btn">
           <span>{currentModel}</span>
           <ChevronDown size={15} style={{ color: '#5A5A5A', flexShrink: 0 }} />
@@ -50,7 +63,7 @@ export function Header() {
 
         {activeConversation && (
           <>
-            <div style={{ width: 1, height: 16, background: '#252525', margin: '0 2px' }} />
+            <div style={{ width: 1, height: 16, background: '#252525', margin: '0 2px' }} className="header-divider" />
             <button
               ref={collaborateRef}
               className="header-action-btn"

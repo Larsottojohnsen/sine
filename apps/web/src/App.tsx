@@ -1,4 +1,4 @@
-import { useState, createContext, useContext, useEffect } from 'react'
+import { useState, createContext, useContext, useEffect, useCallback } from 'react'
 import { AppProvider } from './store/AppContext'
 import { Sidebar } from './components/layout/Sidebar'
 import { Header } from './components/layout/Header'
@@ -23,6 +23,9 @@ interface NavContextType {
   setPendingAgentTask: (task: string | null) => void
   searchOpen: boolean
   setSearchOpen: (open: boolean) => void
+  // Mobile navigation
+  mobileShowChat: boolean
+  setMobileShowChat: (show: boolean) => void
 }
 
 export const NavContext = createContext<NavContextType>({
@@ -32,6 +35,8 @@ export const NavContext = createContext<NavContextType>({
   setPendingAgentTask: () => {},
   searchOpen: false,
   setSearchOpen: () => {},
+  mobileShowChat: false,
+  setMobileShowChat: () => {},
 })
 
 export function useNav() {
@@ -42,6 +47,8 @@ function AppLayout() {
   const [currentPage, setCurrentPage] = useState<AppPage>('chat')
   const [pendingAgentTask, setPendingAgentTask] = useState<string | null>(null)
   const [searchOpen, setSearchOpen] = useState(false)
+  // Mobile: false = show sidebar/conv list, true = show chat
+  const [mobileShowChat, setMobileShowChat] = useState(false)
   const { setActiveConversationId, createConversation, settings } = useApp()
 
   // Apply theme to document root
@@ -77,37 +84,62 @@ function AppLayout() {
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
-  const handleNavigate = (p: string) => {
+  const handleNavigate = useCallback((p: string) => {
     if (p === 'agents') {
       setPendingAgentTask('')
       setCurrentPage('chat')
+      setMobileShowChat(true)
     } else if (p === 'search') {
       setSearchOpen(true)
     } else if (p === 'calendar') {
       setCurrentPage('calendar')
+      setMobileShowChat(true)
     } else if (p === 'admin') {
       setCurrentPage('admin')
+      setMobileShowChat(true)
     } else {
       setCurrentPage(p as AppPage)
     }
-  }
+  }, [])
 
-  const handleSelectConversation = (id: string) => {
+  const handleSelectConversation = useCallback((id: string) => {
     setActiveConversationId(id)
     setCurrentPage('chat')
-  }
+    setMobileShowChat(true)
+  }, [setActiveConversationId])
 
-  const handleNewChat = () => {
+  const handleNewChat = useCallback(() => {
     createConversation()
     setCurrentPage('chat')
-  }
+    setMobileShowChat(true)
+  }, [createConversation])
+
+  const handleMobileBack = useCallback(() => {
+    setMobileShowChat(false)
+  }, [])
 
   return (
-    <NavContext.Provider value={{ currentPage, setCurrentPage, pendingAgentTask, setPendingAgentTask, searchOpen, setSearchOpen }}>
+    <NavContext.Provider value={{
+      currentPage, setCurrentPage,
+      pendingAgentTask, setPendingAgentTask,
+      searchOpen, setSearchOpen,
+      mobileShowChat, setMobileShowChat,
+    }}>
       <div className="app-layout">
-        <Sidebar onNavigate={handleNavigate} currentPage={currentPage} />
-        <div className="main-content">
-          {currentPage !== 'calendar' && currentPage !== 'admin' && <Header />}
+        {/* Sidebar: hidden on mobile when chat is active */}
+        <div className={`sidebar-wrapper${mobileShowChat ? ' mobile-hidden' : ''}`}>
+          <Sidebar
+            onNavigate={handleNavigate}
+            currentPage={currentPage}
+            onSelectConversation={handleSelectConversation}
+            onNewChat={handleNewChat}
+          />
+        </div>
+        {/* Main content: hidden on mobile when sidebar is active */}
+        <div className={`main-content${!mobileShowChat ? ' mobile-hidden' : ''}`}>
+          {currentPage !== 'calendar' && currentPage !== 'admin' && (
+            <Header onMobileBack={handleMobileBack} />
+          )}
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             {currentPage === 'library' ? (
               <LibraryView />
