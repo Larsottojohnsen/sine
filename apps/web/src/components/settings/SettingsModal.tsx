@@ -3,12 +3,13 @@ import {
   X, User, Settings, BarChart2, CreditCard, HelpCircle,
   Calendar, Mail, Database, Globe, Zap, Plug,
   ExternalLink, ChevronDown, Cloud, Palette, Monitor,
-  Check, TrendingUp, AlertCircle, LogOut
+  AlertCircle, LogOut
 } from 'lucide-react'
 import { useApp } from '@/store/AppContext'
 import { getTranslations } from '@/i18n'
 import { SkillsContent } from './SkillsContent'
 import { ConnectorsContent } from './ConnectorsContent'
+import { BillingContent as BillingContentExternal } from './BillingContent'
 import { useAuth } from '@/hooks/useAuth'
 import { useCredits } from '@/hooks/useCredits'
 
@@ -127,7 +128,7 @@ export function SettingsModal() {
             <UsageContent />
           )}
           {activeTab === 'billing' && (
-            <BillingContent />
+            <BillingContentExternal />
           )}
           {activeTab === 'personalization' && (
             <PersonalizationContent />
@@ -515,187 +516,6 @@ function UsageContent() {
             ))}
           </div>
         )}
-      </div>
-    </div>
-  )
-}
-
-function BillingContent() {
-  const { user } = useAuth()
-  const { profile } = useCredits(user?.id ?? null)
-  const isPro = profile?.plan === 'pro'
-  const [selectedPack, setSelectedPack] = useState('2000')
-  const [purchasing, setPurchasing] = useState(false)
-
-  const creditPacks = [
-    { id: '2000',  label: '2 000 kreditter',  price: 'kr 49',  priceId: 'price_2000_nok' },
-    { id: '5000',  label: '5 000 kreditter',  price: 'kr 99',  priceId: 'price_5000_nok' },
-    { id: '10000', label: '10 000 kreditter', price: 'kr 179', priceId: 'price_10000_nok' },
-  ]
-
-  const handleBuyCredits = async () => {
-    setPurchasing(true)
-    try {
-      const pack = creditPacks.find(p => p.id === selectedPack)
-      if (!pack) return
-      // In production: call backend to create Stripe checkout session
-      alert(`Stripe-betaling for ${pack.label} (${pack.price}) — kobles til Stripe i produksjon`)
-    } finally {
-      setPurchasing(false)
-    }
-  }
-
-  const handleUpgradePro = async () => {
-    alert('Stripe Pro-abonnement — kobles til Stripe i produksjon')
-  }
-
-  return (
-    <div>
-      <h2 className="settings-title">Fakturering</h2>
-
-      {/* Current plan */}
-      <div className="settings-section">
-        <p className="settings-section-label">Nåværende plan</p>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-          {/* Free plan */}
-          <div style={{
-            padding: 16, borderRadius: 12, background: '#1A1A1A',
-            border: `1px solid ${!isPro ? '#1A93FE' : '#2A2A2A'}`,
-            position: 'relative', cursor: 'pointer',
-          }}>
-            {!isPro && (
-              <div style={{
-                position: 'absolute', top: 10, right: 10,
-                width: 18, height: 18, borderRadius: '50%',
-                background: '#1A93FE', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Check size={11} color="white" />
-              </div>
-            )}
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#E5E5E5', marginBottom: 4 }}>Gratis</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: '#E5E5E5', marginBottom: 2 }}>kr 0<span style={{ fontSize: 13, fontWeight: 400, color: '#5A5A5A' }}>/mnd</span></div>
-            <div style={{ fontSize: 12, color: '#5A5A5A', marginBottom: 10 }}>1 000 kreditter/mnd</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              {['Tilgang til Sine Chat', 'Grunnleggende skills', '1 000 kreditter/mnd'].map(f => (
-                <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Check size={11} style={{ color: '#5A5A5A', flexShrink: 0 }} />
-                  <span style={{ fontSize: 11, color: '#9A9A9A' }}>{f}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Pro plan */}
-          <div style={{
-            padding: 16, borderRadius: 12,
-            background: isPro ? 'linear-gradient(135deg, rgba(26,147,254,0.12), rgba(0,85,204,0.08))' : '#1A1A1A',
-            border: `1px solid ${isPro ? '#1A93FE' : '#2A2A2A'}`,
-            position: 'relative', cursor: 'pointer',
-          }}>
-            {isPro && (
-              <div style={{
-                position: 'absolute', top: 10, right: 10,
-                width: 18, height: 18, borderRadius: '50%',
-                background: '#1A93FE', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Check size={11} color="white" />
-              </div>
-            )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-              <span style={{ fontSize: 15, fontWeight: 700, color: '#E5E5E5' }}>Pro</span>
-              <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: '#1A93FE', color: 'white', fontWeight: 600 }}>POPULÆR</span>
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: '#E5E5E5', marginBottom: 2 }}>kr 149<span style={{ fontSize: 13, fontWeight: 400, color: '#5A5A5A' }}>/mnd</span></div>
-            <div style={{ fontSize: 12, color: '#5A5A5A', marginBottom: 10 }}>1 000 kreditter inkl. + påfyll</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              {['Alt i Gratis', 'Prioritert support', 'Avanserte skills', 'Alle connectors', '1 000 kreditter/mnd inkl.'].map(f => (
-                <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Check size={11} style={{ color: '#1A93FE', flexShrink: 0 }} />
-                  <span style={{ fontSize: 11, color: '#9A9A9A' }}>{f}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {!isPro && (
-          <button
-            onClick={handleUpgradePro}
-            style={{
-              width: '100%', padding: '11px 16px', borderRadius: 10,
-              background: '#1A93FE', border: 'none', color: 'white',
-              fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-              transition: 'background 0.15s', marginBottom: 20,
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#0077E6')}
-            onMouseLeave={e => (e.currentTarget.style.background = '#1A93FE')}
-          >
-            Oppgrader til Pro – kr 149/mnd
-          </button>
-        )}
-      </div>
-
-      {/* Buy credits */}
-      <div style={{ height: 1, background: '#222222', margin: '4px 0 20px' }} />
-      <div className="settings-section">
-        <p className="settings-section-label">Kjøp kreditter</p>
-        <div style={{ fontSize: 12, color: '#5A5A5A', marginBottom: 12 }}>
-          Kreditter utløper ikke og kan brukes når som helst.
-        </div>
-
-        {/* Credit pack selector */}
-        <div style={{ position: 'relative', marginBottom: 12 }}>
-          <select
-            value={selectedPack}
-            onChange={e => setSelectedPack(e.target.value)}
-            style={{
-              width: '100%', padding: '10px 36px 10px 14px',
-              background: '#222222', border: '1px solid #2E2E2E',
-              borderRadius: 10, color: '#E5E5E5', fontSize: 14,
-              appearance: 'none', cursor: 'pointer', fontFamily: 'inherit',
-              outline: 'none',
-            }}
-          >
-            {creditPacks.map(p => (
-              <option key={p.id} value={p.id}>{p.label} — {p.price}</option>
-            ))}
-          </select>
-          <ChevronDown size={14} style={{
-            position: 'absolute', right: 12, top: '50%',
-            transform: 'translateY(-50%)', color: '#5A5A5A', pointerEvents: 'none',
-          }} />
-        </div>
-
-        <button
-          onClick={handleBuyCredits}
-          disabled={purchasing}
-          style={{
-            width: '100%', padding: '10px 16px', borderRadius: 10,
-            background: purchasing ? '#1A1A1A' : '#222222',
-            border: '1px solid #2E2E2E', color: '#E5E5E5',
-            fontSize: 14, fontWeight: 500, cursor: purchasing ? 'not-allowed' : 'pointer',
-            fontFamily: 'inherit', transition: 'all 0.15s',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          }}
-          onMouseEnter={e => { if (!purchasing) e.currentTarget.style.borderColor = '#1A93FE' }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = '#2E2E2E' }}
-        >
-          <TrendingUp size={15} />
-          {purchasing ? 'Behandler...' : `Kjøp ${creditPacks.find(p => p.id === selectedPack)?.label} — ${creditPacks.find(p => p.id === selectedPack)?.price}`}
-        </button>
-      </div>
-
-      {/* Current balance */}
-      <div style={{ height: 1, background: '#222222', margin: '4px 0 20px' }} />
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '12px 16px', borderRadius: 10, background: '#222222', border: '1px solid #2A2A2A',
-      }}>
-        <span style={{ fontSize: 13, color: '#9A9A9A' }}>Nåværende saldo</span>
-        <span style={{ fontSize: 16, fontWeight: 700, color: '#E5E5E5' }}>
-          {(profile?.credits ?? 0).toLocaleString('no-NO')} kreditter
-        </span>
       </div>
     </div>
   )
