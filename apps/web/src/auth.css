@@ -69,7 +69,7 @@
 .login-logo-img {
   height: 28px;
   width: auto;
-  filter: brightness(0) invert(1);
+  /* CDN logo is already white — no filter needed */
 }
 
 /* ---- Card wrapper ---- */
@@ -388,30 +388,11 @@
   width: 48px;
   height: 48px;
   object-fit: contain;
-  /* SVG er grå på hvit bakgrunn – inverterer til hvit på mørk bakgrunn */
-  filter: brightness(0) invert(1);
-  opacity: 0.88;
+  /* CDN icon is already white — no filter needed */
+  opacity: 0.92;
 }
 
-/* ---- Dev-bypass knapp ---- */
-.login-dev-btn {
-  margin-top: 16px;
-  background: none;
-  border: 1px dashed rgba(255,200,0,0.25);
-  border-radius: 8px;
-  color: rgba(255,200,0,0.45);
-  font-size: 11px;
-  padding: 7px 14px;
-  cursor: pointer;
-  transition: all 0.15s;
-  font-family: inherit;
-  width: 100%;
-}
-.login-dev-btn:hover {
-  border-color: rgba(255,200,0,0.5);
-  color: rgba(255,200,0,0.75);
-  background: rgba(255,200,0,0.04);
-}
+/* Dev-bypass button removed */
 
 /* ---- Johnsen Technology branding ---- */
 .login-bottom-brand {
@@ -427,8 +408,8 @@
 .login-jtg-logo {
   height: 22px;
   width: auto;
-  opacity: 0.28;
-  filter: brightness(0) invert(1);
+  opacity: 0.35;
+  /* CDN logo is already white — no filter needed */
   display: block;
 }
 

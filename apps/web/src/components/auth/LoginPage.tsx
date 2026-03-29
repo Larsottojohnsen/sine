@@ -5,6 +5,7 @@ import { getSupabase } from '../../hooks/useAuth'
 // CDN logo URLs
 const LOGO_LIGHT = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Sine-hvit-svg_cc029234.svg"
 const ICON_LIGHT = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Sine-svg-ikon-hvit_3c0f0e3c.svg"
+const JTG_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/jtg-logo-white_d8e14302.png"
 
 type LoginStep = 'main' | 'email-password' | 'create-account'
 
@@ -311,8 +312,8 @@ export function LoginPage() {
 
       {/* Johnsen Technology branding – bunn av siden */}
       <div className="login-bottom-brand" style={{ pointerEvents: 'auto' }}>
-        <a href="https://jtec.no" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px', fontWeight: 600, textDecoration: 'none', letterSpacing: '0.02em' }}>
-          Johnsen Technology
+        <a href="https://jtec.no" target="_blank" rel="noopener noreferrer">
+          <img src={JTG_LOGO} alt="Johnsen Technology" className="login-jtg-logo" />
         </a>
       </div>
     </div>
