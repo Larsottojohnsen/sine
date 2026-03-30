@@ -5636,3 +5636,222 @@ test
 .recurring-task-card-view-more { background: none; border: none; color: #5A5A5A; font-size: 12px; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 4px; padding: 0; }
 .recurring-task-card-view-more:hover { color: #9A9A9A; }
 .recurring-task-card-connector-warning { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: 8px; background: #2A1A00; border: 1px solid #3A2800; margin-bottom: 10px; font-size: 11px; color: #F59E0B; line-height: 1.5; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   LIGHT THEME OVERRIDES  [data-theme="light"]
+   All dark-hardcoded colours are overridden here so the app
+   looks clean in light mode without touching the dark defaults.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Root / body ─────────────────────────────────────────────── */
+[data-theme="light"] body,
+[data-theme="light"] html,
+[data-theme="light"] #root {
+  background: #F5F5F5;
+  color: #111111;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────── */
+[data-theme="light"] .sidebar {
+  background: #FAFAFA;
+  border-right: 1px solid #E5E5E5;
+}
+[data-theme="light"] .sidebar-collapsed {
+  background: #FAFAFA;
+  border-right: 1px solid #E5E5E5;
+}
+[data-theme="light"] .sidebar-divider { background: #E5E5E5; }
+[data-theme="light"] .sidebar-section-label { color: #999999; }
+[data-theme="light"] .sidebar-bottom { border-top: 1px solid #E5E5E5; }
+[data-theme="light"] .sidebar-section-header { color: #888888; }
+
+/* ── Nav items ───────────────────────────────────────────────── */
+[data-theme="light"] .nav-item { color: #444444; }
+[data-theme="light"] .nav-item:hover { background: #EEEEEE; color: #111111; }
+[data-theme="light"] .nav-item.active { background: #E8E8E8; color: #111111; }
+[data-theme="light"] .nav-item.highlight { color: #111111; }
+[data-theme="light"] .nav-item.highlight:hover { background: #EEEEEE; }
+[data-theme="light"] .icon-btn { color: #555555; }
+[data-theme="light"] .icon-btn:hover { background: #EEEEEE; color: #111111; }
+[data-theme="light"] .conv-item { color: #555555; }
+[data-theme="light"] .conv-item:hover { background: #EEEEEE; color: #222222; }
+[data-theme="light"] .conv-item.active { background: #E8E8E8; color: #111111; }
+[data-theme="light"] .conv-group-label { color: #AAAAAA; }
+
+/* ── Referral banner ─────────────────────────────────────────── */
+[data-theme="light"] .referral-banner {
+  background: #EEEEEE !important;
+  border: 1px solid #DDDDDD !important;
+}
+[data-theme="light"] .referral-banner:hover {
+  background: #E5E5E5 !important;
+  border-color: #CCCCCC !important;
+}
+[data-theme="light"] .referral-icon-wrap { background: #DDDDDD; }
+[data-theme="light"] .referral-title { color: #333333; }
+[data-theme="light"] .referral-sub { color: #777777; }
+
+/* ── Referral modal ──────────────────────────────────────────── */
+[data-theme="light"] .referral-modal {
+  background: #FFFFFF;
+  border: 1px solid #E0E0E0;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.15);
+}
+[data-theme="light"] .referral-modal-close { background: #F0F0F0; color: #555555; }
+[data-theme="light"] .referral-modal-close:hover { background: #E0E0E0; color: #111111; }
+[data-theme="light"] .referral-modal-title { color: #111111; }
+[data-theme="light"] .referral-modal-sub { color: #666666; }
+[data-theme="light"] .referral-modal-sub strong { color: #333333; }
+[data-theme="light"] .referral-modal-tabs { background: #F0F0F0; }
+[data-theme="light"] .referral-tab { color: #666666; }
+[data-theme="light"] .referral-tab.active { background: #FFFFFF; color: #111111; }
+[data-theme="light"] .referral-copy-btn { background: #F0F0F0; border: 1px solid #DDDDDD; color: #333333; }
+[data-theme="light"] .referral-copy-btn:hover { background: #E5E5E5; }
+
+/* ── Settings modal ──────────────────────────────────────────── */
+[data-theme="light"] .modal-overlay { background: rgba(0,0,0,0.35); }
+[data-theme="light"] .modal-panel {
+  background: #FFFFFF;
+  border: 1px solid #E0E0E0;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.15);
+}
+[data-theme="light"] .modal-sidebar {
+  background: #F5F5F5;
+  border-right: 1px solid #E5E5E5;
+}
+[data-theme="light"] .modal-sidebar-user { border-bottom: 1px solid #E5E5E5; }
+[data-theme="light"] .modal-sidebar-username { color: #111111; }
+[data-theme="light"] .modal-sidebar-item { color: #666666; }
+[data-theme="light"] .modal-sidebar-item:hover { background: #EBEBEB; color: #111111; }
+[data-theme="light"] .modal-sidebar-item.active { background: #E5E5E5; color: #111111; }
+[data-theme="light"] .modal-content { background: #FFFFFF; }
+[data-theme="light"] .modal-close { color: #888888; }
+[data-theme="light"] .modal-close:hover { background: #F0F0F0; color: #333333; }
+
+/* ── Settings content ────────────────────────────────────────── */
+[data-theme="light"] .settings-title { color: #111111; }
+[data-theme="light"] .settings-section-label { color: #999999; }
+[data-theme="light"] .settings-row { border-bottom: 1px solid #EEEEEE; }
+[data-theme="light"] .settings-row-label { color: #222222; }
+[data-theme="light"] .settings-row-desc { color: #888888; }
+[data-theme="light"] .settings-select {
+  background: #F5F5F5;
+  border: 1px solid #DDDDDD;
+  color: #222222;
+}
+[data-theme="light"] .settings-select:focus { border-color: #BBBBBB; }
+[data-theme="light"] .appearance-card { border: 2px solid #DDDDDD; }
+[data-theme="light"] .appearance-card.active { border-color: #1A93FE; }
+[data-theme="light"] .appearance-card:hover:not(.active) { border-color: #BBBBBB; }
+[data-theme="light"] .appearance-card-label { background: #F5F5F5; color: #777777; }
+[data-theme="light"] .appearance-card.active .appearance-card-label { color: #1A93FE; }
+
+/* ── Header ──────────────────────────────────────────────────── */
+[data-theme="light"] .header {
+  background: #FFFFFF;
+  border-bottom: 1px solid #EEEEEE;
+}
+[data-theme="light"] .header-model-btn { color: #222222; }
+[data-theme="light"] .header-model-btn:hover { background: #F0F0F0; }
+[data-theme="light"] .header-action-btn {
+  border: 1px solid #DDDDDD;
+  color: #666666;
+}
+[data-theme="light"] .header-action-btn:hover { background: #F0F0F0; color: #222222; border-color: #CCCCCC; }
+[data-theme="light"] .header-icon-btn { color: #666666; }
+[data-theme="light"] .header-icon-btn:hover { background: #F0F0F0; color: #333333; }
+[data-theme="light"] .header-credits-btn { color: #666666; }
+[data-theme="light"] .header-credits-btn:hover { background: #F0F0F0; color: #222222; }
+
+/* ── Main content / chat area ────────────────────────────────── */
+[data-theme="light"] .main-content { background: #FFFFFF; }
+[data-theme="light"] .chat-view { background: #FFFFFF; }
+[data-theme="light"] .welcome-screen { background: #FFFFFF; }
+[data-theme="light"] .welcome-title { color: #111111; }
+[data-theme="light"] .welcome-chip {
+  border: 1px solid #DDDDDD;
+  color: #666666;
+}
+[data-theme="light"] .welcome-chip:hover { background: #F0F0F0; color: #222222; border-color: #CCCCCC; }
+
+/* ── Chat messages ───────────────────────────────────────────── */
+[data-theme="light"] .message-user-bubble {
+  background: #F0F0F0;
+  color: #111111;
+}
+[data-theme="light"] .message-assistant { color: #222222; }
+[data-theme="light"] .message-badge-clean {
+  background: #EEEEEE;
+  color: #666666;
+  border: 1px solid #DDDDDD;
+}
+[data-theme="light"] .message-action-btn { color: #AAAAAA; }
+[data-theme="light"] .message-action-btn:hover { background: #F0F0F0; color: #333333; }
+[data-theme="light"] .prose { color: #222222; }
+
+/* ── Chat input ──────────────────────────────────────────────── */
+[data-theme="light"] .chat-input-area {
+  background: #FFFFFF;
+  border-top: 1px solid #EEEEEE;
+}
+[data-theme="light"] .chat-input-box {
+  background: #F5F5F5;
+  border: 1px solid #E0E0E0;
+}
+[data-theme="light"] .chat-input-box:focus-within { border-color: #CCCCCC; }
+[data-theme="light"] .chat-textarea { color: #111111; }
+[data-theme="light"] .chat-textarea::placeholder { color: #AAAAAA; }
+[data-theme="light"] .chat-input-btn { color: #666666; }
+[data-theme="light"] .chat-input-btn:hover { background: #EBEBEB; color: #333333; }
+[data-theme="light"] .send-btn { background: #111111; color: #FFFFFF; }
+[data-theme="light"] .send-btn:hover { background: #333333; }
+[data-theme="light"] .send-btn:disabled { background: #DDDDDD; color: #AAAAAA; }
+
+/* ── Agent task steps ────────────────────────────────────────── */
+[data-theme="light"] .mns-phase-title { color: #111111; }
+[data-theme="light"] .mns-phase-desc { color: #666666; }
+[data-theme="light"] .mns-pill {
+  background: #F0F0F0;
+  border: 1px solid #DDDDDD;
+  color: #333333;
+}
+[data-theme="light"] .mns-pill-icon { color: #666666; }
+[data-theme="light"] .mns-connector-line { border-left: 2px dashed #CCCCCC; }
+[data-theme="light"] .mns-phase-circle {
+  background: #EEEEEE;
+  border: 2px solid #CCCCCC;
+  color: #666666;
+}
+[data-theme="light"] .mns-phase-circle.done {
+  background: #E8F4FF;
+  border-color: #1A93FE;
+  color: #1A93FE;
+}
+
+/* ── Code blocks ─────────────────────────────────────────────── */
+[data-theme="light"] .code-block-wrapper { border: 1px solid #E0E0E0; }
+[data-theme="light"] .code-block-header {
+  background: #F5F5F5;
+  border-bottom: 1px solid #E0E0E0;
+}
+[data-theme="light"] .code-block-lang { color: #888888; }
+[data-theme="light"] .code-block-copy { color: #888888; }
+[data-theme="light"] .code-block-copy:hover { color: #333333; }
+
+/* ── Mobile topbar ───────────────────────────────────────────── */
+[data-theme="light"] .mobile-topbar {
+  background: #FAFAFA;
+  border-bottom: 1px solid #E5E5E5;
+}
+[data-theme="light"] .mobile-topbar-center { color: #111111; }
+[data-theme="light"] .mobile-topbar-btn { color: #555555; }
+[data-theme="light"] .mobile-avatar-btn { background: #EEEEEE; color: #333333; }
+
+/* ── Thinking indicator ──────────────────────────────────────── */
+[data-theme="light"] .thinking-text { color: #888888; }
+[data-theme="light"] .thinking-dot { background: #AAAAAA; }
+
+/* ── Scrollbar ───────────────────────────────────────────────── */
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: #CCCCCC; }
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #BBBBBB; }

@@ -168,6 +168,10 @@ function SettingsContent({
   const appearance = settings.theme ?? 'dark'
   const [autoApproveCalendar, setAutoApproveCalendar] = useState(false)
   const [pushNotifications, setPushNotifications] = useState(true)
+  const effectiveTheme = settings.theme === 'system'
+    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    : settings.theme
+  const settingsLogoSrc = effectiveTheme === 'light' ? '/sine/Sine-sort.svg' : '/sine/Sinev6.svg'
 
   return (
     <div>
@@ -177,7 +181,7 @@ function SettingsContent({
         paddingTop: 8, paddingBottom: 24, gap: 10,
       }}>
         <img
-          src="/sine/Sinev6.svg"
+          src={settingsLogoSrc}
           alt="Sine"
           style={{ width: 120, height: 'auto', opacity: 0.9 }}
         />

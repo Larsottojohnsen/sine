@@ -6,6 +6,7 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { Copy, Check, RefreshCw, ThumbsUp, ThumbsDown } from 'lucide-react'
 import type { Message } from '@/types'
 import { SaveSkillBox } from './SaveSkillBox'
+import { useApp } from '@/store/AppContext'
 
 interface ChatMessageProps {
   message: Message
@@ -18,6 +19,11 @@ export function ChatMessage({ message, onRegenerate, isLast, conversationHasSkil
   const [copied, setCopied] = useState(false)
   const [liked, setLiked] = useState<boolean | null>(null)
   const [showSaveSkill, setShowSaveSkill] = useState(true)
+  const { settings } = useApp()
+  const effectiveTheme = settings.theme === 'system'
+    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    : settings.theme
+  const chatLogoSrc = effectiveTheme === 'light' ? '/sine/Sine-sort.svg' : '/sine/Sinev6.svg'
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(message.content)
@@ -42,7 +48,7 @@ export function ChatMessage({ message, onRegenerate, isLast, conversationHasSkil
       {/* Avatar – full logo (ikon + tekst) + badge i samme rad */}
       <div className="message-avatar-row">
         <img
-          src="/sine/Sinev6.svg"
+          src={chatLogoSrc}
           alt="Sine"
           className="message-logo-img"
         />

@@ -10,7 +10,9 @@ import { useApp } from '@/store/AppContext'
 import { getTranslations } from '@/i18n'
 import { useAuth } from '@/hooks/useAuth'
 
-const LOGO_LIGHT = "/sine/Sine-hvit.svg"
+// Logo variants: Sine-hvit.svg = white logo for dark mode, Sine-sort.svg = dark logo for light mode
+const LOGO_FOR_DARK_BG = "/sine/Sine-hvit.svg"
+const LOGO_FOR_LIGHT_BG = "/sine/Sine-sort.svg"
 
 interface SidebarProps {
   onNavigate?: (page: string) => void
@@ -119,6 +121,11 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
   const { user } = useAuth()
 
   const t = getTranslations(settings.language)
+  // Determine effective theme (resolve 'system' to actual dark/light)
+  const effectiveTheme = settings.theme === 'system'
+    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    : settings.theme
+  const logoSrc = effectiveTheme === 'light' ? LOGO_FOR_LIGHT_BG : LOGO_FOR_DARK_BG
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [referralOpen, setReferralOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null)
@@ -212,7 +219,7 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
         <div className="sidebar-logo sidebar-logo-desktop">
           <button className="sidebar-logo-btn" onClick={handleNewChat} title="Ny chat">
             <img
-              src={LOGO_LIGHT}
+              src={logoSrc}
               alt="Sine"
               style={{ height: 22, width: 'auto' }}
             />
