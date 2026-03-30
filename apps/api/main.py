@@ -13,6 +13,8 @@ from routes.agent import router as agent_router
 from routes.chat import router as chat_router
 from routes.memory import router as memory_router
 from routes.conversations import router as conversations_router
+from routes.library import router as library_router
+from routes.gmail import router as gmail_router
 
 app = FastAPI(
     title="Sine API",
@@ -40,6 +42,8 @@ app.include_router(agent_router)
 app.include_router(chat_router)
 app.include_router(memory_router)
 app.include_router(conversations_router)
+app.include_router(library_router)
+app.include_router(gmail_router)
 
 
 @app.get("/health")

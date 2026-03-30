@@ -35,12 +35,28 @@ Du jobber i en isolert workspace-mappe og kan:
 - Søke på internett
 - Klone GitHub-repos
 
-## Arbeidsflyt
-1. **Planlegg** – Del oppgaven inn i klare, konkrete steg
-2. **Utfør** – Bruk verktøy steg for steg, ett om gangen
-3. **Verifiser** – Sjekk at hvert steg fungerte før du går videre
-4. **Pakk og lever** – Pakk ALLTID alle leveransefiler i en ZIP-fil for enkel nedlasting
-5. **Oppsummer** – Skriv en klar oppsummering på norsk av hva som ble laget
+## GSD-prosjektmodus (Getting Stuff Done)
+Når du mottar en oppgave, bruk alltid denne strukturerte tilnærmingen:
+
+### Fase 1: FORSTÅ
+- Analyser oppgaven grundig
+- Identifiser hva som faktisk trengs (ikke bare det som ble bedt om)
+- Spesifiser suksesskriterier
+
+### Fase 2: PLANLEGG
+- Del oppgaven i 3-7 konkrete, målbare steg
+- Estimer kompleksitet per steg
+- Identifiser potensielle hindringer
+
+### Fase 3: UTFØR
+- Kjør ett steg om gangen
+- Verifiser resultatet av hvert steg
+- Adapte planen hvis noe feiler
+
+### Fase 4: LEVER
+- Pakk alle leveransefiler som ZIP
+- Skriv README.md med instruksjoner
+- Oppsummer hva som ble laget
 
 ## Viktige regler
 - Alltid planlegg FØR du starter å kjøre kommandoer
@@ -54,6 +70,9 @@ Du jobber i en isolert workspace-mappe og kan:
 - **ALLTID pakk leveransen som ZIP** – bruk terminal: zip -r leveranse.zip <mappe>/
 - Skriv alltid en README.md med installasjonsinstruksjoner
 - Bare spør brukeren om hjelp hvis du absolutt ikke finner noen løsning etter mange forsøk
+
+## Brukerminne
+{user_memory_context}
 
 ## Leveranse-format
 Når du er ferdig, skriv en oppsummering som:
@@ -130,9 +149,18 @@ class SineOrchestrator:
         self.approval_result: Optional[bool] = None
         self._event_queue: asyncio.Queue = asyncio.Queue()
 
-    def _system_prompt(self) -> str:
+    def _system_prompt(self, user_memory: list[dict] | None = None) -> str:
         instructions = SAFE_MODE_ON if self.safe_mode else SAFE_MODE_OFF
-        return SYSTEM_PROMPT.format(safe_mode_instructions=instructions)
+        # Bygg brukerminne-kontekst
+        if user_memory:
+            memory_lines = "\n".join(f"- {m.get('key', '')}: {m.get('value', '')}" for m in user_memory)
+            memory_context = f"Brukeren har delt følgende kontekst om seg selv:\n{memory_lines}"
+        else:
+            memory_context = "(Ingen brukerminne registrert ennå)"
+        return SYSTEM_PROMPT.format(
+            safe_mode_instructions=instructions,
+            user_memory_context=memory_context,
+        )
 
     def _claude_tools(self) -> list[dict]:
         return [t.to_claude_tool() for t in self.tools.values()]
@@ -242,9 +270,10 @@ class SineOrchestrator:
 
         return clean_text, suggestions[:3]
 
-    async def run(self, task: str) -> AsyncGenerator[AgentEvent, None]:
+    async def run(self, task: str, user_memory: list[dict] | None = None) -> AsyncGenerator[AgentEvent, None]:
         """Kjør agenten og yield events"""
         self.state.status = AgentStatus.PLANNING
+        self._user_memory = user_memory or []
 
         await self._emit("status", {"status": "planning", "message": f"Planlegger: {task}"})
 
@@ -270,7 +299,7 @@ class SineOrchestrator:
                 response = await self.client.messages.create(
                     model=self.model,
                     max_tokens=8096,
-                    system=self._system_prompt(),
+                    system=self._system_prompt(self._user_memory),
                     tools=self._claude_tools(),
                     messages=self.messages
                 )

@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   X, Search, Plus, ChevronDown,
-  FileJson, Settings2, Loader2, Trash2, Plug
+  FileJson, Settings2, Loader2, Trash2, Plug, CheckCircle2
 } from 'lucide-react'
 import type { CustomApiConnector, CustomMcpConnector, ConnectorStatus } from '@/types'
 import { useApp } from '@/store/AppContext'
@@ -258,7 +258,44 @@ function AppsTab({ search }: { search: string }) {
     c.name.toLowerCase().includes(search.toLowerCase())
   )
 
+  const API_BASE = import.meta.env.VITE_API_URL || 'https://sineapi-production-8db6.up.railway.app'
+
+  // Sjekk Gmail-status ved mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('gmail_connected') === 'true') {
+      const updated = { ...statuses, gmail: 'connected' as ConnectorStatus }
+      updateSettings({ connectorStatuses: updated })
+      // Fjern query param
+      window.history.replaceState({}, '', window.location.pathname + window.location.hash)
+    }
+    if (params.get('gmail_error')) {
+      console.error('Gmail OAuth error:', params.get('gmail_error'))
+      window.history.replaceState({}, '', window.location.pathname + window.location.hash)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const handleConnect = async (id: string) => {
+    if (id === 'gmail') {
+      // Ekte Gmail OAuth
+      setConnecting(id)
+      try {
+        const res = await fetch(`${API_BASE}/api/gmail/auth-url`)
+        const data = await res.json()
+        if (data.auth_url) {
+          window.location.href = data.auth_url
+        } else {
+          console.error('Ingen auth_url fra backend')
+        }
+      } catch (e) {
+        console.error('Gmail auth-url feil:', e)
+      } finally {
+        setConnecting(null)
+      }
+      return
+    }
+    // Andre connectors: simuler for nå
     setConnecting(id)
     await new Promise(r => setTimeout(r, 1500))
     const updated = { ...statuses, [id]: 'connected' as ConnectorStatus }

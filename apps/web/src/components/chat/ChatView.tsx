@@ -197,6 +197,13 @@ export function ChatView() {
   const { sendMessage, stopStreaming, isStreaming } = useChat()
   const { state: agentState, startAgent, stopAgent, approveAction, fetchFileContent } = useAgent()
   const { memory, addMemory, removeMemory, clearMemory, extractFromMessage } = useUserMemory()
+
+  // Sync memory to settings so useChat can access it without prop drilling
+  useEffect(() => {
+    updateSettings({ userMemory: memory })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [memory])
+
   const [agentMode, setAgentMode] = useState<AgentMode>('safe')
   const [showSidePanel, setShowSidePanel] = useState(false)
   const [useAgentMode, setUseAgentMode] = useState(false)

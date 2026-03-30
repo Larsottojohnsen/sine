@@ -6063,3 +6063,34 @@ test
 
 [data-theme="light"] .uad-signout-btn { color: #E53E3E; }
 [data-theme="light"] .uad-signout-btn:hover { background: rgba(229,62,62,0.08); }
+
+/* ─── Skills Library Modal ───────────────────────────────────── */
+.skill-modal--wide { max-width: 560px; width: 100%; }
+.skill-modal-search {
+  display: flex; align-items: center; gap: 8px;
+  background: #1A1A1A; border: 1px solid #2A2A2A; border-radius: 8px;
+  padding: 0 12px; height: 34px; margin-bottom: 14px;
+}
+.skill-library-grid {
+  display: flex; flex-direction: column; gap: 8px;
+  max-height: 360px; overflow-y: auto; padding-right: 4px;
+}
+.skill-library-card {
+  background: #1A1A1A; border: 1px solid #2A2A2A; border-radius: 10px;
+  padding: 12px 14px; transition: border-color 0.15s;
+}
+.skill-library-card:hover { border-color: #3A3A3A; }
+.skill-library-card-top {
+  display: flex; align-items: center; gap: 10px;
+}
+.skill-library-install-btn {
+  flex-shrink: 0; padding: 5px 12px; border-radius: 7px;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  border: 1px solid #1A93FE; background: rgba(26,147,254,0.08);
+  color: #1A93FE; transition: background 0.15s;
+}
+.skill-library-install-btn:hover:not(:disabled) { background: rgba(26,147,254,0.18); }
+.skill-library-install-btn.installed {
+  border-color: #2A2A2A; background: transparent; color: #5A5A5A; cursor: default;
+  display: flex; align-items: center; gap: 5px;
+}

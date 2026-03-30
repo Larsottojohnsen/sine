@@ -8,7 +8,7 @@ import type { Skill } from '@/types'
 import { useApp } from '@/store/AppContext'
 import { v4 as uuidv4 } from 'uuid'
 
-// ─── 5 offisielle Sine-skills ─────────────────────────────────
+// ─── Offisielle Sine-skills ───────────────────────────────────
 const OFFICIAL_SKILLS: Omit<Skill, 'id' | 'enabled' | 'createdAt'>[] = [
   {
     name: 'norsk-skriveassistent',
@@ -49,6 +49,46 @@ const OFFICIAL_SKILLS: Omit<Skill, 'id' | 'enabled' | 'createdAt'>[] = [
     icon: '🎯',
     updatedAt: 'Mar 1, 2026',
     systemPrompt: 'Du er en ekspert på å lage presentasjoner. Strukturer innholdet logisk med en klar innledning, hoveddel og avslutning. Lag konsise bullet points, foreslå visuelle elementer og sørg for at presentasjonen forteller en klar historie.',
+  },
+  {
+    name: 'gmail-assistent',
+    description: 'Leser, oppsummerer og svarer på e-poster via Gmail-connector. Kan filtrere viktige meldinger, lage utkast og sende svar automatisk.',
+    source: 'official',
+    icon: '📧',
+    updatedAt: 'Mar 30, 2026',
+    systemPrompt: 'Du er en Gmail-assistent. Når brukeren ber deg om å håndtere e-post, bruk Gmail-connectoren til å lese innboksen, oppsummere viktige meldinger og lage profesjonelle svar. Prioriter alltid viktige meldinger og flagg hva som krever umiddelbar handling. Skriv alltid e-poster på norsk med mindre brukeren spesifiserer noe annet.',
+  },
+  {
+    name: 'data-analytiker',
+    description: 'Analyserer datasett, lager visualiseringer og trekker ut innsikt. Støtter CSV, Excel og JSON. Lager Python-kode for analyse og grafer.',
+    source: 'official',
+    icon: '📈',
+    updatedAt: 'Mar 30, 2026',
+    systemPrompt: 'Du er en ekspert data-analytiker. Når du mottar data, analyser dem grundig: finn mønstre, anomalier og viktige trender. Lag Python-kode med pandas og matplotlib for visualiseringer. Presenter funnene i et klart, forretningsorientert format med konkrete anbefalinger basert på dataene.',
+  },
+  {
+    name: 'rapport-forfatter',
+    description: 'Skriver profesjonelle norske rapporter, analyser og dokumenter basert på inndata. Følger norsk forretningsstil og inkluderer sammendrag, innledning og konklusjon.',
+    source: 'official',
+    icon: '📋',
+    updatedAt: 'Mar 30, 2026',
+    systemPrompt: 'Du er en profesjonell norsk rapport-forfatter. Skriv alltid strukturerte rapporter med: 1) Sammendrag, 2) Innledning, 3) Hoveddel med underkapitler, 4) Konklusjon og anbefalinger. Bruk formelt norsk bokmål, korrekt formatering og tydelige overskrifter. Inkluder alltid kildehenvisninger der relevant.',
+  },
+  {
+    name: 'meta-ads-manager',
+    description: 'Hjelper med å lage, optimalisere og analysere Meta Ads-kampanjer. Gir konkrete anbefalinger basert på ytelsesdata og norsk markedsforståelse.',
+    source: 'official',
+    icon: '📱',
+    updatedAt: 'Mar 30, 2026',
+    systemPrompt: 'Du er en ekspert på Meta Ads (Facebook/Instagram). Hjelp brukeren med å lage effektive annonser, velge riktig målgruppe og optimalisere budsjett. Gi konkrete anbefalinger basert på norsk markedsforståelse. Analyser ytelsesdata og foreslå A/B-tester. Bruk alltid norsk i kommunikasjonen.',
+  },
+  {
+    name: 'prosjekt-koordinator',
+    description: 'Hjelper med prosjektplanlegging, oppgavelister, milepæler og statusrapporter. Bruker GSD-metodikk for å holde prosjekter på sporet.',
+    source: 'official',
+    icon: '🗂️',
+    updatedAt: 'Mar 30, 2026',
+    systemPrompt: 'Du er en erfaren prosjektkoordinator. Bruk GSD-metodikk (Getting Stuff Done): 1) FORSTÅ oppgaven, 2) PLANLEGG med konkrete steg og milepæler, 3) UTFØR systematisk, 4) LEVER med oppsummering. Lag alltid klare oppgavelister, estimer tidsbruk og identifiser risikofaktorer. Hold kommunikasjonen kort og handlingsorientert.',
   },
 ]
 
@@ -94,11 +134,9 @@ function SkillCard({
       {/* Top row: name + toggle */}
       <div className="skill-card-v2-top">
         <span className="skill-card-v2-name">
+          {skill.icon && <span style={{ marginRight: 4 }}>{skill.icon}</span>}
           {skill.name}
-          {skill.source === 'official' && skill.icon === '🔍' && (
-            <Sparkles size={12} className="skill-sparkle" />
-          )}
-          {skill.source === 'official' && skill.icon === '📊' && (
+          {skill.source === 'official' && (
             <Sparkles size={12} className="skill-sparkle" />
           )}
         </span>
@@ -284,6 +322,67 @@ function BuildWithSineModal({ onClose, onNavigateToChat }: {
   )
 }
 
+// ─── Offisielt bibliotek modal ────────────────────────────────
+function OfficialLibraryModal({ onClose, onInstall, installedNames }: {
+  onClose: () => void
+  onInstall: (skill: Omit<Skill, 'id' | 'enabled' | 'createdAt'>) => void
+  installedNames: Set<string>
+}) {
+  const [search, setSearch] = useState('')
+  const filtered = OFFICIAL_SKILLS.filter(s =>
+    !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.description.toLowerCase().includes(search.toLowerCase())
+  )
+
+  return (
+    <div className="skill-modal-overlay" onClick={onClose}>
+      <div className="skill-modal skill-modal--wide" onClick={e => e.stopPropagation()}>
+        <button className="skill-modal-close" onClick={onClose}><X size={15} /></button>
+        <h3 className="skill-modal-title">Offisielt skills-bibliotek</h3>
+        <p className="skill-modal-sub">Forhåndsbygde skills vedlikeholdt av Sine-teamet. Tilgjengelig for alle brukere.</p>
+
+        <div className="skill-modal-search">
+          <Search size={13} style={{ color: '#5A5A5A' }} />
+          <input
+            placeholder="Søk skills..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ background: 'none', border: 'none', outline: 'none', color: '#E5E5E5', fontSize: 13, flex: 1 }}
+          />
+        </div>
+
+        <div className="skill-library-grid">
+          {filtered.map(skill => {
+            const installed = installedNames.has(skill.name)
+            return (
+              <div key={skill.name} className="skill-library-card">
+                <div className="skill-library-card-top">
+                  <span style={{ fontSize: 20 }}>{skill.icon}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#E5E5E5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {skill.name}
+                    </div>
+                    {skill.updatedAt && (
+                      <div style={{ fontSize: 11, color: '#5A5A5A' }}>Oppdatert {skill.updatedAt}</div>
+                    )}
+                  </div>
+                  <button
+                    className={`skill-library-install-btn${installed ? ' installed' : ''}`}
+                    onClick={() => !installed && onInstall(skill)}
+                    disabled={installed}
+                  >
+                    {installed ? <><Check size={12} /> Installert</> : '+ Legg til'}
+                  </button>
+                </div>
+                <p style={{ fontSize: 12, color: '#7A7A7A', margin: '8px 0 0', lineHeight: 1.5 }}>{skill.description}</p>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Hoved Skills-innhold ─────────────────────────────────────
 export function SkillsContent({ onNavigateToChat }: { onNavigateToChat?: (prompt: string) => void }) {
   const { settings, updateSettings } = useApp()
@@ -295,6 +394,7 @@ export function SkillsContent({ onNavigateToChat }: { onNavigateToChat?: (prompt
   const [showGithubModal, setShowGithubModal] = useState(false)
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [showBuildModal, setShowBuildModal] = useState(false)
+  const [showLibraryModal, setShowLibraryModal] = useState(false)
   const addMenuRef = useRef<HTMLDivElement>(null)
 
   // Close add menu on outside click
@@ -338,6 +438,8 @@ export function SkillsContent({ onNavigateToChat }: { onNavigateToChat?: (prompt
     handleAddSkill({ name, description: 'Lastet opp skill', source: 'upload', icon: '📦' })
     setShowUploadModal(false)
   }
+
+  const installedNames = new Set(skills.map(s => s.name))
 
   // Filter skills
   const filteredSkills = skills.filter(s => {
@@ -408,13 +510,7 @@ export function SkillsContent({ onNavigateToChat }: { onNavigateToChat?: (prompt
                   <div className="skills-v2-add-menu-sub">Last opp .zip, .skill eller mappe</div>
                 </div>
               </button>
-              <button className="skills-v2-add-menu-item" onClick={() => {
-                // Add all official skills not yet installed
-                OFFICIAL_SKILLS.forEach(s => {
-                  if (!skills.find(sk => sk.name === s.name)) handleAddSkill(s)
-                })
-                setShowAddMenu(false)
-              }}>
+              <button className="skills-v2-add-menu-item" onClick={() => { setShowLibraryModal(true); setShowAddMenu(false) }}>
                 <div className="skills-v2-add-menu-icon"><Shield size={14} /></div>
                 <div>
                   <div className="skills-v2-add-menu-label">Legg til fra offisielt bibliotek</div>
@@ -443,14 +539,10 @@ export function SkillsContent({ onNavigateToChat }: { onNavigateToChat?: (prompt
           </p>
           <button
             className="skills-v2-empty-cta"
-            onClick={() => {
-              OFFICIAL_SKILLS.forEach(s => {
-                if (!skills.find(sk => sk.name === s.name)) handleAddSkill(s)
-              })
-            }}
+            onClick={() => setShowLibraryModal(true)}
           >
             <Check size={13} />
-            Legg til alle offisielle skills
+            Utforsk offisielle skills
           </button>
         </div>
       ) : (
@@ -475,6 +567,13 @@ export function SkillsContent({ onNavigateToChat }: { onNavigateToChat?: (prompt
       )}
       {showBuildModal && (
         <BuildWithSineModal onClose={() => setShowBuildModal(false)} onNavigateToChat={onNavigateToChat ?? (() => {})} />
+      )}
+      {showLibraryModal && (
+        <OfficialLibraryModal
+          onClose={() => setShowLibraryModal(false)}
+          onInstall={skill => handleAddSkill(skill)}
+          installedNames={installedNames}
+        />
       )}
     </div>
   )

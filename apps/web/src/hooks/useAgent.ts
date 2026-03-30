@@ -98,7 +98,7 @@ export function useAgent() {
   const agentMsgIdRef = useRef<string | null>(null);
   const activeTasksRef = useRef<Map<string, AgentTask>>(new Map());
 
-  const { addMessage, updateMessage, updateAgentMessage, activeConversationId, createConversation } = useApp();
+  const { addMessage, updateMessage, updateAgentMessage, activeConversationId, createConversation, settings } = useApp();
 
   const addLog = useCallback((entry: Omit<AgentLogEntry, 'id' | 'timestamp'>) => {
     setState(prev => ({
@@ -163,7 +163,10 @@ export function useAgent() {
       const ws = new WebSocket(`${WS_BASE}/api/agent/ws/${run_id}`);
       wsRef.current = ws;
 
-      ws.onopen = () => ws.send(JSON.stringify({ task }));
+      ws.onopen = () => {
+        const userMemory = (settings.userMemory ?? []).map(m => ({ key: m.key, value: m.value }))
+        ws.send(JSON.stringify({ task, user_memory: userMemory }))
+      };
 
       ws.onmessage = (event) => {
         try {

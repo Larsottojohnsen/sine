@@ -66,12 +66,8 @@ export function useChat() {
         { role: 'user' as const, content: userInput },
       ]
 
-      // Hent brukerminne fra localStorage
-      let userMemory: Array<{key: string, value: string}> = []
-      try {
-        const stored = localStorage.getItem('sine_user_memory')
-        if (stored) userMemory = JSON.parse(stored)
-      } catch { /* ignore */ }
+      // Hent brukerminne fra settings (lastet fra Supabase via useUserMemory)
+      const userMemory: Array<{key: string, value: string}> = (settings.userMemory ?? []).map(m => ({ key: m.key, value: m.value }))
 
       // Bygg aktive skills for system prompt injeksjon
       const activeSkills = (settings.skills ?? [])
