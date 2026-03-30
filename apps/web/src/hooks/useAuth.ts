@@ -121,7 +121,7 @@ export function useAuth() {
 
     // onAuthStateChange is the single source of truth.
     // It fires for: INITIAL_SESSION, SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         // Immediately set user from session (no delay)
         setUser(mapUser(session.user))

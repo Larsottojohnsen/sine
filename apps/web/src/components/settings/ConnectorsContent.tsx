@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
   X, Search, Plus, ChevronDown,
-  FileJson, Settings2, Loader2, Trash2, Plug, CheckCircle2
+  FileJson, Settings2, Loader2, Trash2, Plug
 } from 'lucide-react'
 import type { CustomApiConnector, CustomMcpConnector, ConnectorStatus } from '@/types'
 import { useApp } from '@/store/AppContext'
