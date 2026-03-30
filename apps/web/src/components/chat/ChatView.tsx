@@ -8,6 +8,7 @@ import { useApp } from '@/store/AppContext'
 import { useChat } from '@/hooks/useChat'
 import { useAgent, type AgentMode } from '@/hooks/useAgent'
 import { useUserMemory } from '@/hooks/useUserMemory'
+import { useAuth } from '@/hooks/useAuth'
 import { useNav } from '@/App'
 import type { AgentFile } from '@/types'
 import {
@@ -196,7 +197,8 @@ export function ChatView() {
   const { activeConversation, settings, updateSettings, updateAgentMessage } = useApp()
   const { sendMessage, stopStreaming, isStreaming } = useChat()
   const { state: agentState, startAgent, stopAgent, approveAction, fetchFileContent } = useAgent()
-  const { memory, addMemory, removeMemory, clearMemory, extractFromMessage } = useUserMemory()
+  const { user } = useAuth()
+  const { memory, addMemory, removeMemory, clearMemory, extractFromMessage } = useUserMemory(user?.id)
 
   // Sync memory to settings so useChat can access it without prop drilling
   useEffect(() => {

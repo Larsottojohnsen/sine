@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import type { UserMemory } from '@/types'
-import { supabase } from '@/lib/supabaseClient'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://sineapi-production-8db6.up.railway.app'
 
@@ -25,7 +24,7 @@ function saveLocalMemory(memory: UserMemory[]): void {
   } catch { /* ignore */ }
 }
 
-// ── Konverter Supabase-rad til UserMemory ─────────────────────
+// ── Konverter API-rad til UserMemory ──────────────────────────
 function rowToMemory(row: Record<string, unknown>): UserMemory {
   return {
     id: row.id as string,
@@ -36,31 +35,18 @@ function rowToMemory(row: Record<string, unknown>): UserMemory {
   }
 }
 
-export function useUserMemory() {
+// userId passed in from the parent (useAuth) — no separate auth listener
+export function useUserMemory(userId: string | null | undefined) {
   const [memory, setMemory] = useState<UserMemory[]>([])
-  const [userId, setUserId] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)
   const extractDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // ── Hent bruker-ID fra Supabase Auth ─────────────────────────
+  // ── Last minne fra backend (eller localStorage som fallback) ──
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      const uid = data.session?.user?.id ?? null
-      setUserId(uid)
-    })
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUserId(session?.user?.id ?? null)
-    })
-    return () => listener.subscription.unsubscribe()
-  }, [])
-
-  // ── Last minne fra Supabase (eller localStorage som fallback) ─
-  useEffect(() => {
-    if (userId === undefined) return // venter på auth-sjekk
+    // userId === undefined means auth check not yet complete — wait
+    if (userId === undefined) return
 
     if (userId) {
-      // Innlogget: hent fra Supabase
       fetch(`${API_BASE}/api/memory`, {
         headers: { 'x-user-id': userId },
       })
@@ -71,12 +57,11 @@ export function useUserMemory() {
           setLoaded(true)
         })
         .catch(() => {
-          // Fallback til localStorage
           setMemory(loadLocalMemory())
           setLoaded(true)
         })
     } else {
-      // Ikke innlogget: bruk localStorage
+      // Not logged in — use localStorage
       setMemory(loadLocalMemory())
       setLoaded(true)
     }
@@ -101,7 +86,6 @@ export function useUserMemory() {
           return [...prev, newEntry]
         })
       } catch {
-        // Fallback til lokal
         setMemory(prev => {
           const existing = prev.findIndex(m => m.key.toLowerCase() === key.toLowerCase())
           let updated: UserMemory[]
@@ -191,7 +175,6 @@ export function useUserMemory() {
       return
     }
 
-    // Debounce: vent 2s etter siste melding før ekstraksjon
     if (extractDebounceRef.current) clearTimeout(extractDebounceRef.current)
     extractDebounceRef.current = setTimeout(async () => {
       try {
@@ -202,7 +185,6 @@ export function useUserMemory() {
         })
         const data = await res.json()
         if (data.added > 0) {
-          // Oppdater lokal state med nye minne-oppføringer
           const newEntries: UserMemory[] = (data.extracted ?? []).map(rowToMemory)
           setMemory(prev => {
             const updated = [...prev]
