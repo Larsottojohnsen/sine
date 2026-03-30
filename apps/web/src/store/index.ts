@@ -1,7 +1,16 @@
-import { useState, useCallback } from 'react'
-import type { Conversation, Message, SineModel, AppSettings } from '../types'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { v4 as uuidv4 } from 'uuid'
+import type { Conversation, Message, SineModel, AppSettings } from '../types'
 import { generateTitle } from '../lib/utils'
+import { useAuth } from '../hooks/useAuth'
+import {
+  fetchConversations,
+  createConversationInDb,
+  updateConversationTitle,
+  deleteConversationFromDb,
+  insertMessage,
+  updateMessageContent,
+} from '../services/conversationService'
 
 const DEFAULT_SETTINGS: AppSettings = {
   language: 'no',
@@ -9,65 +18,65 @@ const DEFAULT_SETTINGS: AppSettings = {
   theme: 'dark',
 }
 
-// ─── User-scoped storage keys ─────────────────────────────────────────────────
-// Conversations and settings are stored per-user so that different users
-// on the same device cannot see each other's data.
-function getUserId(): string {
-  // Try to get the current user ID from localStorage (set by useAuth dev bypass)
-  // or from Supabase session. Falls back to 'anon' for unauthenticated users.
+// ── Settings: still localStorage (not sensitive) ─────────────
+function settingsKey(userId?: string | null): string {
+  return userId ? `sine_settings_${userId}` : 'sine_settings'
+}
+function loadSettings(userId?: string | null): AppSettings {
   try {
-    const bypass = localStorage.getItem('sine_dev_bypass')
-    if (bypass === 'true') return 'dev-user'
-    // Try to read Supabase session user id
-    const sbKeys = Object.keys(localStorage).filter(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
-    if (sbKeys.length > 0) {
-      const session = JSON.parse(localStorage.getItem(sbKeys[0]) || '{}')
-      if (session?.user?.id) return session.user.id
-    }
+    const raw = localStorage.getItem(settingsKey(userId))
+    if (!raw) return DEFAULT_SETTINGS
+    return JSON.parse(raw) as AppSettings
+  } catch {
+    return DEFAULT_SETTINGS
+  }
+}
+function saveSettings(s: AppSettings, userId?: string | null) {
+  try {
+    localStorage.setItem(settingsKey(userId), JSON.stringify(s))
   } catch { /* ignore */ }
-  return 'anon'
 }
 
-function convKey(): string { return `sine_conversations_${getUserId()}` }
-function settingsKey(): string { return `sine_settings_${getUserId()}` }
-
-function loadFromStorage<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key)
-    if (!raw) return fallback
-    return JSON.parse(raw) as T
-  } catch {
-    return fallback
-  }
-}
-
-function saveToStorage<T>(key: string, value: T): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value))
-  } catch {
-    // ignore
-  }
-}
-
+// ── Store ─────────────────────────────────────────────────────
 export function useAppStore() {
-  // Compute user-scoped keys once at init time
-  const [storageKeys] = useState(() => ({ conv: convKey(), settings: settingsKey() }))
+  const { user } = useAuth()
 
-  const [conversations, setConversations] = useState<Conversation[]>(() =>
-    loadFromStorage<Conversation[]>(storageKeys.conv, []).map(c => ({
-      ...c,
-      createdAt: new Date(c.createdAt),
-      updatedAt: new Date(c.updatedAt),
-      messages: c.messages.map(m => ({ ...m, createdAt: new Date(m.createdAt) })),
-    }))
-  )
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [conversationsLoaded, setConversationsLoaded] = useState(false)
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
-  const [settings, setSettings] = useState<AppSettings>(() =>
-    loadFromStorage<AppSettings>(storageKeys.settings, DEFAULT_SETTINGS)
-  )
+  const [settings, setSettings] = useState<AppSettings>(() => loadSettings(null))
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsInitialTab, setSettingsInitialTab] = useState<string | undefined>(undefined)
+
+  // Keep userId in a ref so async callbacks can read it without stale closures
+  const userIdRef = useRef<string | null>(null)
+  useEffect(() => {
+    userIdRef.current = user?.id ?? null
+  }, [user?.id])
+
+  // ── Load conversations from Supabase when user changes ───────
+  useEffect(() => {
+    if (!user?.id) {
+      setConversations([])
+      setActiveConversationId(null)
+      setConversationsLoaded(false)
+      return
+    }
+
+    // Reload settings scoped to this user
+    setSettings(loadSettings(user.id))
+
+    setConversationsLoaded(false)
+    fetchConversations(user.id)
+      .then(convs => {
+        setConversations(convs)
+        setConversationsLoaded(true)
+      })
+      .catch(() => {
+        setConversationsLoaded(true)
+      })
+  }, [user?.id])
 
   const openSettingsTab = useCallback((tab?: string) => {
     setSettingsInitialTab(tab)
@@ -76,7 +85,8 @@ export function useAppStore() {
 
   const activeConversation = conversations.find(c => c.id === activeConversationId) ?? null
 
-  const createConversation = useCallback((model: SineModel = settings.model): string => {
+  // ── Create conversation ───────────────────────────────────────
+  const createConversation = useCallback((model: SineModel = DEFAULT_SETTINGS.model): string => {
     const id = uuidv4()
     const now = new Date()
     const conv: Conversation = {
@@ -87,38 +97,57 @@ export function useAppStore() {
       updatedAt: now,
       model,
     }
-    setConversations(prev => {
-      const updated = [conv, ...prev]
-      saveToStorage(storageKeys.conv, updated)
-      return updated
-    })
+    setConversations(prev => [conv, ...prev])
     setActiveConversationId(id)
-    return id
-  }, [settings.model, storageKeys.conv])
 
+    const uid = userIdRef.current
+    if (uid) {
+      createConversationInDb(uid, id, 'Ny samtale', 'chat').catch(console.error)
+    }
+
+    return id
+  }, [])
+
+  // ── Add message ───────────────────────────────────────────────
   const addMessage = useCallback((conversationId: string, message: Omit<Message, 'id' | 'createdAt'>): string => {
     const id = uuidv4()
     const now = new Date()
     const newMsg: Message = { ...message, id, createdAt: now }
 
+    let titleChanged = false
+    let newTitle = ''
+
     setConversations(prev => {
-      const updated = prev.map(c => {
+      return prev.map(c => {
         if (c.id !== conversationId) return c
         const msgs = [...c.messages, newMsg]
         const title = msgs.length === 1 && message.role === 'user'
           ? generateTitle(message.content)
           : c.title
+        if (title !== c.title) {
+          titleChanged = true
+          newTitle = title
+        }
         return { ...c, messages: msgs, updatedAt: now, title }
       })
-      saveToStorage(storageKeys.conv, updated)
-      return updated
     })
-    return id
-  }, [storageKeys.conv])
 
+    if (titleChanged) {
+      updateConversationTitle(conversationId, newTitle).catch(console.error)
+    }
+
+    // Persist to Supabase — skip streaming placeholder (empty assistant messages)
+    if (!message.isStreaming) {
+      insertMessage(conversationId, newMsg).catch(console.error)
+    }
+
+    return id
+  }, [])
+
+  // ── Update message (called during streaming + on finish) ─────
   const updateMessage = useCallback((conversationId: string, messageId: string, content: string, isStreaming = false) => {
     setConversations(prev => {
-      const updated = prev.map(c => {
+      return prev.map(c => {
         if (c.id !== conversationId) return c
         return {
           ...c,
@@ -128,19 +157,22 @@ export function useAppStore() {
           updatedAt: new Date(),
         }
       })
-      // Ikke lagre til localStorage under streaming – kun når ferdig
-      if (!isStreaming) saveToStorage(storageKeys.conv, updated)
-      return updated
     })
-  }, [storageKeys.conv])
 
+    // Persist to Supabase only when streaming is finished
+    if (!isStreaming) {
+      updateMessageContent(messageId, content).catch(console.error)
+    }
+  }, [])
+
+  // ── Update agent message (tasks, files, plan, events) ────────
   const updateAgentMessage = useCallback((
     conversationId: string,
     messageId: string,
     updates: Partial<Message>
   ) => {
     setConversations(prev => {
-      const updated = prev.map(c => {
+      return prev.map(c => {
         if (c.id !== conversationId) return c
         return {
           ...c,
@@ -150,32 +182,41 @@ export function useAppStore() {
           updatedAt: new Date(),
         }
       })
-      saveToStorage(storageKeys.conv, updated)
-      return updated
     })
-  }, [storageKeys.conv])
 
-  const deleteConversation = useCallback((id: string) => {
-    setConversations(prev => {
-      const updated = prev.filter(c => c.id !== id)
-      saveToStorage(storageKeys.conv, updated)
-      return updated
-    })
-    if (activeConversationId === id) {
-      setActiveConversationId(null)
+    // Build metadata object for Supabase
+    const meta: Record<string, unknown> = {}
+    if (updates.agentTasks)     meta.agentTasks     = updates.agentTasks
+    if (updates.agentFiles)     meta.agentFiles     = updates.agentFiles
+    if (updates.agentStatus)    meta.agentStatus    = updates.agentStatus
+    if (updates.agentPlan)      meta.agentPlan      = updates.agentPlan
+    if (updates.agentEvents)    meta.agentEvents    = updates.agentEvents
+    if (updates.isAgentMessage) meta.isAgentMessage = updates.isAgentMessage
+
+    if (Object.keys(meta).length > 0) {
+      updateMessageContent(messageId, updates.content ?? '', meta).catch(console.error)
     }
-  }, [activeConversationId, storageKeys.conv])
+  }, [])
 
+  // ── Delete conversation ───────────────────────────────────────
+  const deleteConversation = useCallback((id: string) => {
+    setConversations(prev => prev.filter(c => c.id !== id))
+    if (activeConversationId === id) setActiveConversationId(null)
+    deleteConversationFromDb(id).catch(console.error)
+  }, [activeConversationId])
+
+  // ── Settings ──────────────────────────────────────────────────
   const updateSettings = useCallback((updates: Partial<AppSettings>) => {
     setSettings(prev => {
       const updated = { ...prev, ...updates }
-      saveToStorage(storageKeys.settings, updated)
+      saveSettings(updated, userIdRef.current)
       return updated
     })
-  }, [storageKeys.settings])
+  }, [])
 
   return {
     conversations,
+    conversationsLoaded,
     activeConversation,
     activeConversationId,
     setActiveConversationId,
