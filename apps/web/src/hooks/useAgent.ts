@@ -98,7 +98,7 @@ export function useAgent() {
   const agentMsgIdRef = useRef<string | null>(null);
   const activeTasksRef = useRef<Map<string, AgentTask>>(new Map());
 
-  const { addMessage, updateMessage, updateAgentMessage, activeConversationId, createConversation, settings } = useApp();
+  const { addMessage, updateMessage, updateAgentMessage, activeConversationId, activeConversation, createConversation, settings } = useApp();
 
   const addLog = useCallback((entry: Omit<AgentLogEntry, 'id' | 'timestamp'>) => {
     setState(prev => ({
@@ -165,7 +165,20 @@ export function useAgent() {
 
       ws.onopen = () => {
         const userMemory = (settings.userMemory ?? []).map(m => ({ key: m.key, value: m.value }))
-        ws.send(JSON.stringify({ task, user_memory: userMemory }))
+        // Build conversation history from the active conversation so the agent
+        // has full context when switching from chat mode or continuing a thread.
+        // We include user, assistant and agent messages, mapping 'agent' -> 'assistant'
+        // since Claude only understands user/assistant roles.
+        const conversationHistory = (activeConversation?.messages ?? [])
+          .filter(m => (m.role === 'user' || m.role === 'assistant' || m.role === 'agent'))
+          .filter(m => m.content && m.content.trim() !== '' && !m.isStreaming)
+          // Exclude the user message we just added (it's the task itself)
+          .slice(0, -1)
+          .map(m => ({
+            role: (m.role === 'agent' ? 'assistant' : m.role) as 'user' | 'assistant',
+            content: m.content,
+          }))
+        ws.send(JSON.stringify({ task, user_memory: userMemory, conversation_history: conversationHistory }))
       };
 
       ws.onmessage = (event) => {

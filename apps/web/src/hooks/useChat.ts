@@ -50,13 +50,15 @@ export function useChat() {
     // ───────────────────────────────────────────────────────────────
 
     try {
-      // Build message history from conversation
+      // Build message history from conversation.
+      // Include agent messages mapped to 'assistant' so context is preserved
+      // when switching between chat and agent modes.
       const conv = activeConversation
       const history = conv?.messages
-        .filter(m => m.role === 'user' || m.role === 'assistant')
-        .filter(m => m.content && m.content.trim() !== '')
+        .filter(m => m.role === 'user' || m.role === 'assistant' || m.role === 'agent')
+        .filter(m => m.content && m.content.trim() !== '' && !m.isStreaming)
         .map(m => ({
-          role: m.role as 'user' | 'assistant',
+          role: (m.role === 'agent' ? 'assistant' : m.role) as 'user' | 'assistant',
           content: m.content,
         })) ?? []
 

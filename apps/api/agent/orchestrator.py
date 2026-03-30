@@ -270,12 +270,30 @@ class SineOrchestrator:
 
         return clean_text, suggestions[:3]
 
-    async def run(self, task: str, user_memory: list[dict] | None = None) -> AsyncGenerator[AgentEvent, None]:
+    async def run(self, task: str, user_memory: list[dict] | None = None, conversation_history: list[dict] | None = None) -> AsyncGenerator[AgentEvent, None]:
         """Kjør agenten og yield events"""
         self.state.status = AgentStatus.PLANNING
         self._user_memory = user_memory or []
 
         await self._emit("status", {"status": "planning", "message": f"Planlegger: {task}"})
+
+        # Inject conversation history from previous chat/agent turns so context
+        # is preserved when the user switches between chat and agent modes.
+        # Claude requires alternating user/assistant roles, so we validate and
+        # clean the history before prepending it.
+        if conversation_history:
+            cleaned: list[dict] = []
+            for msg in conversation_history:
+                role = msg.get("role", "")
+                content = msg.get("content", "").strip()
+                if role in ("user", "assistant") and content:
+                    # Avoid consecutive same-role messages (Claude rejects them)
+                    if cleaned and cleaned[-1]["role"] == role:
+                        # Merge into previous message
+                        cleaned[-1]["content"] += "\n" + content
+                    else:
+                        cleaned.append({"role": role, "content": content})
+            self.messages.extend(cleaned)
 
         # Legg til brukermelding
         self.messages.append({"role": "user", "content": task})

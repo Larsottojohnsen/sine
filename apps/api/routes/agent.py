@@ -51,6 +51,7 @@ async def agent_websocket(websocket: WebSocket, run_id: str):
         init_data = await asyncio.wait_for(websocket.receive_json(), timeout=10.0)
         task = init_data.get("task", "")
         user_memory = init_data.get("user_memory", [])  # Brukerminne fra frontend
+        conversation_history = init_data.get("conversation_history", [])  # Samtalehistorikk på tvers av modi
     except asyncio.TimeoutError:
         await websocket.send_json({"type": "error", "data": {"message": "Tidsavbrutt – ingen oppgave mottatt"}})
         await websocket.close()
@@ -63,7 +64,7 @@ async def agent_websocket(websocket: WebSocket, run_id: str):
 
     # Kjør agenten og stream events
     try:
-        async for event in orchestrator.run(task, user_memory=user_memory):
+        async for event in orchestrator.run(task, user_memory=user_memory, conversation_history=conversation_history):
             try:
                 await websocket.send_json({
                     "type": event.type,
