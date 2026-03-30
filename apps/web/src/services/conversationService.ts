@@ -147,13 +147,31 @@ export async function insertMessage(
 }
 
 // ── Update message content (after streaming finishes) ────────
+// Uses upsert so assistant messages are always persisted even if the
+// initial placeholder row was never inserted (isStreaming=true was skipped).
 export async function updateMessageContent(
   messageId: string,
   content: string,
-  extraMetadata?: Record<string, unknown>
+  extraMetadata?: Record<string, unknown>,
+  // These are needed for upsert when the row doesn't exist yet
+  fallback?: { conversationId: string; role: string; createdAt: Date }
 ): Promise<void> {
   const supabase = getSupabase()
-  const update: Record<string, unknown> = { content }
-  if (extraMetadata) update.metadata = extraMetadata
-  await supabase.from('messages').update(update).eq('id', messageId)
+
+  if (fallback) {
+    // Upsert: insert if not exists, update if exists
+    const row: Record<string, unknown> = {
+      id: messageId,
+      conversation_id: fallback.conversationId,
+      role: fallback.role,
+      content,
+      metadata: extraMetadata ?? {},
+      created_at: fallback.createdAt.toISOString(),
+    }
+    await supabase.from('messages').upsert(row, { onConflict: 'id' })
+  } else {
+    const update: Record<string, unknown> = { content }
+    if (extraMetadata) update.metadata = extraMetadata
+    await supabase.from('messages').update(update).eq('id', messageId)
+  }
 }

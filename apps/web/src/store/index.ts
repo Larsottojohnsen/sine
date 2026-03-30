@@ -146,22 +146,34 @@ export function useAppStore() {
 
   // ── Update message (called during streaming + on finish) ─────
   const updateMessage = useCallback((conversationId: string, messageId: string, content: string, isStreaming = false) => {
+    let msgCreatedAt: Date = new Date()
+    let msgRole = 'assistant'
+
     setConversations(prev => {
       return prev.map(c => {
         if (c.id !== conversationId) return c
         return {
           ...c,
-          messages: c.messages.map(m =>
-            m.id === messageId ? { ...m, content, isStreaming } : m
-          ),
+          messages: c.messages.map(m => {
+            if (m.id !== messageId) return m
+            // Capture metadata for upsert fallback
+            msgCreatedAt = m.createdAt
+            msgRole = m.role
+            return { ...m, content, isStreaming }
+          }),
           updatedAt: new Date(),
         }
       })
     })
 
-    // Persist to Supabase only when streaming is finished
+    // Persist to Supabase only when streaming is finished.
+    // Pass fallback so the row is upserted even if the placeholder was never inserted.
     if (!isStreaming) {
-      updateMessageContent(messageId, content).catch(console.error)
+      updateMessageContent(messageId, content, undefined, {
+        conversationId,
+        role: msgRole,
+        createdAt: msgCreatedAt,
+      }).catch(console.error)
     }
   }, [])
 
