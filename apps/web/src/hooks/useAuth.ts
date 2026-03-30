@@ -13,44 +13,11 @@ export function getSupabase() {
       auth: {
         persistSession: true,
         detectSessionInUrl: true,
-        // NOTE: Do NOT set flowType:'pkce' here — it breaks email/password login
-        // because PKCE requires a server-side callback redirect, which
-        // signInWithPassword does not use.
+        // Do NOT use flowType:'pkce' — it breaks email/password login
       },
     })
   }
   return _supabase
-}
-
-// ── User cache ────────────────────────────────────────────────
-// Stored in localStorage so we can restore the user synchronously
-// on page refresh without waiting for a network round-trip.
-const CACHE_KEY = 'sine_auth_user_cache'
-
-function readCachedUser(): AuthUser | null {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY)
-    if (!raw) return null
-    return JSON.parse(raw) as AuthUser
-  } catch {
-    return null
-  }
-}
-
-function writeCachedUser(user: AuthUser | null): void {
-  try {
-    if (user) {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(user))
-    } else {
-      localStorage.removeItem(CACHE_KEY)
-    }
-  } catch { /* ignore */ }
-}
-
-// Exported so LoginPage can write the cache immediately after signInWithPassword
-// without waiting for onAuthStateChange to fire (belt-and-suspenders).
-export function writeCachedUserFromLogin(supabaseUser: User): void {
-  writeCachedUser(mapUser(supabaseUser))
 }
 
 export interface AuthUser {
@@ -73,11 +40,38 @@ function mapUser(u: User): AuthUser {
   }
 }
 
+// ── Read Supabase's own persisted session from localStorage synchronously ──
+// Supabase stores the session under the key:
+//   sb-<project-ref>-auth-token
+// This is available synchronously on page load — no network call needed.
+// We use this to render the app immediately without any spinner.
+const SUPABASE_SESSION_KEY = `sb-cauaqoqvpvjpeghejgvj-auth-token`
+
+function readSessionUserSync(): AuthUser | null {
+  try {
+    // Dev bypass
+    if (localStorage.getItem('sine_dev_bypass') === 'true') {
+      return { id: 'dev-user', email: 'dev@sine.no', name: 'Dev User', role: 'admin', isAdmin: true }
+    }
+    const raw = localStorage.getItem(SUPABASE_SESSION_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    // Supabase stores { access_token, refresh_token, user, expires_at, ... }
+    const u: User | undefined = parsed?.user
+    if (!u?.id) return null
+    // Check token hasn't expired (expires_at is Unix seconds)
+    const expiresAt: number | undefined = parsed?.expires_at
+    if (expiresAt && expiresAt * 1000 < Date.now()) return null
+    return mapUser(u)
+  } catch {
+    return null
+  }
+}
+
 async function fetchUserRole(supabaseUser: User): Promise<AuthUser> {
   const base = mapUser(supabaseUser)
   try {
-    const supabase = getSupabase()
-    const { data } = await supabase
+    const { data } = await getSupabase()
       .from('profiles')
       .select('role')
       .eq('id', supabaseUser.id)
@@ -91,56 +85,50 @@ async function fetchUserRole(supabaseUser: User): Promise<AuthUser> {
   return base
 }
 
-export function useAuth() {
-  // Initialise synchronously from cache — no spinner on repeat visits
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    if (typeof window !== 'undefined' && localStorage.getItem('sine_dev_bypass') === 'true') {
-      return { id: 'dev-user', email: 'dev@sine.no', name: 'Dev User', role: 'admin', isAdmin: true }
-    }
-    return readCachedUser()
-  })
+// Exported so LoginPage can trigger an immediate re-render after signInWithPassword
+export function writeCachedUserFromLogin(_supabaseUser: User): void {
+  // No-op: Supabase writes its own session to localStorage automatically.
+  // onAuthStateChange will fire and update state. Nothing extra needed here.
+}
 
-  // loading=false immediately when we have a cached user
-  const [loading, setLoading] = useState<boolean>(() => {
-    if (typeof window !== 'undefined' && localStorage.getItem('sine_dev_bypass') === 'true') {
-      return false
-    }
-    return readCachedUser() === null
-  })
+export function useAuth() {
+  // ── Synchronous init: read Supabase's own localStorage session ──
+  // This is INSTANT — no network, no spinner, no waiting.
+  // The user sees the app immediately on every page refresh.
+  const [user, setUser] = useState<AuthUser | null>(() => readSessionUserSync())
+
+  // loading is NEVER true when we already have a session in localStorage.
+  // It's only true for brand-new visitors who have never logged in.
+  const [loading, setLoading] = useState<boolean>(() => readSessionUserSync() === null)
 
   useEffect(() => {
     if (localStorage.getItem('sine_dev_bypass') === 'true') return
 
     const supabase = getSupabase()
 
-    // ── onAuthStateChange fires for EVERY auth event:
-    //    INITIAL_SESSION, SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, etc.
-    //    This is the single source of truth for auth state.
-    //    It fires synchronously with the cached session on mount,
-    //    and again whenever signInWithPassword / signOut is called.
+    // onAuthStateChange is the single source of truth going forward.
+    // It fires for: INITIAL_SESSION, SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED.
+    // We do NOT wait for it to render the app — the sync read above handles that.
+    // Here we just keep state up-to-date and enrich with role info.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        // Best-effort role fetch — don't block on it
+        // Enrich with role in background — don't block rendering
         fetchUserRole(session.user).then(enriched => {
           setUser(enriched)
-          writeCachedUser(enriched)
           setLoading(false)
         }).catch(() => {
-          const base = mapUser(session.user)
-          setUser(base)
-          writeCachedUser(base)
+          setUser(mapUser(session.user))
           setLoading(false)
         })
       } else {
-        // SIGNED_OUT or no session
+        // SIGNED_OUT — clear user
         setUser(null)
-        writeCachedUser(null)
         setLoading(false)
       }
     })
 
-    // Safety net: if onAuthStateChange never fires (network issue), stop loading after 5s
-    const safetyTimeout = setTimeout(() => setLoading(false), 5000)
+    // Safety net: stop loading after 3s even if onAuthStateChange never fires
+    const safetyTimeout = setTimeout(() => setLoading(false), 3000)
 
     return () => {
       clearTimeout(safetyTimeout)
@@ -150,8 +138,8 @@ export function useAuth() {
 
   const signOut = async () => {
     localStorage.removeItem('sine_dev_bypass')
-    writeCachedUser(null)
 
+    // Clear all sine_ prefixed keys
     const keysToRemove: string[] = []
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)

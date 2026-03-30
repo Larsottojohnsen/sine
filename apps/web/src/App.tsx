@@ -189,8 +189,9 @@ function AuthGate() {
     )
   }
 
-  // No cached user — show spinner only while the initial auth check runs.
-  // With the new cache-first approach this should resolve in <100ms on repeat visits.
+  // Only show a spinner for brand-new visitors who have no session at all.
+  // Logged-in users always have a Supabase session in localStorage,
+  // so loading is never true for them — the app renders instantly.
   if (loading) {
     return (
       <div className="auth-loading">
