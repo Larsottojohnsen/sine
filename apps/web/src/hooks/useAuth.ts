@@ -96,9 +96,29 @@ export function useAuth() {
   }, [])
 
   const signOut = async () => {
-    const supabase = getSupabase()
-    await supabase.auth.signOut()
+    // Remove dev bypass flag so the user is not auto-logged-in again
+    localStorage.removeItem('sine_dev_bypass')
+
+    // Also clear all sine_* keys so conversations/settings are not leaked
+    const keysToRemove: string[] = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith('sine_')) keysToRemove.push(key)
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k))
+
+    // Sign out from Supabase (no-op if using dev bypass)
+    try {
+      const supabase = getSupabase()
+      await supabase.auth.signOut()
+    } catch {
+      // Ignore Supabase errors on sign out
+    }
+
     setUser(null)
+
+    // Redirect to landing page
+    window.location.href = '/sine/'
   }
 
   return { user, loading, signOut }
