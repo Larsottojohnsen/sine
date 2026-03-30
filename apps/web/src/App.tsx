@@ -174,25 +174,28 @@ function AuthGate() {
 
   // When user is authenticated, always show the app
   useEffect(() => {
-    if (!loading && user) {
+    if (user) {
       setView('app')
     }
-  }, [user, loading])
+  }, [user])
 
-  if (loading) {
-    return (
-      <div className="auth-loading">
-        <div className="auth-loading-spinner" />
-      </div>
-    )
-  }
-
-  // If authenticated, show the app directly
+  // If we have a user (from cache or verified session) show the app immediately.
+  // Background verification continues in useAuth without blocking the UI.
   if (user) {
     return (
       <AppProvider>
         <AppLayout />
       </AppProvider>
+    )
+  }
+
+  // No cached user — show spinner only while the initial auth check runs.
+  // With the new cache-first approach this should resolve in <100ms on repeat visits.
+  if (loading) {
+    return (
+      <div className="auth-loading">
+        <div className="auth-loading-spinner" />
+      </div>
     )
   }
 
