@@ -41,27 +41,31 @@ function mapUser(u: User): AuthUser {
 }
 
 // ── Read Supabase's own persisted session from localStorage synchronously ──
-// Supabase stores the session under the key:
-//   sb-<project-ref>-auth-token
+// Supabase stores the session under the key: sb-<project-ref>-auth-token
 // This is available synchronously on page load — no network call needed.
-// We use this to render the app immediately without any spinner.
 const SUPABASE_SESSION_KEY = `sb-cauaqoqvpvjpeghejgvj-auth-token`
 
 function readSessionUserSync(): AuthUser | null {
   try {
     // Dev bypass
-    if (localStorage.getItem('sine_dev_bypass') === 'true') {
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('sine_dev_bypass') === 'true') {
       return { id: 'dev-user', email: 'dev@sine.no', name: 'Dev User', role: 'admin', isAdmin: true }
     }
     const raw = localStorage.getItem(SUPABASE_SESSION_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw)
     // Supabase stores { access_token, refresh_token, user, expires_at, ... }
-    const u: User | undefined = parsed?.user
+    // It may also be nested under a 'currentSession' key in some versions
+    const session = parsed?.currentSession ?? parsed
+    const u: User | undefined = session?.user
     if (!u?.id) return null
     // Check token hasn't expired (expires_at is Unix seconds)
-    const expiresAt: number | undefined = parsed?.expires_at
-    if (expiresAt && expiresAt * 1000 < Date.now()) return null
+    const expiresAt: number | undefined = session?.expires_at
+    if (expiresAt && expiresAt * 1000 < Date.now()) {
+      // Token expired — but Supabase will refresh it via onAuthStateChange
+      // Still return the user so we don't flash a spinner
+      return mapUser(u)
+    }
     return mapUser(u)
   } catch {
     return null
@@ -85,50 +89,63 @@ async function fetchUserRole(supabaseUser: User): Promise<AuthUser> {
   return base
 }
 
-// Exported so LoginPage can trigger an immediate re-render after signInWithPassword
+// No-op export kept for backward compatibility
 export function writeCachedUserFromLogin(_supabaseUser: User): void {
-  // No-op: Supabase writes its own session to localStorage automatically.
-  // onAuthStateChange will fire and update state. Nothing extra needed here.
+  // Supabase writes its own session to localStorage automatically.
+  // onAuthStateChange will fire and update state.
 }
 
 export function useAuth() {
-  // ── Synchronous init: read Supabase's own localStorage session ──
+  // Synchronous init: read Supabase's own localStorage session.
   // This is INSTANT — no network, no spinner, no waiting.
-  // The user sees the app immediately on every page refresh.
   const [user, setUser] = useState<AuthUser | null>(() => readSessionUserSync())
 
-  // loading is NEVER true when we already have a session in localStorage.
-  // It's only true for brand-new visitors who have never logged in.
+  // loading is only true when there is NO cached session at all.
+  // For returning users, loading starts as false → no spinner ever shown.
   const [loading, setLoading] = useState<boolean>(() => readSessionUserSync() === null)
 
   useEffect(() => {
-    if (localStorage.getItem('sine_dev_bypass') === 'true') return
+    if (localStorage.getItem('sine_dev_bypass') === 'true') {
+      setLoading(false)
+      return
+    }
 
     const supabase = getSupabase()
+    let resolved = false
 
-    // onAuthStateChange is the single source of truth going forward.
+    const resolve = (authUser: AuthUser | null) => {
+      resolved = true
+      setUser(authUser)
+      setLoading(false)
+    }
+
+    // onAuthStateChange is the single source of truth.
     // It fires for: INITIAL_SESSION, SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED.
-    // We do NOT wait for it to render the app — the sync read above handles that.
-    // Here we just keep state up-to-date and enrich with role info.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
+        // Immediately set user from session (no delay)
+        setUser(mapUser(session.user))
+        setLoading(false)
         // Enrich with role in background — don't block rendering
         fetchUserRole(session.user).then(enriched => {
           setUser(enriched)
-          setLoading(false)
         }).catch(() => {
-          setUser(mapUser(session.user))
-          setLoading(false)
+          // ignore role fetch error
         })
+        resolved = true
       } else {
-        // SIGNED_OUT — clear user
-        setUser(null)
-        setLoading(false)
+        // SIGNED_OUT or no session
+        resolve(null)
       }
     })
 
-    // Safety net: stop loading after 3s even if onAuthStateChange never fires
-    const safetyTimeout = setTimeout(() => setLoading(false), 3000)
+    // Hard safety net: if onAuthStateChange never fires within 4s,
+    // stop loading and show the login page.
+    const safetyTimeout = setTimeout(() => {
+      if (!resolved) {
+        setLoading(false)
+      }
+    }, 4000)
 
     return () => {
       clearTimeout(safetyTimeout)
@@ -146,6 +163,9 @@ export function useAuth() {
       if (key && key.startsWith('sine_')) keysToRemove.push(key)
     }
     keysToRemove.forEach(k => localStorage.removeItem(k))
+
+    // Also clear the Supabase session key to prevent stale cache reads
+    localStorage.removeItem(SUPABASE_SESSION_KEY)
 
     try {
       await getSupabase().auth.signOut()

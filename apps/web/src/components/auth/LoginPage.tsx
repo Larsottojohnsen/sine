@@ -27,10 +27,13 @@ export function LoginPage() {
         provider: 'google',
         options: { redirectTo: window.location.origin + (import.meta.env.BASE_URL || '/') }
       })
-      if (error) setError(error.message)
+      if (error) {
+        setError(error.message)
+        setLoading(false)
+      }
+      // If no error, browser will redirect — keep loading=true
     } catch {
       setError('Google-innlogging feilet. Prøv igjen.')
-    } finally {
       setLoading(false)
     }
   }
@@ -44,10 +47,13 @@ export function LoginPage() {
         provider: 'github',
         options: { redirectTo: window.location.origin + (import.meta.env.BASE_URL || '/') }
       })
-      if (error) setError(error.message)
+      if (error) {
+        setError(error.message)
+        setLoading(false)
+      }
+      // If no error, browser will redirect — keep loading=true
     } catch {
       setError('GitHub-innlogging feilet. Prøv igjen.')
-    } finally {
       setLoading(false)
     }
   }
@@ -57,15 +63,8 @@ export function LoginPage() {
       setError('Skriv inn en gyldig e-postadresse')
       return
     }
-    setLoading(true)
     setError('')
-    try {
-      setStep('email-password')
-    } catch {
-      setError('Noe gikk galt. Prøv igjen.')
-    } finally {
-      setLoading(false)
-    }
+    setStep('email-password')
   }
 
   const handlePasswordLogin = async () => {
@@ -74,21 +73,32 @@ export function LoginPage() {
     setError('')
     try {
       const supabase = getSupabase()
-      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      })
+
       if (error) {
-        setError(error.message.includes('Invalid login credentials') ? 'Feil e-post eller passord' : error.message)
+        setError(error.message.includes('Invalid login credentials')
+          ? 'Feil e-post eller passord'
+          : error.message)
         setLoading(false)
         return
       }
-      // Success — onAuthStateChange in useAuth will fire and update the user state.
-      // As a belt-and-suspenders fallback, also write the cache directly here
-      // so the app renders even if onAuthStateChange is delayed.
-      if (data.session?.user) {
-        const { writeCachedUserFromLogin } = await import('../../hooks/useAuth')
-        writeCachedUserFromLogin(data.session.user)
+
+      if (!data.session?.user) {
+        setError('Innlogging feilet — ingen sesjon returnert. Prøv igjen.')
+        setLoading(false)
+        return
       }
-      // Don't call setLoading(false) — let the parent AuthGate re-render
-      // when useAuth picks up the new session via onAuthStateChange.
+
+      // ✅ Success path:
+      // Supabase has already written the session to localStorage.
+      // Force a full page reload so useAuth reads the fresh session
+      // synchronously — this is the most reliable approach and avoids
+      // any race conditions with onAuthStateChange in the normal browser.
+      window.location.reload()
+
     } catch {
       setError('Innlogging feilet. Prøv igjen.')
       setLoading(false)
@@ -112,7 +122,14 @@ export function LoginPage() {
           data: { display_name: email.split('@')[0] },
         }
       })
-      if (error) setError(error.message)
+      if (error) {
+        setError(error.message)
+      } else {
+        setError('')
+        // Show success message
+        setStep('forgot-password-sent')
+        setResetEmail(email)
+      }
     } catch {
       setError('Registrering feilet. Prøv igjen.')
     } finally {
@@ -271,19 +288,19 @@ export function LoginPage() {
                       value={password}
                       onChange={e => { setPassword(e.target.value); setError('') }}
                       onKeyDown={e => e.key === 'Enter' && handlePasswordLogin()}
+                      autoComplete="current-password"
                       autoFocus
                     />
-                    <button className="login-eye-btn" onClick={() => setShowPassword(p => !p)} type="button">
+                    <button
+                      type="button"
+                      className="login-edit-btn"
+                      onClick={() => setShowPassword(p => !p)}
+                      style={{ minWidth: 32 }}
+                    >
                       {showPassword ? (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
-                          <line x1="1" y1="1" x2="23" y2="23"/>
-                        </svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                       ) : (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                          <circle cx="12" cy="12" r="3"/>
-                        </svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                       )}
                     </button>
                   </div>
@@ -296,63 +313,12 @@ export function LoginPage() {
                 >
                   {loading ? <span className="login-spinner" /> : 'Logg inn'}
                 </button>
-                <button className="login-back-btn" onClick={() => { setStep('main'); setError('') }}>Tilbake</button>
-              </div>
-            </>
-          )}
-
-          {step === 'forgot-password' && (
-            <>
-              <h1 className="login-title">Glemt passord</h1>
-              <p className="login-subtitle" style={{ marginBottom: 20 }}>
-                Skriv inn e-postadressen din, så sender vi deg en lenke for å tilbakestille passordet.
-              </p>
-              <div className="login-email-section">
-                <div className="login-input-group">
-                  <label className="login-label">E-post</label>
-                  <input
-                    type="email"
-                    className="login-input"
-                    placeholder="Skriv inn e-postadresse"
-                    value={resetEmail}
-                    onChange={e => { setResetEmail(e.target.value); setError('') }}
-                    onKeyDown={e => e.key === 'Enter' && handleForgotPassword()}
-                    autoFocus
-                    autoComplete="email"
-                  />
-                </div>
-                {error && <p className="login-error">{error}</p>}
                 <button
-                  className="login-continue-btn"
-                  onClick={handleForgotPassword}
-                  disabled={loading || !resetEmail.trim()}
+                  className="login-back-btn"
+                  onClick={() => { setStep('main'); setError(''); setPassword('') }}
                 >
-                  {loading ? <span className="login-spinner" /> : 'Send tilbakestillingslenke'}
+                  Tilbake
                 </button>
-                <button className="login-back-btn" onClick={() => { setStep('email-password'); setError('') }}>Tilbake</button>
-              </div>
-            </>
-          )}
-
-          {step === 'forgot-password-sent' && (
-            <>
-              <div style={{ textAlign: 'center', padding: '8px 0 16px' }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>📧</div>
-                <h1 className="login-title">Sjekk e-posten din</h1>
-                <p className="login-subtitle" style={{ marginBottom: 20 }}>
-                  Vi har sendt en tilbakestillingslenke til<br />
-                  <strong style={{ color: '#f0f0f0' }}>{resetEmail}</strong>
-                </p>
-                <p style={{ fontSize: 12, color: '#5A5A5A', marginBottom: 20 }}>
-                  Ikke fått e-post? Sjekk søppelpost, eller{' '}
-                  <button
-                    onClick={() => { setStep('forgot-password'); setError('') }}
-                    style={{ fontSize: 12, color: '#1A93FE', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}
-                  >
-                    prøv igjen
-                  </button>
-                </p>
-                <button className="login-back-btn" onClick={() => { setStep('main'); setError('') }}>Tilbake til innlogging</button>
               </div>
             </>
           )}
@@ -366,7 +332,7 @@ export function LoginPage() {
                   <input
                     type="email"
                     className="login-input"
-                    placeholder="Skriv inn e-postadresse"
+                    placeholder="din@epost.no"
                     value={email}
                     onChange={e => { setEmail(e.target.value); setError('') }}
                     autoComplete="email"
@@ -374,48 +340,95 @@ export function LoginPage() {
                 </div>
                 <div className="login-input-group">
                   <label className="login-label">Passord (minst 8 tegn)</label>
-                  <div className="login-input-with-action">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      className="login-input"
-                      placeholder="Velg et passord"
-                      value={password}
-                      onChange={e => { setPassword(e.target.value); setError('') }}
-                      onKeyDown={e => e.key === 'Enter' && handleCreateAccount()}
-                    />
-                    <button className="login-eye-btn" onClick={() => setShowPassword(p => !p)} type="button">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                        <circle cx="12" cy="12" r="3"/>
-                      </svg>
-                    </button>
-                  </div>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    className="login-input"
+                    placeholder="Velg et sikkert passord"
+                    value={password}
+                    onChange={e => { setPassword(e.target.value); setError('') }}
+                    onKeyDown={e => e.key === 'Enter' && handleCreateAccount()}
+                    autoComplete="new-password"
+                  />
                 </div>
                 {error && <p className="login-error">{error}</p>}
                 <button
                   className="login-continue-btn"
                   onClick={handleCreateAccount}
-                  disabled={loading || !password.trim() || !email.trim()}
+                  disabled={loading || !email.trim() || !password.trim()}
                 >
                   {loading ? <span className="login-spinner" /> : 'Opprett konto'}
                 </button>
-                <button className="login-back-btn" onClick={() => { setStep('main'); setError('') }}>Tilbake</button>
+                <button
+                  className="login-back-btn"
+                  onClick={() => { setStep('main'); setError(''); setPassword('') }}
+                >
+                  Tilbake
+                </button>
               </div>
             </>
           )}
-        </div>
 
-        <div className="login-footer">
-          <a href="#" className="login-footer-link">Vilkår for bruk</a>
-          <a href="#" className="login-footer-link">Personvern</a>
+          {step === 'forgot-password' && (
+            <>
+              <h1 className="login-title">Glemt passord?</h1>
+              <p className="login-subtitle">Vi sender deg en lenke for å tilbakestille passordet</p>
+              <div className="login-email-section">
+                <input
+                  type="email"
+                  className="login-input"
+                  placeholder="din@epost.no"
+                  value={resetEmail}
+                  onChange={e => { setResetEmail(e.target.value); setError('') }}
+                  onKeyDown={e => e.key === 'Enter' && handleForgotPassword()}
+                  autoComplete="email"
+                  autoFocus
+                />
+                {error && <p className="login-error">{error}</p>}
+                <button
+                  className="login-continue-btn"
+                  onClick={handleForgotPassword}
+                  disabled={loading || !resetEmail.trim()}
+                >
+                  {loading ? <span className="login-spinner" /> : 'Send tilbakestillingslenke'}
+                </button>
+                <button
+                  className="login-back-btn"
+                  onClick={() => { setStep('main'); setError('') }}
+                >
+                  Tilbake
+                </button>
+              </div>
+            </>
+          )}
+
+          {step === 'forgot-password-sent' && (
+            <>
+              <div style={{ textAlign: 'center', padding: '8px 0 16px' }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>📧</div>
+                <h1 className="login-title">Sjekk innboksen din</h1>
+                <p className="login-subtitle">
+                  Vi har sendt en e-post til <strong>{resetEmail}</strong> med instruksjoner for å tilbakestille passordet.
+                </p>
+              </div>
+              <button
+                className="login-back-btn"
+                onClick={() => { setStep('main'); setError('') }}
+              >
+                Tilbake til innlogging
+              </button>
+            </>
+          )}
+
         </div>
       </div>
 
-      {/* Johnsen Technology branding – bunn av siden */}
-      <div className="login-bottom-brand" style={{ pointerEvents: 'auto' }}>
-        <a href="https://jtec.no" target="_blank" rel="noopener noreferrer">
-          <img src={JTG_LOGO} alt="Johnsen Technology" className="login-jtg-logo" />
-        </a>
+      {/* JTG footer */}
+      <div className="login-footer">
+        <img src={JTG_LOGO} alt="JTG" className="login-footer-logo" />
+        <div className="login-footer-links">
+          <a href="#">Vilkår for bruk</a>
+          <a href="#">Personvern</a>
+        </div>
       </div>
     </div>
   )
