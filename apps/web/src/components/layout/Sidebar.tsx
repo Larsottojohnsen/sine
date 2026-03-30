@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import {
   Plus, Search, BookOpen, FolderPlus, Trash2,
-  Bot, PanelLeftClose, PanelLeftOpen, CalendarDays,
+  PanelLeftClose, PanelLeftOpen, CalendarDays,
   LayoutGrid, Monitor, Terminal, ChevronRight, SlidersHorizontal,
-  MessageSquare, X, Copy, Mail, Check, ShieldCheck,
+  X, Copy, Mail, Check, ShieldCheck,
   Bell, User
 } from 'lucide-react'
+import { VenterIcon } from '@/assets/icons/VenterIcon'
 import { useApp } from '@/store/AppContext'
 import { getTranslations } from '@/i18n'
 import { useAuth } from '@/hooks/useAuth'
@@ -538,7 +539,7 @@ function ConvGroup({
   label, conversations, activeId, hoveredId, onHover, onSelect, onDelete, activeAgentRunId,
 }: {
   label: string
-  conversations: { id: string; title: string; updatedAt: Date; type?: string }[]
+  conversations: { id: string; title: string; updatedAt: Date; type?: string; messages?: { agentStatus?: string }[] }[]
   activeId: string | null
   hoveredId: string | null
   onHover: (id: string | null) => void
@@ -551,8 +552,21 @@ function ConvGroup({
     <div style={{ marginBottom: 4 }}>
       <p className="conv-group-label">{label}</p>
       {conversations.map(conv => {
-        const isAgent = conv.type === 'agent'
-        const isRunning = isAgent && activeAgentRunId != null && activeId === conv.id
+        const isRunning = activeAgentRunId != null && activeId === conv.id
+        const lastStatus = conv.messages?.[conv.messages.length - 1]?.agentStatus
+
+        let iconColor: string | undefined
+        let iconOpacity = 0.4
+        if (isRunning) {
+          iconColor = '#F59E0B'
+          iconOpacity = 1
+        } else if (lastStatus === 'completed') {
+          iconColor = '#22C55E'
+          iconOpacity = 1
+        } else if (lastStatus === 'failed' || lastStatus === 'stopped') {
+          iconColor = '#EF4444'
+          iconOpacity = 1
+        }
 
         return (
           <button
@@ -562,14 +576,8 @@ function ConvGroup({
             onMouseEnter={() => onHover(conv.id)}
             onMouseLeave={() => onHover(null)}
           >
-            <span style={{ flexShrink: 0, fontSize: 11, opacity: 0.5, display: 'flex', alignItems: 'center', width: 14 }}>
-              {isRunning ? (
-                <span className="conv-spinner" />
-              ) : isAgent ? (
-                <Bot size={12} />
-              ) : (
-                <MessageSquare size={12} />
-              )}
+            <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', width: 14, opacity: iconOpacity }}>
+              <VenterIcon size={12} color={iconColor ?? 'currentColor'} />
             </span>
             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {conv.title.length > 26 ? conv.title.slice(0, 26) + '…' : conv.title}
