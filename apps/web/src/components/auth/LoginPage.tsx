@@ -74,11 +74,23 @@ export function LoginPage() {
     setError('')
     try {
       const supabase = getSupabase()
-      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
-      if (error) setError(error.message.includes('Invalid login credentials') ? 'Feil e-post eller passord' : error.message)
+      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+      if (error) {
+        setError(error.message.includes('Invalid login credentials') ? 'Feil e-post eller passord' : error.message)
+        setLoading(false)
+        return
+      }
+      // Success — onAuthStateChange in useAuth will fire and update the user state.
+      // As a belt-and-suspenders fallback, also write the cache directly here
+      // so the app renders even if onAuthStateChange is delayed.
+      if (data.session?.user) {
+        const { writeCachedUserFromLogin } = await import('../../hooks/useAuth')
+        writeCachedUserFromLogin(data.session.user)
+      }
+      // Don't call setLoading(false) — let the parent AuthGate re-render
+      // when useAuth picks up the new session via onAuthStateChange.
     } catch {
       setError('Innlogging feilet. Prøv igjen.')
-    } finally {
       setLoading(false)
     }
   }

@@ -11,21 +11,20 @@ export function getSupabase() {
   if (!_supabase) {
     _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: {
-        // Store session in localStorage so it survives page refresh
         persistSession: true,
-        // Detect OAuth tokens in URL hash automatically
         detectSessionInUrl: true,
-        // Use PKCE flow for better security
-        flowType: 'pkce',
+        // NOTE: Do NOT set flowType:'pkce' here — it breaks email/password login
+        // because PKCE requires a server-side callback redirect, which
+        // signInWithPassword does not use.
       },
     })
   }
   return _supabase
 }
 
-// ── Cached user in memory (survives React re-renders) ─────────
-// This is populated synchronously from localStorage on first load
-// so the app can render immediately without waiting for Supabase.
+// ── User cache ────────────────────────────────────────────────
+// Stored in localStorage so we can restore the user synchronously
+// on page refresh without waiting for a network round-trip.
 const CACHE_KEY = 'sine_auth_user_cache'
 
 function readCachedUser(): AuthUser | null {
@@ -46,6 +45,12 @@ function writeCachedUser(user: AuthUser | null): void {
       localStorage.removeItem(CACHE_KEY)
     }
   } catch { /* ignore */ }
+}
+
+// Exported so LoginPage can write the cache immediately after signInWithPassword
+// without waiting for onAuthStateChange to fire (belt-and-suspenders).
+export function writeCachedUserFromLogin(supabaseUser: User): void {
+  writeCachedUser(mapUser(supabaseUser))
 }
 
 export interface AuthUser {
@@ -87,84 +92,63 @@ async function fetchUserRole(supabaseUser: User): Promise<AuthUser> {
 }
 
 export function useAuth() {
-  // ── Initialise synchronously from cache so loading=false immediately ──
+  // Initialise synchronously from cache — no spinner on repeat visits
   const [user, setUser] = useState<AuthUser | null>(() => {
-    // Dev bypass
     if (typeof window !== 'undefined' && localStorage.getItem('sine_dev_bypass') === 'true') {
-      return {
-        id: 'dev-user',
-        email: 'dev@sine.no',
-        name: 'Dev User',
-        role: 'admin',
-        isAdmin: true,
-      }
+      return { id: 'dev-user', email: 'dev@sine.no', name: 'Dev User', role: 'admin', isAdmin: true }
     }
     return readCachedUser()
   })
 
-  // loading=false immediately if we have a cached user, otherwise true
+  // loading=false immediately when we have a cached user
   const [loading, setLoading] = useState<boolean>(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('sine_dev_bypass') === 'true') {
       return false
     }
-    // If there is a cached user we can show the app right away
     return readCachedUser() === null
   })
 
   useEffect(() => {
-    // Dev bypass — nothing to do
     if (localStorage.getItem('sine_dev_bypass') === 'true') return
 
     const supabase = getSupabase()
 
-    // ── Background verification: confirm the cached session is still valid ──
-    // We do NOT block rendering on this — the app is already visible.
-    // A short timeout ensures we don't hang forever if Supabase is slow.
-    const verifyTimeout = setTimeout(() => {
-      // If Supabase still hasn't responded after 5s, trust the cache and stop loading
-      setLoading(false)
-    }, 5000)
-
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      clearTimeout(verifyTimeout)
+    // ── onAuthStateChange fires for EVERY auth event:
+    //    INITIAL_SESSION, SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, etc.
+    //    This is the single source of truth for auth state.
+    //    It fires synchronously with the cached session on mount,
+    //    and again whenever signInWithPassword / signOut is called.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        // Session is valid — enrich with role (non-blocking, best-effort)
-        const enriched = await fetchUserRole(session.user)
-        setUser(enriched)
-        writeCachedUser(enriched)
+        // Best-effort role fetch — don't block on it
+        fetchUserRole(session.user).then(enriched => {
+          setUser(enriched)
+          writeCachedUser(enriched)
+          setLoading(false)
+        }).catch(() => {
+          const base = mapUser(session.user)
+          setUser(base)
+          writeCachedUser(base)
+          setLoading(false)
+        })
       } else {
-        // No active session — clear cache and show unauthenticated state
+        // SIGNED_OUT or no session
         setUser(null)
         writeCachedUser(null)
+        setLoading(false)
       }
-      setLoading(false)
-    }).catch(() => {
-      clearTimeout(verifyTimeout)
-      // Network error — keep cached user visible, stop loading
-      setLoading(false)
     })
 
-    // ── Listen for auth state changes (login, logout, token refresh) ──
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        const enriched = await fetchUserRole(session.user)
-        setUser(enriched)
-        writeCachedUser(enriched)
-      } else {
-        setUser(null)
-        writeCachedUser(null)
-      }
-      setLoading(false)
-    })
+    // Safety net: if onAuthStateChange never fires (network issue), stop loading after 5s
+    const safetyTimeout = setTimeout(() => setLoading(false), 5000)
 
     return () => {
-      clearTimeout(verifyTimeout)
+      clearTimeout(safetyTimeout)
       subscription.unsubscribe()
     }
   }, [])
 
   const signOut = async () => {
-    // Clear dev bypass and all sine_* localStorage keys
     localStorage.removeItem('sine_dev_bypass')
     writeCachedUser(null)
 
@@ -176,11 +160,8 @@ export function useAuth() {
     keysToRemove.forEach(k => localStorage.removeItem(k))
 
     try {
-      const supabase = getSupabase()
-      await supabase.auth.signOut()
-    } catch {
-      // Ignore Supabase errors on sign out
-    }
+      await getSupabase().auth.signOut()
+    } catch { /* ignore */ }
 
     setUser(null)
     window.location.href = '/sine/'
