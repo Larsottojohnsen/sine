@@ -998,3 +998,20 @@ html[data-theme="light"] .official-library-back:hover {
 html[data-theme="light"] .official-library-title {
   color: #1A1A1A;
 }
+
+/* ─── Context menus (ConvContextMenu, HeaderContextMenu) ─────── */
+html[data-theme="light"] {
+  --ctx-bg:     #FFFFFF;
+  --ctx-border: #E2E2DF;
+  --ctx-text:   #1A1A1A;
+  --ctx-hover:  #F5F5F3;
+}
+
+/* ─── TaskDetailsModal ────────────────────────────────────────── */
+html[data-theme="light"] {
+  --td-bg:         #FFFFFF;
+  --td-border:     #E2E2DF;
+  --td-text:       #1A1A1A;
+  --td-text-muted: #6A6A65;
+  --td-input:      #F5F5F3;
+}

@@ -17,6 +17,8 @@ interface DbConversation {
   agent_type: string | null
   created_at: string
   updated_at: string
+  is_favorite?: boolean
+  credits_used?: number
 }
 
 interface DbMessage {
@@ -39,6 +41,8 @@ function dbConvToLocal(row: DbConversation, messages: Message[] = []): Conversat
     model: 'sine-1' as SineModel,
     type: (row.mode as 'chat' | 'agent') ?? 'chat',
     agentType: (row.agent_type as 'code' | 'writing') ?? undefined,
+    isFavorite: row.is_favorite ?? false,
+    creditsUsed: row.credits_used ?? 0,
   }
 }
 
@@ -174,4 +178,20 @@ export async function updateMessageContent(
     if (extraMetadata) update.metadata = extraMetadata
     await supabase.from('messages').update(update).eq('id', messageId)
   }
+}
+
+// ── Toggle favourite ──────────────────────────────────────────
+export async function toggleFavoriteInDb(id: string, isFavorite: boolean): Promise<void> {
+  const supabase = getSupabase()
+  await supabase.from('conversations').update({ is_favorite: isFavorite }).eq('id', id)
+}
+
+// ── Rename conversation ───────────────────────────────────────
+// (alias kept here for clarity — same as updateConversationTitle)
+export { updateConversationTitle as renameConversationInDb }
+
+// ── Generate shareable link ───────────────────────────────────
+export function buildShareLink(conversationId: string): string {
+  const base = window.location.origin + window.location.pathname
+  return `${base}?share=${conversationId}`
 }

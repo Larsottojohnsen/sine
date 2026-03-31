@@ -5816,23 +5816,35 @@ test
 [data-theme="light"] .message-action-btn:hover { background: #F0F0F0; color: #333333; }
 [data-theme="light"] .prose { color: #222222; }
 
-/* ── Chat input ──────────────────────────────────────────────── */
+/* ── Chat input — Manus-stil ─────────────────────────────────── */
 [data-theme="light"] .chat-input-area {
-  background: #FFFFFF;
-  border-top: 1px solid #EEEEEE;
+  background: #F7F7F5;
+  border-top: 1px solid #E8E8E6;
 }
 [data-theme="light"] .chat-input-box {
-  background: #F5F5F5;
-  border: 1px solid #E0E0E0;
+  background: #FFFFFF;
+  border: 1px solid #E2E2DF;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.04);
 }
-[data-theme="light"] .chat-input-box:focus-within { border-color: #CCCCCC; }
-[data-theme="light"] .chat-textarea { color: #111111; }
-[data-theme="light"] .chat-textarea::placeholder { color: #AAAAAA; }
-[data-theme="light"] .chat-input-btn { color: #666666; }
-[data-theme="light"] .chat-input-btn:hover { background: #EBEBEB; color: #333333; }
-[data-theme="light"] .send-btn { background: #111111; color: #FFFFFF; }
+[data-theme="light"] .chat-input-box:focus-within {
+  border-color: #C8C8C4;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
+}
+[data-theme="light"] .chat-input-box.agent-mode {
+  border-color: rgba(99,102,241,0.3);
+  box-shadow: 0 2px 12px rgba(99,102,241,0.08);
+}
+[data-theme="light"] .chat-textarea { color: #1A1A1A; }
+[data-theme="light"] .chat-textarea::placeholder { color: #9A9A95; }
+[data-theme="light"] .toolbar-btn { color: #6A6A65; }
+[data-theme="light"] .toolbar-btn:hover { background: #F0F0ED; color: #1A1A1A; }
+[data-theme="light"] .toolbar-btn.skill-active { color: #1A93FE; }
+[data-theme="light"] .toolbar-btn.connector-active { color: #16A34A; }
+[data-theme="light"] .chat-input-btn { color: #6A6A65; }
+[data-theme="light"] .chat-input-btn:hover { background: #F0F0ED; color: #1A1A1A; }
+[data-theme="light"] .send-btn { background: #1A1A1A; color: #FFFFFF; }
 [data-theme="light"] .send-btn:hover { background: #333333; }
-[data-theme="light"] .send-btn:disabled { background: #DDDDDD; color: #AAAAAA; }
+[data-theme="light"] .send-btn:disabled { background: #E5E5E2; color: #AAAAAA; }
 
 /* ── Agent task steps ────────────────────────────────────────── */
 [data-theme="light"] .mns-phase-title { color: #111111; }

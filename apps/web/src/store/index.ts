@@ -10,6 +10,7 @@ import {
   deleteConversationFromDb,
   insertMessage,
   updateMessageContent,
+  toggleFavoriteInDb,
 } from '../services/conversationService'
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -217,6 +218,26 @@ export function useAppStore() {
     deleteConversationFromDb(id).catch(console.error)
   }, [activeConversationId])
 
+  // ── Toggle favourite ──────────────────────────────────────────
+  const toggleFavorite = useCallback((id: string) => {
+    let newVal = false
+    setConversations(prev => prev.map(c => {
+      if (c.id !== id) return c
+      newVal = !c.isFavorite
+      return { ...c, isFavorite: newVal }
+    }))
+    toggleFavoriteInDb(id, newVal).catch(console.error)
+  }, [])
+
+  // ── Rename conversation ───────────────────────────────────────
+  const renameConversation = useCallback((id: string, newTitle: string) => {
+    if (!newTitle.trim()) return
+    setConversations(prev => prev.map(c =>
+      c.id === id ? { ...c, title: newTitle.trim() } : c
+    ))
+    updateConversationTitle(id, newTitle.trim()).catch(console.error)
+  }, [])
+
   // ── Settings ──────────────────────────────────────────────────
   const updateSettings = useCallback((updates: Partial<AppSettings>) => {
     setSettings(prev => {
@@ -237,6 +258,8 @@ export function useAppStore() {
     updateMessage,
     updateAgentMessage,
     deleteConversation,
+    toggleFavorite,
+    renameConversation,
     settings,
     updateSettings,
     sidebarOpen,
