@@ -246,17 +246,13 @@ const APP_CONNECTORS: ConnectorDef[] = [
 // ─── Connector Detail Modal ───────────────────────────────────
 function ConnectorDetailModal({
   connector,
-  status,
   onDisconnect,
   onClose,
 }: {
   connector: ConnectorDef
-  status: ConnectorStatus
   onDisconnect: () => void
   onClose: () => void
 }) {
-  const connectedSince = status === 'connected'
-
   return (
     <div className="connector-modal-overlay" onClick={onClose}>
       <div className="connector-modal connector-detail-modal" onClick={e => e.stopPropagation()}>
@@ -323,19 +319,6 @@ function ConnectorDetailModal({
         </div>
       </div>
     </div>
-  )
-}
-
-// ─── Toggle Switch ────────────────────────────────────────────
-function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () => void }) {
-  return (
-    <button
-      className={`conn-toggle${checked ? ' conn-toggle--on' : ''}`}
-      onClick={onChange}
-      aria-label="Toggle"
-    >
-      <span className="conn-toggle-thumb" />
-    </button>
   )
 }
 
@@ -603,7 +586,6 @@ function AppsTab({ search }: { search: string }) {
       {detailConnector && (
         <ConnectorDetailModal
           connector={detailConnector}
-          status={statuses[detailConnector.id] ?? 'disconnected'}
           onDisconnect={() => handleDisconnect(detailConnector.id)}
           onClose={() => setDetailConnector(null)}
         />
