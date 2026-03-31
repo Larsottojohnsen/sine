@@ -422,13 +422,9 @@ export function LoginPage() {
         </div>
       </div>
 
-      {/* JTG footer */}
-      <div className="login-footer">
-        <img src={JTG_LOGO} alt="JTG" className="login-footer-logo" />
-        <div className="login-footer-links">
-          <a href="#">Vilkår for bruk</a>
-          <a href="#">Personvern</a>
-        </div>
+      {/* JTG branding — sentrert nederst, absolutt posisjonert */}
+      <div className="login-bottom-brand">
+        <img src={JTG_LOGO} alt="Johnsen Technology Group" className="login-jtg-logo" />
       </div>
     </div>
   )
