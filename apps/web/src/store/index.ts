@@ -56,6 +56,11 @@ export function useAppStore() {
     userIdRef.current = user?.id ?? null
   }, [user?.id])
 
+  // ── Track pending DB conversation creations to avoid FK race ──
+  // When createConversation fires, the DB insert is async. addMessage
+  // must wait for it before inserting messages or the FK constraint fails.
+  const pendingConvCreates = useRef<Map<string, Promise<void>>>(new Map())
+
   // ── Load conversations from Supabase when user changes ───────
   useEffect(() => {
     if (!user?.id) {
@@ -103,7 +108,11 @@ export function useAppStore() {
 
     const uid = userIdRef.current
     if (uid) {
-      createConversationInDb(uid, id, 'Ny samtale', 'chat').catch(console.error)
+      // Register pending promise so addMessage can wait before inserting (FK constraint)
+      const p = createConversationInDb(uid, id, 'Ny samtale', 'chat')
+        .catch(console.error)
+        .finally(() => pendingConvCreates.current.delete(id)) as Promise<void>
+      pendingConvCreates.current.set(id, p)
     }
 
     return id
@@ -139,7 +148,14 @@ export function useAppStore() {
 
     // Persist to Supabase — skip streaming placeholder (empty assistant messages)
     if (!message.isStreaming) {
-      insertMessage(conversationId, newMsg).catch(console.error)
+      // Wait for conversation row to exist in DB before inserting message
+      // (avoids FK constraint violation when conversation was just created)
+      const pending = pendingConvCreates.current.get(conversationId)
+      if (pending) {
+        pending.then(() => insertMessage(conversationId, newMsg)).catch(console.error)
+      } else {
+        insertMessage(conversationId, newMsg).catch(console.error)
+      }
     }
 
     return id

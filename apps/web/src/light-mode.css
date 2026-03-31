@@ -1015,3 +1015,16 @@ html[data-theme="light"] {
   --td-text-muted: #6A6A65;
   --td-input:      #F5F5F3;
 }
+
+/* ─── LogoutConfirmModal ──────────────────────────────────────── */
+html[data-theme="light"] {
+  --logout-bg:              #FFFFFF;
+  --logout-border:          #E2E2DF;
+  --logout-text:            #1A1A1A;
+  --logout-muted:           #7A7A7A;
+  --logout-btn-border:      #D8D8D5;
+  --logout-btn-border-hover:#B8B8B4;
+  --logout-btn-hover:       #F5F5F3;
+  --logout-confirm-bg:      #1A1A1A;
+  --logout-confirm-text:    #FFFFFF;
+}

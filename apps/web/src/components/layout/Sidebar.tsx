@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { VenterIcon } from '@/assets/icons/VenterIcon'
 import { FavorittIcon } from '@/assets/icons/FavorittIcon'
+import { GulSirkelIcon } from '@/assets/icons/GulSirkelIcon'
 import { ConvContextMenu } from './ConvContextMenu'
 import { buildShareLink } from '@/services/conversationService'
 import { useApp } from '@/store/AppContext'
@@ -625,13 +626,14 @@ function ConvGroup({
         const isRunning = activeAgentRunId != null && activeId === conv.id
         const lastStatus = conv.messages?.[conv.messages.length - 1]?.agentStatus
         const isFav = conv.isFavorite ?? false
+        const needsApproval = lastStatus === 'waiting_approval'
 
         let iconColor: string | undefined
-        let iconOpacity = 0.4
+        let iconOpacity = 0.45
         if (isFav) {
           iconColor = '#F59E0B'
           iconOpacity = 1
-        } else if (isRunning) {
+        } else if (isRunning || lastStatus === 'running') {
           iconColor = '#F59E0B'
           iconOpacity = 1
         } else if (lastStatus === 'completed') {
@@ -639,6 +641,8 @@ function ConvGroup({
           iconOpacity = 1
         } else if (lastStatus === 'failed' || lastStatus === 'stopped') {
           iconColor = '#EF4444'
+          iconOpacity = 1
+        } else if (needsApproval) {
           iconOpacity = 1
         }
 
@@ -653,10 +657,12 @@ function ConvGroup({
             onMouseLeave={() => onHover(null)}
           >
             {/* Status / favourite icon */}
-            <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', width: 14, opacity: iconOpacity }}>
-              {isFav
-                ? <FavorittIcon size={12} color={iconColor ?? 'currentColor'} />
-                : <VenterIcon size={12} color={iconColor ?? 'currentColor'} />
+            <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', width: 18, opacity: iconOpacity }}>
+              {needsApproval
+                ? <GulSirkelIcon size={18} />
+                : isFav
+                  ? <FavorittIcon size={18} color={iconColor ?? 'currentColor'} />
+                  : <VenterIcon size={18} color={iconColor ?? 'currentColor'} />
               }
             </span>
 

@@ -6,6 +6,8 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { useCredits } from '../../hooks/useCredits'
+import { useApp } from '../../store/AppContext'
+import { LogoutConfirmModal } from './LogoutConfirmModal'
 
 interface Props {
   onOpenSettings: (tab?: string) => void
@@ -13,9 +15,11 @@ interface Props {
 
 export function UserAvatarDropdown({ onOpenSettings }: Props) {
   const [open, setOpen] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const { user, signOut } = useAuth()
   const { profile } = useCredits(user?.id ?? null)
+  const { settings } = useApp()
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -160,14 +164,24 @@ export function UserAvatarDropdown({ onOpenSettings }: Props) {
           <div className="uad-section uad-section--last">
             <button
               className="uad-signout-btn"
-              onClick={async () => { await signOut(); setOpen(false) }}
+              onClick={() => { setOpen(false); setShowLogoutConfirm(true) }}
             >
               <LogOut size={15} />
-              <span>Logg ut</span>
+              <span>{settings.language === 'no' ? 'Logg ut' : 'Log out'}</span>
             </button>
           </div>
 
         </div>
+      )}
+
+      {/* Logout confirmation modal */}
+      {showLogoutConfirm && (
+        <LogoutConfirmModal
+          email={user?.email ?? ''}
+          language={settings.language}
+          onConfirm={async () => { setShowLogoutConfirm(false); await signOut() }}
+          onCancel={() => setShowLogoutConfirm(false)}
+        />
       )}
     </div>
   )
