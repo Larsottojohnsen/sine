@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   Plus, Search, BookOpen, FolderPlus, Trash2,
-  PanelLeftClose, PanelLeftOpen, CalendarDays,
+  Bot, PanelLeftClose, PanelLeftOpen, CalendarDays,
   LayoutGrid, Monitor, Terminal, ChevronRight, SlidersHorizontal,
   X, Copy, Mail, Check, ShieldCheck,
   Bell, User
