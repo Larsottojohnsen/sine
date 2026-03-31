@@ -1,95 +1,330 @@
 import { useState, useEffect } from 'react'
 import {
   X, Search, Plus, ChevronDown,
-  FileJson, Settings2, Loader2, Trash2, Plug
+  FileJson, Settings2, Loader2, Trash2, Plug,
+  CheckCircle2, ExternalLink, Unplug,
 } from 'lucide-react'
 import type { CustomApiConnector, CustomMcpConnector, ConnectorStatus } from '@/types'
 import { useApp } from '@/store/AppContext'
 import { v4 as uuidv4 } from 'uuid'
 
-// ─── App-koblinger definisjon ─────────────────────────────────
-const APP_CONNECTORS = [
-  {
-    id: 'github',
-    name: 'GitHub',
-    description: 'Koble til GitHub for å gi Sine tilgang til dine repositorier og kode.',
-    icon: '/connector-icons/github.svg',
-    iconBg: '#24292e',
-    type: 'oauth' as const,
-    scopes: ['repo', 'read:user'],
-    beta: false,
-  },
+// ─── Connector definitions with categories ────────────────────
+type ConnectorDef = {
+  id: string
+  name: string
+  description: string
+  icon: string
+  iconBg: string
+  iconRadius?: number
+  type: 'oauth' | 'api_key'
+  scopes?: string[]
+  beta?: boolean
+  category: string
+  docsUrl?: string
+}
+
+const APP_CONNECTORS: ConnectorDef[] = [
+  // ── E-post ────────────────────────────────────────────────────
   {
     id: 'gmail',
     name: 'Gmail',
-    description: 'Koble til Gmail for å la Sine lese og sende e-post på dine vegne.',
-    icon: '/connector-icons/gmail.svg',
+    description: 'La Sine lese og sende e-post på dine vegne via Gmail.',
+    icon: '/connector-icons/gmail.webp',
     iconBg: '#fff',
-    type: 'oauth' as const,
+    type: 'oauth',
     scopes: ['gmail.readonly', 'gmail.send'],
-    beta: false,
-  },
-  {
-    id: 'meta-ads',
-    name: 'Meta Ads Manager',
-    description: 'Koble til Meta Ads Manager for å analysere og administrere annonsekampanjer.',
-    icon: '/connector-icons/meta.svg',
-    iconBg: '#fff',
-    type: 'oauth' as const,
-    scopes: ['ads_read', 'ads_management'],
-    beta: true,
-  },
-  {
-    id: 'instagram',
-    name: 'Instagram',
-    description: 'Koble til Instagram for å administrere innlegg og analysere engasjement.',
-    icon: '/connector-icons/instagram.svg',
-    iconBg: '#fff',
-    type: 'oauth' as const,
-    scopes: ['instagram_basic', 'instagram_content_publish'],
-    beta: true,
-  },
-  {
-    id: 'instagram-creator',
-    name: 'Instagram Creator Marketplace',
-    description: 'Tilgang til Instagram Creator Marketplace for samarbeid og merkevarebygging.',
-    icon: '/connector-icons/instagram-creator.svg',
-    iconBg: '#fff',
-    type: 'oauth' as const,
-    scopes: ['instagram_branded_content_creator'],
-    beta: true,
+    category: 'E-post',
+    docsUrl: 'https://developers.google.com/gmail/api',
   },
   {
     id: 'outlook-mail',
     name: 'Outlook Mail',
     description: 'Koble til Outlook for å lese og sende e-post via Microsoft-kontoen din.',
-    icon: '/connector-icons/outlook.svg',
+    icon: '/connector-icons/outlook-mail.png',
     iconBg: '#fff',
-    type: 'oauth' as const,
+    type: 'oauth',
     scopes: ['Mail.Read', 'Mail.Send'],
-    beta: false,
+    category: 'E-post',
   },
+  // ── Kalender ──────────────────────────────────────────────────
   {
     id: 'google-calendar',
     name: 'Google Calendar',
-    description: 'Koble til Google Calendar for å la Sine se og opprette kalenderoppføringer.',
-    icon: '/connector-icons/gcal.svg',
+    description: 'La Sine se og opprette kalenderoppføringer i Google Calendar.',
+    icon: '/connector-icons/gcal.webp',
     iconBg: '#fff',
-    type: 'oauth' as const,
+    type: 'oauth',
     scopes: ['calendar.readonly', 'calendar.events'],
-    beta: false,
+    category: 'Kalender',
   },
   {
     id: 'outlook-calendar',
     name: 'Outlook Calendar',
     description: 'Koble til Outlook Calendar via Microsoft-kontoen din.',
-    icon: '/connector-icons/outlook.svg',
+    icon: '/connector-icons/outlook-calendar.png',
     iconBg: '#fff',
-    type: 'oauth' as const,
+    type: 'oauth',
     scopes: ['Calendars.Read', 'Calendars.ReadWrite'],
-    beta: false,
+    category: 'Kalender',
+  },
+  // ── Kommunikasjon ─────────────────────────────────────────────
+  {
+    id: 'slack',
+    name: 'Slack',
+    description: 'Koble til Slack for å sende meldinger og varsler til kanalene dine.',
+    icon: '/connector-icons/slack.png',
+    iconBg: '#fff',
+    type: 'oauth',
+    scopes: ['chat:write', 'channels:read'],
+    category: 'Kommunikasjon',
+    beta: true,
+  },
+  // ── Kode & Infrastruktur ──────────────────────────────────────
+  {
+    id: 'github',
+    name: 'GitHub',
+    description: 'Koble til GitHub for å gi Sine tilgang til repositorier og kode.',
+    icon: '/connector-icons/github.webp',
+    iconBg: '#24292e',
+    iconRadius: 10,
+    type: 'oauth',
+    scopes: ['repo', 'read:user'],
+    category: 'Kode & Infra',
+    docsUrl: 'https://docs.github.com/en/developers/apps',
+  },
+  {
+    id: 'supabase',
+    name: 'Supabase',
+    description: 'Koble Sine til Supabase for databasetilgang og -administrasjon.',
+    icon: '/connector-icons/supabase.webp',
+    iconBg: '#fff',
+    type: 'api_key',
+    category: 'Kode & Infra',
+    beta: true,
+  },
+  {
+    id: 'vercel',
+    name: 'Vercel',
+    description: 'La Sine deploye og administrere Vercel-prosjekter.',
+    icon: '/connector-icons/vercel.webp',
+    iconBg: '#000',
+    iconRadius: 10,
+    type: 'oauth',
+    category: 'Kode & Infra',
+    beta: true,
+  },
+  {
+    id: 'cloudflare',
+    name: 'Cloudflare',
+    description: 'Koble til Cloudflare for DNS-administrasjon og sikkerhetsinnstillinger.',
+    icon: '/connector-icons/cloudflare.webp',
+    iconBg: '#fff',
+    type: 'api_key',
+    category: 'Kode & Infra',
+    beta: true,
+  },
+  // ── Prosjektstyring ───────────────────────────────────────────
+  {
+    id: 'notion',
+    name: 'Notion',
+    description: 'Koble til Notion for å lese og oppdatere sider og databaser.',
+    icon: '/connector-icons/notion.webp',
+    iconBg: '#fff',
+    type: 'oauth',
+    scopes: ['read_content', 'update_content'],
+    category: 'Prosjektstyring',
+  },
+  {
+    id: 'monday',
+    name: 'Monday.com',
+    description: 'Koble til Monday.com for oppgavestyring og teamprosjekter.',
+    icon: '/connector-icons/monday.webp',
+    iconBg: '#fff',
+    type: 'oauth',
+    category: 'Prosjektstyring',
+    beta: true,
+  },
+  {
+    id: 'asana',
+    name: 'Asana',
+    description: 'La Sine opprette og administrere oppgaver i Asana.',
+    icon: '/connector-icons/asana.webp',
+    iconBg: '#fff',
+    type: 'oauth',
+    category: 'Prosjektstyring',
+    beta: true,
+  },
+  {
+    id: 'airtable',
+    name: 'Airtable',
+    description: 'Koble til Airtable for å lese og skrive til baser og tabeller.',
+    icon: '/connector-icons/airtable.webp',
+    iconBg: '#fff',
+    type: 'oauth',
+    category: 'Prosjektstyring',
+    beta: true,
+  },
+  // ── Markedsføring ─────────────────────────────────────────────
+  {
+    id: 'meta-ads',
+    name: 'Meta Ads Manager',
+    description: 'Analyser og administrer Meta-annonsekampanjer med Sine.',
+    icon: '/connector-icons/meta.svg',
+    iconBg: '#fff',
+    type: 'oauth',
+    scopes: ['ads_read', 'ads_management'],
+    category: 'Markedsføring',
+    beta: true,
+  },
+  {
+    id: 'instagram',
+    name: 'Instagram',
+    description: 'Administrer innlegg og analyser engasjement på Instagram.',
+    icon: '/connector-icons/instagram.svg',
+    iconBg: '#fff',
+    type: 'oauth',
+    scopes: ['instagram_basic', 'instagram_content_publish'],
+    category: 'Markedsføring',
+    beta: true,
+  },
+  {
+    id: 'instagram-creator',
+    name: 'Instagram Creator',
+    description: 'Tilgang til Instagram Creator Marketplace for merkesamarbeid.',
+    icon: '/connector-icons/instagram-creator.svg',
+    iconBg: '#fff',
+    type: 'oauth',
+    scopes: ['instagram_branded_content_creator'],
+    category: 'Markedsføring',
+    beta: true,
+  },
+  {
+    id: 'canva',
+    name: 'Canva',
+    description: 'La Sine generere og redigere design direkte i Canva.',
+    icon: '/connector-icons/canva.webp',
+    iconBg: '#fff',
+    type: 'oauth',
+    category: 'Markedsføring',
+    beta: true,
+  },
+  // ── Finans ────────────────────────────────────────────────────
+  {
+    id: 'stripe',
+    name: 'Stripe',
+    description: 'Koble til Stripe for å se betalinger, kunder og abonnementer.',
+    icon: '/connector-icons/stripe.webp',
+    iconBg: '#fff',
+    type: 'api_key',
+    category: 'Finans',
+    beta: true,
+  },
+  // ── Automatisering ────────────────────────────────────────────
+  {
+    id: 'zapier',
+    name: 'Zapier',
+    description: 'Koble Sine til tusenvis av apper via Zapier-automatisering.',
+    icon: '/connector-icons/zapier.webp',
+    iconBg: '#fff',
+    type: 'oauth',
+    category: 'Automatisering',
+    beta: true,
+  },
+  // ── Nettleser ─────────────────────────────────────────────────
+  {
+    id: 'chrome',
+    name: 'Chrome',
+    description: 'La Sine samhandle med nettsider i Chrome-nettleseren.',
+    icon: '/connector-icons/chrome.webp',
+    iconBg: '#fff',
+    type: 'oauth',
+    category: 'Nettleser',
+    beta: true,
   },
 ]
+
+// ─── Connector Detail Modal ───────────────────────────────────
+function ConnectorDetailModal({
+  connector,
+  status,
+  onDisconnect,
+  onClose,
+}: {
+  connector: ConnectorDef
+  status: ConnectorStatus
+  onDisconnect: () => void
+  onClose: () => void
+}) {
+  const connectedSince = status === 'connected'
+
+  return (
+    <div className="connector-modal-overlay" onClick={onClose}>
+      <div className="connector-modal connector-detail-modal" onClick={e => e.stopPropagation()}>
+        <div className="connector-modal-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div
+              className="conn-detail-icon"
+              style={{
+                background: connector.iconBg,
+                borderRadius: connector.iconRadius ?? 8,
+              }}
+            >
+              <img src={connector.icon} alt={connector.name} />
+            </div>
+            <div>
+              <h3 className="connector-modal-title">{connector.name}</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                <CheckCircle2 size={12} color="#22c55e" />
+                <span style={{ fontSize: 12, color: '#22c55e' }}>Tilkoblet</span>
+              </div>
+            </div>
+          </div>
+          <button className="skill-modal-close" onClick={onClose}><X size={15} /></button>
+        </div>
+
+        <div className="connector-modal-body">
+          <p style={{ fontSize: 13, color: 'var(--connector-detail-text, #9A9A9A)', lineHeight: 1.5, marginBottom: 20 }}>
+            {connector.description}
+          </p>
+
+          {connector.scopes && connector.scopes.length > 0 && (
+            <div className="connector-detail-section">
+              <div className="connector-detail-label">Tillatelser</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                {connector.scopes.map(scope => (
+                  <span key={scope} className="connector-scope-badge">{scope}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {connector.docsUrl && (
+            <div className="connector-detail-section">
+              <a
+                href={connector.docsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="connector-docs-link"
+              >
+                <ExternalLink size={12} /> Dokumentasjon
+              </a>
+            </div>
+          )}
+        </div>
+
+        <div className="connector-modal-footer" style={{ justifyContent: 'space-between' }}>
+          <button
+            className="connector-disconnect-btn"
+            onClick={() => { onDisconnect(); onClose() }}
+          >
+            <Unplug size={13} /> Koble fra
+          </button>
+          <button className="connector-save-btn" onClick={onClose}>Lukk</button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // ─── Toggle Switch ────────────────────────────────────────────
 function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () => void }) {
@@ -105,9 +340,9 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () =>
 }
 
 // ─── Connector Icon ───────────────────────────────────────────
-function ConnectorIcon({ src, bg, name }: { src: string; bg: string; name: string }) {
+function ConnectorIcon({ src, bg, name, radius }: { src: string; bg: string; name: string; radius?: number }) {
   return (
-    <div className="conn-icon-wrap" style={{ background: bg }}>
+    <div className="conn-icon-wrap" style={{ background: bg, borderRadius: radius ?? 8 }}>
       <img src={src} alt={name} className="conn-icon-img" />
     </div>
   )
@@ -148,7 +383,7 @@ function AddCustomApiModal({ onClose, onSave }: {
         <div className="connector-modal-header">
           <div>
             <h3 className="connector-modal-title">Legg til egendefinert API</h3>
-            <p className="connector-modal-sub">Bruk egendefinert API-kobling for å integrere enhver ekstern tjeneste som støtter nøkkel- eller token-autorisasjon.</p>
+            <p className="connector-modal-sub">Integrer en ekstern tjeneste med nøkkel- eller token-autorisasjon.</p>
           </div>
           <button className="skill-modal-close" onClick={onClose}><X size={15} /></button>
         </div>
@@ -253,20 +488,16 @@ function AppsTab({ search }: { search: string }) {
   const { settings, updateSettings } = useApp()
   const statuses: Record<string, ConnectorStatus> = settings.connectorStatuses ?? {}
   const [connecting, setConnecting] = useState<string | null>(null)
-
-  const filtered = APP_CONNECTORS.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase())
-  )
+  const [detailConnector, setDetailConnector] = useState<ConnectorDef | null>(null)
 
   const API_BASE = import.meta.env.VITE_API_URL || 'https://sineapi-production-8db6.up.railway.app'
 
-  // Sjekk Gmail-status ved mount
+  // Sjekk Gmail OAuth callback
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get('gmail_connected') === 'true') {
       const updated = { ...statuses, gmail: 'connected' as ConnectorStatus }
       updateSettings({ connectorStatuses: updated })
-      // Fjern query param
       window.history.replaceState({}, '', window.location.pathname + window.location.hash)
     }
     if (params.get('gmail_error')) {
@@ -276,18 +507,15 @@ function AppsTab({ search }: { search: string }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const handleConnect = async (id: string) => {
+  const handleConnect = async (app: ConnectorDef) => {
+    const id = app.id
     if (id === 'gmail') {
-      // Ekte Gmail OAuth
       setConnecting(id)
       try {
         const res = await fetch(`${API_BASE}/api/gmail/auth-url`)
         const data = await res.json()
-        if (data.auth_url) {
-          window.location.href = data.auth_url
-        } else {
-          console.error('Ingen auth_url fra backend')
-        }
+        if (data.auth_url) window.location.href = data.auth_url
+        else console.error('Ingen auth_url fra backend')
       } catch (e) {
         console.error('Gmail auth-url feil:', e)
       } finally {
@@ -295,58 +523,91 @@ function AppsTab({ search }: { search: string }) {
       }
       return
     }
-    // Andre connectors: simuler for nå
+    // Andre connectors: simuler
     setConnecting(id)
-    await new Promise(r => setTimeout(r, 1500))
-    const updated = { ...statuses, [id]: 'connected' as ConnectorStatus }
-    updateSettings({ connectorStatuses: updated })
+    await new Promise(r => setTimeout(r, 1200))
+    updateSettings({ connectorStatuses: { ...statuses, [id]: 'connected' as ConnectorStatus } })
     setConnecting(null)
   }
 
-  const handleToggle = (id: string) => {
+  const handleDisconnect = (id: string) => {
     const updated = { ...statuses }
-    if (updated[id] === 'connected') {
-      delete updated[id]
-    } else {
-      updated[id] = 'connected'
-    }
+    delete updated[id]
     updateSettings({ connectorStatuses: updated })
   }
 
+  // Group by category
+  const filtered = APP_CONNECTORS.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
+    c.description.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const categories = Array.from(new Set(APP_CONNECTORS.map(c => c.category)))
+  const groupedFiltered = categories
+    .map(cat => ({
+      cat,
+      items: filtered.filter(c => c.category === cat),
+    }))
+    .filter(g => g.items.length > 0)
+
   return (
     <div className="conn-app-list">
-      {filtered.map(app => {
-        const status = statuses[app.id] ?? 'disconnected'
-        const isConnected = status === 'connected'
-        const isConnecting = connecting === app.id
+      {groupedFiltered.map(({ cat, items }) => (
+        <div key={cat} className="conn-category-group">
+          <div className="conn-category-label">{cat}</div>
+          {items.map(app => {
+            const status = statuses[app.id] ?? 'disconnected'
+            const isConnected = status === 'connected'
+            const isConnecting = connecting === app.id
 
-        return (
-          <div key={app.id} className="conn-app-row">
-            <ConnectorIcon src={app.icon} bg={app.iconBg} name={app.name} />
-            <div className="conn-app-info">
-              <div className="conn-app-name">
-                {app.name}
-                {app.beta && <span className="conn-beta-badge">Beta</span>}
+            return (
+              <div key={app.id} className="conn-app-row">
+                <ConnectorIcon src={app.icon} bg={app.iconBg} name={app.name} radius={app.iconRadius} />
+                <div className="conn-app-info">
+                  <div className="conn-app-name">
+                    {app.name}
+                    {app.beta && <span className="conn-beta-badge">Beta</span>}
+                  </div>
+                  <div className="conn-app-desc">{app.description}</div>
+                </div>
+                <div className="conn-app-action">
+                  {isConnected ? (
+                    <button
+                      className="conn-connected-btn"
+                      onClick={() => setDetailConnector(app)}
+                      title="Administrer tilkobling"
+                    >
+                      <CheckCircle2 size={13} />
+                      Tilkoblet
+                    </button>
+                  ) : (
+                    <button
+                      className="conn-connect-btn"
+                      onClick={() => handleConnect(app)}
+                      disabled={isConnecting}
+                    >
+                      {isConnecting
+                        ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
+                        : 'Koble til'
+                      }
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-            <div className="conn-app-action">
-              {isConnected ? (
-                <ToggleSwitch checked={true} onChange={() => handleToggle(app.id)} />
-              ) : (
-                <button
-                  className="conn-connect-btn"
-                  onClick={() => handleConnect(app.id)}
-                  disabled={isConnecting}
-                >
-                  {isConnecting ? (
-                    <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
-                  ) : 'Connect'}
-                </button>
-              )}
-            </div>
-          </div>
-        )
-      })}
+            )
+          })}
+        </div>
+      ))}
+
+      {/* Detail / disconnect modal */}
+      {detailConnector && (
+        <ConnectorDetailModal
+          connector={detailConnector}
+          status={statuses[detailConnector.id] ?? 'disconnected'}
+          onDisconnect={() => handleDisconnect(detailConnector.id)}
+          onClose={() => setDetailConnector(null)}
+        />
+      )}
     </div>
   )
 }
@@ -390,6 +651,7 @@ function CustomApiTab() {
                 </div>
                 <div className="conn-app-info">
                   <div className="conn-app-name">{c.name}</div>
+                  {c.note && <div className="conn-app-desc">{c.note}</div>}
                 </div>
                 <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#5A5A5A', padding: 4 }} onClick={() => handleDelete(c.id)}>
                   <Trash2 size={14} />
@@ -502,7 +764,7 @@ export function ConnectorsContent() {
           <Search size={13} style={{ color: '#5A5A5A', flexShrink: 0 }} />
           <input
             className="connector-search-input"
-            placeholder="Søk"
+            placeholder="Søk etter app"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />

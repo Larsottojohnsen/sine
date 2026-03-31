@@ -1028,3 +1028,19 @@ html[data-theme="light"] {
   --logout-confirm-bg:      #1A1A1A;
   --logout-confirm-text:    #FFFFFF;
 }
+
+/* ─── Connectors (light mode) ─────────────────────────────────── */
+html[data-theme="light"] .conn-search-wrap { background: #F5F5F3; border-color: #E2E2DF; }
+html[data-theme="light"] .conn-category-label { color: #AEAEAD; border-color: #EBEBEA; }
+html[data-theme="light"] .conn-app-row { border-color: #EBEBEA; }
+html[data-theme="light"] .conn-app-row:hover { background: rgba(0,0,0,0.02); }
+html[data-theme="light"] .conn-app-name { color: #1A1A1A; }
+html[data-theme="light"] .conn-app-desc { color: #9A9A9A; }
+html[data-theme="light"] .conn-beta-badge { color: #7A7A7A; background: #F0F0EE; border-color: #E0E0DE; }
+html[data-theme="light"] .conn-icon-wrap { border-color: rgba(0,0,0,0.08); }
+html[data-theme="light"] .conn-connect-btn { border-color: #DEDEDC; color: #7A7A7A; }
+html[data-theme="light"] .conn-connect-btn:hover { border-color: #AEAEAD; color: #1A1A1A; }
+html[data-theme="light"] .connector-detail-modal { background: #FFFFFF; border-color: #E2E2DF; }
+html[data-theme="light"] .connector-detail-label { color: #AEAEAD; }
+html[data-theme="light"] .connector-scope-badge { background: #F5F5F3; border-color: #E2E2DF; color: #7A7A7A; }
+html[data-theme="light"] { --connector-detail-text: #6A6A65; }
