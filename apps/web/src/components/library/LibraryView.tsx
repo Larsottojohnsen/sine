@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import {
   LayoutGrid, List, Search, ChevronDown,
   FileText, Image, Archive, Code, FileAudio, Table, Globe, File, MoreHorizontal,
@@ -7,7 +7,6 @@ import {
 import { useApp } from '@/store/AppContext'
 import type { AgentFile, Conversation } from '@/types'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://sineapi-production-8db6.up.railway.app'
 
 type FileType = 'all' | 'slides' | 'websites' | 'documents' | 'images' | 'audio' | 'spreadsheets' | 'others'
 type ViewMode = 'grid' | 'list'
@@ -219,150 +218,6 @@ function ConversationGroup({ conversation, files, viewMode }: ConversationGroupP
   )
 }
 
-// ── Document Upload Panel ─────────────────────────────────────────────────
-type UploadStatus = 'idle' | 'uploading' | 'indexing' | 'done' | 'error'
-
-interface UploadedDoc {
-  id: string
-  name: string
-  size: string
-  status: UploadStatus
-  error?: string
-}
-
-function DocumentUploadPanel() {
-  const [uploads, setUploads] = useState<UploadedDoc[]>([])
-  const [isDragging, setIsDragging] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const processFile = useCallback(async (file: File) => {
-    const id = Math.random().toString(36).slice(2)
-    const sizeStr = file.size > 1024 * 1024
-      ? `${(file.size / 1024 / 1024).toFixed(1)} MB`
-      : `${Math.round(file.size / 1024)} KB`
-
-    setUploads(prev => [...prev, { id, name: file.name, size: sizeStr, status: 'uploading' }])
-
-    try {
-      // Upload to backend for LightRAG indexing
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const res = await fetch(`${API_BASE}/api/library/upload`, {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!res.ok) throw new Error(`Upload feilet: ${res.status}`)
-
-      setUploads(prev => prev.map(u => u.id === id ? { ...u, status: 'indexing' } : u))
-
-      // Simulate indexing delay (LightRAG processes in background)
-      await new Promise(r => setTimeout(r, 1500))
-
-      setUploads(prev => prev.map(u => u.id === id ? { ...u, status: 'done' } : u))
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Ukjent feil'
-      setUploads(prev => prev.map(u => u.id === id ? { ...u, status: 'error', error: msg } : u))
-    }
-  }, [])
-
-  const handleFiles = useCallback((files: FileList | null) => {
-    if (!files) return
-    const ALLOWED = ['.pdf', '.docx', '.doc', '.txt', '.md', '.csv', '.xlsx']
-    Array.from(files).forEach(file => {
-      const ext = '.' + file.name.split('.').pop()?.toLowerCase()
-      if (ALLOWED.includes(ext)) {
-        processFile(file)
-      }
-    })
-  }, [processFile])
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-    handleFiles(e.dataTransfer.files)
-  }, [handleFiles])
-
-  const statusIcon = (status: UploadStatus) => {
-    if (status === 'uploading') return <Loader2 size={13} style={{ animation: 'spin 1s linear infinite', color: '#1A93FE' }} />
-    if (status === 'indexing') return <Loader2 size={13} style={{ animation: 'spin 1s linear infinite', color: '#f59e0b' }} />
-    if (status === 'done') return <CheckCircle2 size={13} style={{ color: '#10b981' }} />
-    if (status === 'error') return <AlertCircle size={13} style={{ color: '#ef4444' }} />
-    return null
-  }
-
-  const statusLabel = (status: UploadStatus) => {
-    if (status === 'uploading') return 'Laster opp...'
-    if (status === 'indexing') return 'Indekserer...'
-    if (status === 'done') return 'Klar'
-    if (status === 'error') return 'Feil'
-    return ''
-  }
-
-  return (
-    <div className="lib-upload-panel">
-      <div className="lib-upload-header">
-        <h3 className="lib-upload-title">Last opp dokumenter</h3>
-        <p className="lib-upload-desc">
-          Dokumenter indekseres med LightRAG og gjøres tilgjengelig for Sine i alle samtaler.
-          Støttede formater: PDF, DOCX, TXT, MD, CSV, XLSX
-        </p>
-      </div>
-
-      {/* Drop zone */}
-      <div
-        className={`lib-upload-dropzone${isDragging ? ' lib-upload-dropzone--active' : ''}`}
-        onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-      >
-        <Upload size={24} style={{ color: isDragging ? '#1A93FE' : '#5A5A5A', marginBottom: 8 }} />
-        <p style={{ fontSize: 13, color: isDragging ? '#1A93FE' : '#7A7A7A', margin: 0 }}>
-          {isDragging ? 'Slipp filer her' : 'Dra og slipp filer, eller klikk for å velge'}
-        </p>
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept=".pdf,.docx,.doc,.txt,.md,.csv,.xlsx"
-          style={{ display: 'none' }}
-          onChange={e => handleFiles(e.target.files)}
-        />
-      </div>
-
-      {/* Upload list */}
-      {uploads.length > 0 && (
-        <div className="lib-upload-list">
-          {uploads.map(u => (
-            <div key={u.id} className="lib-upload-item">
-              <FileText size={14} style={{ color: '#3b82f6', flexShrink: 0 }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, color: '#E5E5E5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.name}</div>
-                <div style={{ fontSize: 11, color: '#5A5A5A' }}>{u.size}</div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#7A7A7A', flexShrink: 0 }}>
-                {statusIcon(u.status)}
-                <span>{statusLabel(u.status)}</span>
-              </div>
-              {u.status !== 'uploading' && u.status !== 'indexing' && (
-                <button
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#5A5A5A', padding: 2 }}
-                  onClick={() => setUploads(prev => prev.filter(x => x.id !== u.id))}
-                >
-                  <X size={12} />
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── Main LibraryView ──────────────────────────────────────────────────────
 export function LibraryView() {
   const { conversations } = useApp()
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
