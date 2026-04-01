@@ -172,7 +172,7 @@ export function useAuth() {
     } catch { /* ignore */ }
 
     setUser(null)
-    window.location.href = '/sine/'
+    window.location.href = '/'
   }
 
   return { user, loading, signOut }

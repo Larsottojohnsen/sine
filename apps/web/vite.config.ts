@@ -13,7 +13,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  base: '/sine/',
+  base: '/',
   preview: {
     allowedHosts: true,
   },

@@ -23,7 +23,7 @@ export function ChatMessage({ message, onRegenerate, isLast, conversationHasSkil
   const effectiveTheme = settings.theme === 'system'
     ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
     : settings.theme
-  const chatLogoSrc = effectiveTheme === 'light' ? '/sine/Sine-sort.svg' : '/sine/Sinev6.svg'
+  const chatLogoSrc = effectiveTheme === 'light' ? '/Sine-sort.svg' : '/Sinev6.svg'
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(message.content)

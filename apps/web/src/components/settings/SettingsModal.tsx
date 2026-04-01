@@ -175,7 +175,7 @@ function SettingsContent({
   const effectiveTheme = settings.theme === 'system'
     ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
     : settings.theme
-  const settingsLogoSrc = effectiveTheme === 'light' ? '/sine/Sine-sort.svg' : '/sine/Sinev6.svg'
+  const settingsLogoSrc = effectiveTheme === 'light' ? '/Sine-sort.svg' : '/Sinev6.svg'
 
   return (
     <div>

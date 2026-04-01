@@ -3,8 +3,8 @@ import PixelBlast from './PixelBlast'
 import { getSupabase } from '../../hooks/useAuth'
 
 // CDN logo URLs
-const LOGO_LIGHT = "/sine/Sine-hvit.svg"
-const ICON_LIGHT = "/sine/Sine-ikon-hvit.svg"
+const LOGO_LIGHT = "/Sine-hvit.svg"
+const ICON_LIGHT = "/Sine-ikon-hvit.svg"
 
 type LoginStep = 'main' | 'email-password' | 'create-account' | 'forgot-password' | 'forgot-password-sent'
 

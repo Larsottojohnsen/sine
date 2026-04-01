@@ -2,14 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import "../landing.css";
 
 // ── CDN ASSETS ──────────────────────────────────────────────────────────────
-const LOGO_DARK  = "/sine/Sine-sort.svg";
-const LOGO_LIGHT = "/sine/Sine-hvit.svg";
+const LOGO_DARK  = "/Sine-sort.svg";
+const LOGO_LIGHT = "/Sine-hvit.svg";
 
 // App mockup images (generated)
-const IMG_CHAT       = "/sine/sine-chat-mockup.png";
-const IMG_CALENDAR   = "/sine/sine-calendar-mockup.png";
-const IMG_CONNECTORS = "/sine/sine-connectors-mockup.png";
-const IMG_LIBRARY    = "/sine/sine-library-mockup.png";
+const IMG_CHAT       = "/sine-chat-mockup.png";
+const IMG_CALENDAR   = "/sine-calendar-mockup.png";
+const IMG_CONNECTORS = "/sine-connectors-mockup.png";
+const IMG_LIBRARY    = "/sine-library-mockup.png";
 
 // Nature background paintings (Gemini-generated Norwegian landscapes)
 const BG_MOUNTAIN   = "https://d2xsxph8kpxj0f.cloudfront.net/310519663215301248/mRNQuoggx2LarwPy6pojqf/Gemini_Generated_Image_3ol3u3ol3u3ol3u3_bb6304dd.png";

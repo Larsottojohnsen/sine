@@ -18,12 +18,12 @@ interface AgentChatMessageProps {
 function getFileIcon(type: AgentFile['type']) {
   if (type === 'archive') {
     return (
-      <img src="/sine/fil.svg" alt="Arkiv"
+      <img src="/fil.svg" alt="Arkiv"
         style={{ width: 32, height: 32, objectFit: 'contain', flexShrink: 0 }} />
     )
   }
   return (
-    <img src="/sine/dokument.svg" alt="Dokument"
+    <img src="/dokument.svg" alt="Dokument"
       style={{ width: 32, height: 32, objectFit: 'contain', flexShrink: 0 }} />
   )
 }
@@ -314,7 +314,7 @@ export function AgentChatMessage({ message, onOpenFile, onSuggestion }: AgentCha
     <div className="message-assistant animate-fade-in">
       {/* Avatar row */}
       <div className="message-avatar-row">
-        <img src="/sine/Sinev6.svg" alt="Sine" className="message-logo-img" />
+        <img src="/Sinev6.svg" alt="Sine" className="message-logo-img" />
         <span className="message-badge-clean" style={{ color: '#818CF8' }}>Agent</span>
       </div>
 

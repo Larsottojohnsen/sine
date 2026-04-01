@@ -142,7 +142,7 @@ export function UserAvatarDropdown({ onOpenSettings }: Props) {
               icon={<Home size={15} />}
               label="Hjemmeside"
               external
-              onClick={() => { window.open('https://larsottojohnsen.github.io/sine/', '_blank'); setOpen(false) }}
+              onClick={() => { window.open('https://sine.no', '_blank'); setOpen(false) }}
             />
             <UadItem
               icon={<HelpCircle size={15} />}
@@ -154,7 +154,7 @@ export function UserAvatarDropdown({ onOpenSettings }: Props) {
               icon={<BookOpen size={15} />}
               label="Dokumentasjon"
               external
-              onClick={() => { window.open('https://larsottojohnsen.github.io/sine/', '_blank'); setOpen(false) }}
+              onClick={() => { window.open('https://sine.no', '_blank'); setOpen(false) }}
             />
           </div>
 

@@ -16,8 +16,8 @@ import { getTranslations } from '@/i18n'
 import { useAuth } from '@/hooks/useAuth'
 
 // Logo variants: Sine-hvit.svg = white logo for dark mode, Sine-sort.svg = dark logo for light mode
-const LOGO_FOR_DARK_BG = "/sine/Sine-hvit.svg"
-const LOGO_FOR_LIGHT_BG = "/sine/Sine-sort.svg"
+const LOGO_FOR_DARK_BG = "/Sine-hvit.svg"
+const LOGO_FOR_LIGHT_BG = "/Sine-sort.svg"
 
 interface SidebarProps {
   onNavigate?: (page: string) => void
@@ -364,7 +364,7 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
           {/* Referral-kort */}
           <button className="referral-banner" onClick={() => setReferralOpen(true)}>
             <div className="referral-icon-wrap">
-              <img src="/sine/hand-icon.svg" alt="Inviter" style={{ width: 16, height: 16, opacity: 0.9 }} />
+              <img src="/hand-icon.svg" alt="Inviter" style={{ width: 16, height: 16, opacity: 0.9 }} />
             </div>
             <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
               <div className="referral-title">Del Sine med en venn</div>
@@ -469,7 +469,7 @@ function ReferralModal({ onClose }: { onClose: () => void }) {
 
         {/* E-post-bilde */}
         <div className="referral-modal-hero">
-          <img src="/sine/invite-email.png" alt="Inviter" style={{ width: 100, height: 'auto' }} />
+          <img src="/invite-email.png" alt="Inviter" style={{ width: 100, height: 'auto' }} />
         </div>
 
         {/* Tittel */}
