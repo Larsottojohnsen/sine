@@ -203,5 +203,41 @@ export function useUserMemory(userId: string | null | undefined) {
     }, 2000)
   }, [userId, addMemory])
 
-  return { memory, addMemory, removeMemory, clearMemory, buildMemoryContext, extractFromMessage, loaded }
+  // ── LLM-basert henting av relevante minner (Claude Code-inspirert) ──────────
+  // I stedet for å sende ALLE minner til LLM, bruker vi Claude til å velge
+  // de mest relevante minnene for en gitt spørring. Dette sparer tokens og
+  // øker presisjon når brukeren har mange lagrede minner.
+  const getRelevantMemories = useCallback(async (
+    query: string,
+    maxCount: number = 5
+  ): Promise<UserMemory[]> => {
+    // Ingen minner lagret — returner tom liste
+    if (memory.length === 0) return []
+
+    // Få minner: returner alle direkte uten API-kall
+    if (memory.length <= maxCount) return memory
+
+    // Mange minner: bruk LLM til å velge de mest relevante
+    if (userId) {
+      try {
+        const res = await fetch(`${API_BASE}/api/memory/relevant`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
+          body: JSON.stringify({ query, max_count: maxCount }),
+        })
+        const data = await res.json()
+        if (data.memories && Array.isArray(data.memories)) {
+          return (data.memories as Record<string, unknown>[]).map(rowToMemory)
+        }
+      } catch {
+        // Fallback: returner de siste N minnene
+        return memory.slice(-maxCount)
+      }
+    }
+
+    // Ikke innlogget: returner de siste N minnene
+    return memory.slice(-maxCount)
+  }, [memory, userId])
+
+  return { memory, addMemory, removeMemory, clearMemory, buildMemoryContext, extractFromMessage, getRelevantMemories, loaded }
 }

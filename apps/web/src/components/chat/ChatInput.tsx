@@ -3,8 +3,111 @@ import {
   Monitor, Mic, ArrowUp, Square,
   ChevronDown, Globe, Cpu, Bot, BotOff,
   Plus, Paperclip, ChevronRight,
-  Plug, Zap, Check, ToggleRight, ToggleLeft, Settings
+  Plug, Zap, Check, ToggleRight, ToggleLeft, Settings,
+  Brain, Trash2, BarChart2, BookOpen, Lightbulb
 } from 'lucide-react'
+
+// ─── Slash-kommandoer (inspirert av Claude Code) ────────────────────────────────────
+const SLASH_COMMANDS = [
+  {
+    command: '/husk',
+    description: 'Lagre noe i minnet. Eks: /husk Jeg jobber med React',
+    icon: 'Brain',
+    example: '/husk [nøkkel]: [verdi]',
+  },
+  {
+    command: '/glem',
+    description: 'Slett et minne. Eks: /glem navn',
+    icon: 'Trash2',
+    example: '/glem [nøkkel]',
+  },
+  {
+    command: '/plan',
+    description: 'Aktiver planleggingsmodus – Sine lager en plan før den handler',
+    icon: 'Lightbulb',
+    example: '/plan [oppgave]',
+  },
+  {
+    command: '/bruk',
+    description: 'Vis token-forbruk for denne samtalen',
+    icon: 'BarChart2',
+    example: '/bruk',
+  },
+  {
+    command: '/skills',
+    description: 'List opp alle tilgjengelige skills',
+    icon: 'BookOpen',
+    example: '/skills',
+  },
+] as const
+
+type SlashCommand = typeof SLASH_COMMANDS[number]
+
+const SLASH_ICONS: Record<string, React.ReactNode> = {
+  Brain: <Brain size={14} />,
+  Trash2: <Trash2 size={14} />,
+  Lightbulb: <Lightbulb size={14} />,
+  BarChart2: <BarChart2 size={14} />,
+  BookOpen: <BookOpen size={14} />,
+}
+
+function SlashCommandMenu({
+  commands,
+  selectedIndex,
+  onSelect,
+}: {
+  commands: readonly SlashCommand[]
+  selectedIndex: number
+  onSelect: (cmd: SlashCommand) => void
+}) {
+  if (commands.length === 0) return null
+  return (
+    <div style={{
+      position: 'absolute',
+      bottom: '100%',
+      left: 0,
+      right: 0,
+      marginBottom: 6,
+      background: '#1A1A1A',
+      border: '1px solid #2A2A2A',
+      borderRadius: 10,
+      overflow: 'hidden',
+      zIndex: 100,
+      boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+    }}>
+      <div style={{ padding: '6px 10px 4px', fontSize: 10, color: '#4A4A4A', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+        Kommandoer
+      </div>
+      {commands.map((cmd, i) => (
+        <button
+          key={cmd.command}
+          onClick={() => onSelect(cmd)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            width: '100%',
+            padding: '8px 12px',
+            background: i === selectedIndex ? '#252525' : 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            color: '#E5E5E5',
+            fontFamily: 'inherit',
+            textAlign: 'left',
+          }}
+        >
+          <span style={{ color: '#1A93FE', flexShrink: 0 }}>{SLASH_ICONS[cmd.icon]}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#1A93FE' }}>{cmd.command}</span>
+              <span style={{ fontSize: 11, color: '#5A5A5A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cmd.description}</span>
+            </div>
+          </div>
+        </button>
+      ))}
+    </div>
+  )
+}
 import type { SineModel, Skill } from '@/types'
 import { getTranslations } from '@/i18n'
 import type { AgentMode, AgentState } from '@/hooks/useAgent'
@@ -250,6 +353,9 @@ export function ChatInput({
   const [showPlusMenu, setShowPlusMenu] = useState(false)
   const [showSkillsDropdown, setShowSkillsDropdown] = useState(false)
   const [showConnectorsPopup, setShowConnectorsPopup] = useState(false)
+  const [slashMenuOpen, setSlashMenuOpen] = useState(false)
+  const [slashSelectedIndex, setSlashSelectedIndex] = useState(0)
+  const [planningMode, setPlanningMode] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const plusMenuRef = useRef<HTMLDivElement>(null)
@@ -309,22 +415,146 @@ export function ChatInput({
     ta.style.height = Math.min(ta.scrollHeight, 200) + 'px'
   }, [])
 
+  // ── Slash-kommando: filtrer basert på input ───────────────────────────────────
+  const filteredSlashCommands = value.startsWith('/')
+    ? SLASH_COMMANDS.filter(c => c.command.startsWith(value.split(' ')[0].toLowerCase()))
+    : []
+
+  // ── Slash-kommando: håndter utførelse ─────────────────────────────────────────
+  const executeSlashCommand = useCallback((cmd: SlashCommand, fullInput: string) => {
+    const args = fullInput.slice(cmd.command.length).trim()
+
+    switch (cmd.command) {
+      case '/husk': {
+        // /husk [nøkkel]: [verdi] eller /husk [verdi]
+        if (args) {
+          const colonIdx = args.indexOf(':')
+          if (colonIdx > 0) {
+            const key = args.slice(0, colonIdx).trim()
+            const val = args.slice(colonIdx + 1).trim()
+            onAddMemory?.(key, val)
+            onSend(`Jeg har lagret i minnet: **${key}** = ${val}`, agentMode)
+          } else {
+            onAddMemory?.('notat', args)
+            onSend(`Jeg har lagret i minnet: ${args}`, agentMode)
+          }
+        } else {
+          setValue('/husk ')
+          textareaRef.current?.focus()
+          return
+        }
+        break
+      }
+      case '/glem': {
+        if (args) {
+          const toRemove = memory.find(m => m.key.toLowerCase() === args.toLowerCase())
+          if (toRemove) {
+            onRemoveMemory?.(toRemove.id)
+            onSend(`Jeg har slettet minnet: **${args}**`, agentMode)
+          } else {
+            onSend(`Fant ikke minnet "${args}". Tilgjengelige minner: ${memory.map(m => m.key).join(', ') || 'ingen'}`, agentMode)
+          }
+        } else {
+          onClearMemory?.()
+          onSend('Jeg har slettet alle lagrede minner.', agentMode)
+        }
+        break
+      }
+      case '/plan': {
+        setPlanningMode(true)
+        const task = args || 'Beskriv oppgaven'
+        onSend(`/plan ${task}`, agentMode)
+        break
+      }
+      case '/bruk': {
+        const memCount = memory.length
+        onSend(
+          `**Minnestatus:** ${memCount} minner lagret.\n` +
+          (memCount > 0
+            ? `\n**Lagrede minner:**\n${memory.map(m => `- **${m.key}**: ${m.value}`).join('\n')}`
+            : ''),
+          agentMode
+        )
+        break
+      }
+      case '/skills': {
+        const activeSkills = (settings.skills ?? []).filter(s => s.enabled)
+        const allSkills = settings.skills ?? []
+        onSend(
+          `**Skills (${activeSkills.length}/${allSkills.length} aktive):**\n` +
+          (allSkills.length > 0
+            ? allSkills.map(s => `- ${s.enabled ? '✅' : '□'} **${s.name}**: ${s.description}`).join('\n')
+            : 'Ingen skills lagt til ennå. Gå til Innstillinger for å legge til skills.'),
+          agentMode
+        )
+        break
+      }
+    }
+
+    setValue('')
+    setSlashMenuOpen(false)
+    if (textareaRef.current) textareaRef.current.style.height = 'auto'
+  }, [memory, onAddMemory, onRemoveMemory, onClearMemory, onSend, agentMode, settings.skills])
+
   const handleSend = useCallback(() => {
     const trimmed = value.trim()
     if (!trimmed || isStreaming || disabled) return
-    onSend(trimmed, agentMode)
+
+    // Sjekk om dette er en slash-kommando
+    if (trimmed.startsWith('/')) {
+      const matchedCmd = SLASH_COMMANDS.find(c => trimmed.startsWith(c.command))
+      if (matchedCmd) {
+        executeSlashCommand(matchedCmd, trimmed)
+        return
+      }
+    }
+
+    // Vanlig melding — legg til planleggingsmodus-flagg hvis aktivt
+    if (planningMode) {
+      onSend(`[PLANLEGGINGSMODUS] ${trimmed}`, agentMode)
+    } else {
+      onSend(trimmed, agentMode)
+    }
     setValue('')
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
     }
-  }, [value, isStreaming, disabled, onSend, agentMode])
+  }, [value, isStreaming, disabled, onSend, agentMode, planningMode, executeSlashCommand])
 
   const handleKeyDown = useCallback((e: KeyboardEvent<HTMLTextAreaElement>) => {
+    // Naviger slash-meny med piltaster
+    if (slashMenuOpen && filteredSlashCommands.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setSlashSelectedIndex(i => (i + 1) % filteredSlashCommands.length)
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setSlashSelectedIndex(i => (i - 1 + filteredSlashCommands.length) % filteredSlashCommands.length)
+        return
+      }
+      if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) {
+        e.preventDefault()
+        const cmd = filteredSlashCommands[slashSelectedIndex]
+        if (cmd) {
+          setValue(cmd.command + ' ')
+          setSlashMenuOpen(false)
+          textareaRef.current?.focus()
+        }
+        return
+      }
+      if (e.key === 'Escape') {
+        setSlashMenuOpen(false)
+        return
+      }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
     }
-  }, [handleSend])
+  }, [handleSend, slashMenuOpen, filteredSlashCommands, slashSelectedIndex])
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -412,11 +642,34 @@ export function ChatInput({
       )}
 
       {/* ── Hoved input-boks ── */}
-      <div className={`chat-input-box${useAgentMode ? ' agent-mode' : ''}`}>
+      <div className={`chat-input-box${useAgentMode ? ' agent-mode' : ''}`} style={{ position: 'relative' }}>
+        {/* Slash-kommando meny */}
+        {slashMenuOpen && filteredSlashCommands.length > 0 && (
+          <SlashCommandMenu
+            commands={filteredSlashCommands}
+            selectedIndex={slashSelectedIndex}
+            onSelect={(cmd) => {
+              setValue(cmd.command + ' ')
+              setSlashMenuOpen(false)
+              textareaRef.current?.focus()
+            }}
+          />
+        )}
         <textarea
           ref={textareaRef}
           value={value}
-          onChange={e => { setValue(e.target.value); adjustHeight() }}
+          onChange={e => {
+            const v = e.target.value
+            setValue(v)
+            adjustHeight()
+            // Vis slash-meny når input starter med '/'
+            if (v.startsWith('/') && v.length > 0) {
+              setSlashMenuOpen(true)
+              setSlashSelectedIndex(0)
+            } else {
+              setSlashMenuOpen(false)
+            }
+          }}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled}
@@ -554,6 +807,24 @@ export function ChatInput({
               }
             >
               <Monitor size={18} />
+            </button>
+
+            {/* Planleggingsmodus-knapp (Claude Code-inspirert) */}
+            <button
+              className={`toolbar-mode-btn${planningMode ? ' active' : ''}`}
+              onClick={() => setPlanningMode(v => !v)}
+              title={planningMode
+                ? 'Planleggingsmodus aktiv – Sine lager en plan før den handler. Klikk for å deaktivere.'
+                : 'Aktiver planleggingsmodus – Sine lager en plan og viser den før den handler'
+              }
+              style={planningMode ? {
+                background: 'rgba(234, 179, 8, 0.15)',
+                color: '#EAB308',
+                border: '1px solid rgba(234, 179, 8, 0.3)',
+              } : undefined}
+            >
+              <Lightbulb size={12} />
+              <span>Plan</span>
             </button>
 
             {/* Agent/Chat-modus toggle */}

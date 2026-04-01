@@ -1,6 +1,11 @@
 """
 Chat API Routes – standard (ikke-agent) modus
 POST /api/chat/stream  – SSE streaming chat med Claude
+
+Prompt caching: Systemprompten (inkl. skills og minne) merkes med
+cache_control={"type": "ephemeral"} slik at Anthropic cacher den i
+5 minutter. Dette reduserer input-token-kostnader med ~80-90% for
+lange system-prompter ved gjentatte kall i samme samtale.
 """
 from __future__ import annotations
 import os
@@ -47,12 +52,43 @@ class ChatRequest(BaseModel):
     conversation_id: str | None = None
     active_skills: list[SkillData] = []
     connected_apps: list[str] = []
+    planning_mode: bool = False
 
 
-def _build_system(language: str, user_memory: list[dict], active_skills: list = [], connected_apps: list = []) -> str:
+def _build_system_blocks(
+    language: str,
+    user_memory: list[dict],
+    active_skills: list = [],
+    connected_apps: list = [],
+    planning_mode: bool = False,
+) -> list[dict]:
+    """
+    Bygger system-prompt som en liste av blokker med prompt caching.
+    Den statiske basepromptblokken caches alltid (ephemeral).
+    Dynamiske deler (minne, skills) legges til som separate blokker
+    der den siste blokken caches for å dekke hele systemkonteksten.
+    """
     base = SYSTEM_PROMPT_NO if language == "no" else SYSTEM_PROMPT_EN
 
-    # Inject active skill system prompts
+    # Legg til planleggingsmodus-instruksjoner
+    if planning_mode:
+        base += (
+            "\n\n## Planleggingsmodus\n"
+            "Du er nå i planleggingsmodus. Før du utfører noe, skal du:\n"
+            "1. Lage en detaljert, nummerert plan over hva du vil gjøre\n"
+            "2. Presentere planen for brukeren\n"
+            "3. Vente på bekreftelse før du fortsetter\n"
+            "Bruk formatet:\n"
+            "**Plan:**\n"
+            "1. [steg 1]\n"
+            "2. [steg 2]\n"
+            "...\n"
+            "Er du klar til å starte? (ja/nei)"
+        )
+
+    # Bygg dynamisk del (skills, apper, minne)
+    dynamic_parts = []
+
     if active_skills:
         skill_sections = []
         for skill in active_skills:
@@ -61,41 +97,70 @@ def _build_system(language: str, user_memory: list[dict], active_skills: list = 
             else:
                 skill_sections.append(f"### Skill: {skill.name}\n{skill.description}")
         if skill_sections:
-            base += "\n\n## Aktive Skills\nDu har følgende skills aktivert som påvirker hvordan du svarer:\n\n"
-            base += "\n\n".join(skill_sections)
+            dynamic_parts.append(
+                "## Aktive Skills\nDu har følgende skills aktivert som påvirker hvordan du svarer:\n\n"
+                + "\n\n".join(skill_sections)
+            )
 
-    # Inject connected apps context
     if connected_apps:
         apps_str = ", ".join(connected_apps)
-        base += f"\n\n## Tilkoblede apper\nBrukeren har koblet til følgende apper: {apps_str}. Du kan referere til disse når det er relevant."
+        dynamic_parts.append(
+            f"## Tilkoblede apper\nBrukeren har koblet til følgende apper: {apps_str}. "
+            "Du kan referere til disse når det er relevant."
+        )
 
     if user_memory:
         mem_lines = "\n".join(f"- {m.get('key', '')}: {m.get('value', '')}" for m in user_memory)
-        base += f"\n\n## Brukerminne\nHusk dette om brukeren:\n{mem_lines}"
-    return base
+        dynamic_parts.append(f"## Brukerminne\nHusk dette om brukeren:\n{mem_lines}")
+
+    # Sett sammen alle deler
+    full_system = base
+    if dynamic_parts:
+        full_system += "\n\n" + "\n\n".join(dynamic_parts)
+
+    # Returner som én cacheable blokk
+    # Anthropic cacher blokker merket med cache_control i 5 minutter.
+    # Dette sparer ~80-90% av input-token-kostnader for gjentatte kall.
+    return [
+        {
+            "type": "text",
+            "text": full_system,
+            "cache_control": {"type": "ephemeral"},
+        }
+    ]
 
 
 async def _stream_chat(request: ChatRequest) -> AsyncGenerator[str, None]:
     model = MODEL_MAP.get(request.model, "claude-3-5-haiku-20241022")
-    system = _build_system(request.language, request.user_memory, request.active_skills, request.connected_apps)
+    system_blocks = _build_system_blocks(
+        request.language,
+        request.user_memory,
+        request.active_skills,
+        request.connected_apps,
+        request.planning_mode,
+    )
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
 
     try:
         async with client.messages.stream(
             model=model,
             max_tokens=4096,
-            system=system,
+            system=system_blocks,
             messages=messages,
+            # Aktiver prompt caching (beta-header kreves for noen modeller)
+            extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"},
         ) as stream:
             async for text in stream.text_stream:
                 data = json.dumps({"type": "token", "content": text}, ensure_ascii=False)
                 yield f"data: {data}\n\n"
 
-            # Send usage stats
+            # Send usage stats inkl. cache-info
             final = await stream.get_final_message()
             usage = {
                 "input_tokens": final.usage.input_tokens,
                 "output_tokens": final.usage.output_tokens,
+                "cache_creation_input_tokens": getattr(final.usage, "cache_creation_input_tokens", 0),
+                "cache_read_input_tokens": getattr(final.usage, "cache_read_input_tokens", 0),
             }
             yield f"data: {json.dumps({'type': 'done', 'usage': usage})}\n\n"
 

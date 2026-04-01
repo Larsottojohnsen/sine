@@ -277,6 +277,9 @@ export function ChatView() {
     const convTitle = activeConversation?.title ?? 'Ny samtale'
     extractFromMessage(text, convTitle)
 
+    // Detekter planleggingsmodus-flagg satt av ChatInput
+    const isPlanningMode = text.startsWith('[PLANLEGGINGSMODUS]')
+
     if (useAgentMode) {
       // Start blob fade-out
       setBlobFadingOut(true)
@@ -287,7 +290,7 @@ export function ChatView() {
     } else {
       // Fade out blobs
       setBlobFadingOut(true)
-      sendMessage(text)
+      sendMessage(text, isPlanningMode)
     }
   }, [useAgentMode, agentMode, startAgent, sendMessage, extractFromMessage, activeConversation?.title])
 

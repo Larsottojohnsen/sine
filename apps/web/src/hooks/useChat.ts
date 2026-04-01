@@ -12,15 +12,21 @@ export function useChat() {
   const [isStreaming, setIsStreaming] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
 
-  const sendMessage = useCallback(async (userInput: string) => {
+  const sendMessage = useCallback(async (userInput: string, planningMode: boolean = false) => {
+    // Fjern [PLANLEGGINGSMODUS]-prefiks fra meldingen før den sendes til API
+    // (flagget er allerede fanget opp i planningMode-parameteren)
+    const cleanInput = userInput.startsWith('[PLANLEGGINGSMODUS] ')
+      ? userInput.slice('[PLANLEGGINGSMODUS] '.length)
+      : userInput
+    const isPlanningMode = planningMode || userInput.startsWith('[PLANLEGGINGSMODUS]')
     // Ensure we have an active conversation
     let convId = activeConversationId
     if (!convId) {
       convId = createConversation(settings.model)
     }
 
-    // Add user message
-    addMessage(convId, { role: 'user', content: userInput })
+    // Add user message (vis ren tekst uten planleggingsmodus-prefiks)
+    addMessage(convId, { role: 'user', content: cleanInput })
 
     // Add empty assistant message (will be streamed into)
     const assistantMsgId = addMessage(convId, { role: 'assistant', content: '', isStreaming: true })
@@ -65,7 +71,7 @@ export function useChat() {
       // Add the new user message at the end
       const messages = [
         ...history,
-        { role: 'user' as const, content: userInput },
+        { role: 'user' as const, content: cleanInput },
       ]
 
       // Hent brukerminne fra settings (lastet fra Supabase via useUserMemory)
@@ -94,6 +100,7 @@ export function useChat() {
           conversation_id: convId,
           active_skills: activeSkills,
           connected_apps: connectedApps,
+          planning_mode: isPlanningMode,
         }),
         signal: abortRef.current.signal,
       })

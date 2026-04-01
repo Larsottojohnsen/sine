@@ -149,9 +149,33 @@ class SineOrchestrator:
         self.approval_result: Optional[bool] = None
         self._event_queue: asyncio.Queue = asyncio.Queue()
 
-    def _system_prompt(self, user_memory: list[dict] | None = None) -> str:
+    def _system_prompt_blocks(self, user_memory: list[dict] | None = None) -> list[dict]:
+        """
+        Bygger system-prompt som en liste av cacheable blokker.
+        Anthropic cacher blokker merket med cache_control i 5 minutter,
+        noe som reduserer input-token-kostnader med ~80-90% for gjentatte kall.
+        """
         instructions = SAFE_MODE_ON if self.safe_mode else SAFE_MODE_OFF
-        # Bygg brukerminne-kontekst
+        if user_memory:
+            memory_lines = "\n".join(f"- {m.get('key', '')}: {m.get('value', '')}" for m in user_memory)
+            memory_context = f"Brukeren har delt følgende kontekst om seg selv:\n{memory_lines}"
+        else:
+            memory_context = "(Ingen brukerminne registrert ennå)"
+        full_prompt = SYSTEM_PROMPT.format(
+            safe_mode_instructions=instructions,
+            user_memory_context=memory_context,
+        )
+        return [
+            {
+                "type": "text",
+                "text": full_prompt,
+                "cache_control": {"type": "ephemeral"},
+            }
+        ]
+
+    def _system_prompt(self, user_memory: list[dict] | None = None) -> str:
+        """Bakoverkompatibel metode – returnerer streng"""
+        instructions = SAFE_MODE_ON if self.safe_mode else SAFE_MODE_OFF
         if user_memory:
             memory_lines = "\n".join(f"- {m.get('key', '')}: {m.get('value', '')}" for m in user_memory)
             memory_context = f"Brukeren har delt følgende kontekst om seg selv:\n{memory_lines}"
@@ -163,7 +187,14 @@ class SineOrchestrator:
         )
 
     def _claude_tools(self) -> list[dict]:
-        return [t.to_claude_tool() for t in self.tools.values()]
+        """Returnerer verktøydefinisjoner. Siste verktøy caches for å spare tokens."""
+        tools = [t.to_claude_tool() for t in self.tools.values()]
+        # Merk siste verktøy som cacheable slik at hele verktøylisten caches
+        if tools:
+            last = dict(tools[-1])
+            last["cache_control"] = {"type": "ephemeral"}
+            tools[-1] = last
+        return tools
 
     async def _emit(self, event_type: str, data: dict) -> None:
         event = AgentEvent(type=event_type, data=data)
@@ -317,9 +348,10 @@ class SineOrchestrator:
                 response = await self.client.messages.create(
                     model=self.model,
                     max_tokens=8096,
-                    system=self._system_prompt(self._user_memory),
+                    system=self._system_prompt_blocks(self._user_memory),
                     tools=self._claude_tools(),
-                    messages=self.messages
+                    messages=self.messages,
+                    extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"},
                 )
                 llm_retries = 0  # Reset ved suksess
             except Exception as e:
