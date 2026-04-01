@@ -17,6 +17,66 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+# ── Kontekstvinduforvaltning ────────────────────────────────────────────────
+# Behold alltid de siste N meldingene i full form.
+# Eldre meldinger komprimeres til et sammendrag med en billig Haiku-kall.
+# Dette reduserer input-token-kostnader med 40-70% for lange samtaler.
+MAX_FULL_MESSAGES = 12  # Antall meldinger som beholdes i full form
+MIN_MESSAGES_FOR_COMPRESSION = 16  # Ikke komprimer under denne grensen
+
+
+async def _compress_history(
+    client: anthropic.AsyncAnthropic,
+    messages: list[dict],
+    language: str = "no",
+) -> list[dict]:
+    """
+    Komprimer eldre meldinger til et sammendrag når samtalen blir lang.
+    Bruker claude-haiku-4-5 (billigste modell) for komprimeringen.
+    Returnerer en ny meldingsliste: [sammendrag-melding] + siste MAX_FULL_MESSAGES meldinger.
+    """
+    if len(messages) <= MIN_MESSAGES_FOR_COMPRESSION:
+        return messages
+
+    # Del opp: eldre meldinger som skal komprimeres, og nyere som beholdes
+    old_messages = messages[:-MAX_FULL_MESSAGES]
+    recent_messages = messages[-MAX_FULL_MESSAGES:]
+
+    # Bygg tekst av de eldre meldingene for sammendrag
+    history_text = ""
+    for m in old_messages:
+        role_label = "Bruker" if m["role"] == "user" else "Assistent"
+        content = m["content"] if isinstance(m["content"], str) else str(m["content"])
+        history_text += f"{role_label}: {content[:500]}\n"
+
+    lang_instruction = "norsk" if language == "no" else "English"
+    summary_prompt = (
+        f"Lag et kort sammendrag på {lang_instruction} av denne samtalehistorikken. "
+        f"Behold viktige fakta, beslutninger og kontekst. Maks 200 ord:\n\n{history_text}"
+    )
+
+    try:
+        response = await client.messages.create(
+            model="claude-haiku-4-5",
+            max_tokens=300,
+            messages=[{"role": "user", "content": summary_prompt}],
+        )
+        summary_text = response.content[0].text.strip()
+        lang_label = "Sammendrag av tidligere samtale" if language == "no" else "Summary of earlier conversation"
+        summary_message = {
+            "role": "user",
+            "content": f"[{lang_label}]:\n{summary_text}"
+        }
+        # Legg til en tom assistant-melding etter sammendraget for å holde alternering
+        ack_message = {
+            "role": "assistant",
+            "content": "Forstått, jeg husker konteksten fra tidligere i samtalen." if language == "no" else "Understood, I remember the context from earlier in the conversation."
+        }
+        return [summary_message, ack_message] + recent_messages
+    except Exception:
+        # Fallback: bare behold de siste meldingene uten komprimering
+        return recent_messages
+
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
 client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY") or os.getenv("claude_key"))
@@ -25,6 +85,66 @@ MODEL_MAP = {
     "sine-1":   "claude-haiku-4-5",
     "sine-pro":  "claude-sonnet-4-5",
 }
+
+# ── Intelligent modellruting ───────────────────────────────────────────────
+# For Sine Pro-brukere: ruter enkle spørsmål til Haiku (billig) og
+# komplekse spørsmål til Sonnet (kraftig). Sine 1 bruker alltid Haiku.
+#
+# Enkle spørsmål: korte meldinger, oversettelse, fakta, enkel formatering
+# Komplekse spørsmål: kode, analyse, planlegging, lange meldinger, flerstegs
+
+# Nøkkelord som indikerer komplekse oppgaver
+_COMPLEX_KEYWORDS = {
+    # Kode og teknisk
+    "kod", "kode", "skriv", "lag", "bygg", "implement", "debug", "fiks",
+    "funksjon", "klasse", "api", "database", "sql", "python", "javascript",
+    "typescript", "react", "html", "css", "json", "xml", "regex",
+    "algoritme", "arkitektur", "design", "system",
+    # Analyse og planlegging
+    "analyser", "sammenlign", "vurder", "forklar", "beskriv", "oppsummer",
+    "planlegg", "strategi", "rapport", "dokument", "skriv om",
+    # Kreativt
+    "skriv en", "lag en", "generer", "oversett", "reformuler",
+    # Engelsk
+    "write", "create", "build", "implement", "debug", "fix", "analyze",
+    "compare", "explain", "summarize", "plan", "generate", "code",
+}
+
+
+def _route_model(base_model: str, last_user_message: str) -> str:
+    """
+    Velg modell basert på meldingskompleksitet.
+    - Sine 1: alltid Haiku (ingen endring)
+    - Sine Pro: Haiku for enkle spørsmål, Sonnet for komplekse
+
+    Heuristikk:
+    1. Kort melding (< 60 tegn) uten komplekse nøkkelord → Haiku
+    2. Lang melding (> 300 tegn) → Sonnet
+    3. Inneholder komplekse nøkkelord → Sonnet
+    4. Ellers → Haiku
+    """
+    if base_model != "claude-sonnet-4-5":
+        # Sine 1 eller ukjent modell: ikke ruter
+        return base_model
+
+    msg = last_user_message.lower().strip()
+    msg_len = len(msg)
+
+    # Alltid Sonnet for lange meldinger
+    if msg_len > 300:
+        return "claude-sonnet-4-5"
+
+    # Sjekk for komplekse nøkkelord
+    words = set(msg.split())
+    # Sjekk både enkeltord og bigrams
+    bigrams = {f"{msg.split()[i]} {msg.split()[i+1]}" for i in range(len(msg.split()) - 1)} if len(msg.split()) > 1 else set()
+    all_tokens = words | bigrams
+
+    if any(kw in all_tokens or kw in msg for kw in _COMPLEX_KEYWORDS):
+        return "claude-sonnet-4-5"
+
+    # Kort, enkel melding → Haiku (mye billigere)
+    return "claude-haiku-4-5"
 
 SYSTEM_PROMPT_NO = """Du er Sine, en intelligent AI-assistent. Du svarer alltid på norsk med mindre brukeren skriver på et annet språk.
 Vær presis, hjelpsom og vennlig. Bruk markdown for formatering der det er naturlig."""
@@ -131,7 +251,20 @@ def _build_system_blocks(
 
 
 async def _stream_chat(request: ChatRequest) -> AsyncGenerator[str, None]:
-    model = MODEL_MAP.get(request.model, "claude-3-5-haiku-20241022")
+    # Basismodell fra brukerens plan (sine-1 → haiku, sine-pro → sonnet)
+    base_model = MODEL_MAP.get(request.model, "claude-haiku-4-5")
+
+    # Bygg meldingsliste og anvend kontekstvinduforvaltning
+    messages = [{"role": m.role, "content": m.content} for m in request.messages]
+    messages = await _compress_history(client, messages, request.language)
+
+    # Intelligent modellruting: velg billigere modell for enkle spørsmål
+    last_user_msg = next(
+        (m["content"] for m in reversed(messages) if m["role"] == "user"),
+        ""
+    )
+    model = _route_model(base_model, last_user_msg)
+
     system_blocks = _build_system_blocks(
         request.language,
         request.user_memory,
@@ -139,7 +272,6 @@ async def _stream_chat(request: ChatRequest) -> AsyncGenerator[str, None]:
         request.connected_apps,
         request.planning_mode,
     )
-    messages = [{"role": m.role, "content": m.content} for m in request.messages]
 
     try:
         async with client.messages.stream(

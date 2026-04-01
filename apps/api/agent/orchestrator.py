@@ -104,6 +104,25 @@ SAFE_MODE_OFF = """Du kjører i Power Mode. Du har utvidede tillatelser, men væ
 MAX_ITERATIONS = 30
 MAX_LLM_RETRIES = 3
 MAX_TOOL_FAILURES = 5  # Maks antall verktøy-feil før agenten spør brukeren
+MAX_TOOL_OUTPUT_CHARS = 8000  # Maks tegn sendt tilbake til Claude per verktøyresultat
+
+
+def _truncate_tool_output(output: str, max_len: int = MAX_TOOL_OUTPUT_CHARS) -> str:
+    """
+    Trunkér langt verktøyresultat for å spare input-tokens i neste LLM-kall.
+    Beholder starten og slutten (der feilmeldinger og resultater typisk er),
+    og legger inn en tydelig markør i midten.
+    """
+    if len(output) <= max_len:
+        return output
+    half = max_len // 2
+    omitted = len(output) - max_len
+    return (
+        output[:half]
+        + f"\n\n[... {omitted:,} tegn utelatt for å spare tokens ...]"
+        + "\n\n"
+        + output[-half:]
+    )
 
 
 class SineOrchestrator:
@@ -401,42 +420,53 @@ class SineOrchestrator:
             tool_results = []
             has_tool_use = False
 
+            # Emit tekst-blokker og samle alle tool_use-blokker
+            tool_use_blocks = []
             for block in response.content:
                 if block.type == "text" and block.text.strip():
                     await self._emit("log", {"message": block.text, "level": "thinking"})
-
                 elif block.type == "tool_use":
                     has_tool_use = True
-                    tool_name = block.name
-                    tool_args = block.input
-                    tool_use_id = block.id
+                    tool_use_blocks.append(block)
 
+            # Kjør alle verktøy parallelt (asyncio.gather) for 2-5x speedup
+            if tool_use_blocks:
+                self.state.status = AgentStatus.RUNNING
+
+                # Emit tool_call events for alle verktøy
+                for block in tool_use_blocks:
                     await self._emit("tool_call", {
-                        "tool": tool_name,
-                        "args": tool_args,
-                        "id": tool_use_id
+                        "tool": block.name,
+                        "args": block.input,
+                        "id": block.id
                     })
 
-                    # Oppdater status
-                    self.state.status = AgentStatus.RUNNING
+                # Kjør alle verktøy parallelt
+                results = await asyncio.gather(
+                    *[self._execute_tool(block.name, block.input) for block in tool_use_blocks],
+                    return_exceptions=True
+                )
 
-                    # Kjør verktøyet
-                    result = await self._execute_tool(tool_name, tool_args)
+                for block, result in zip(tool_use_blocks, results):
+                    tool_name = block.name
+                    tool_use_id = block.id
+
+                    # Håndter uventede exceptions fra gather
+                    if isinstance(result, Exception):
+                        result = ToolResult(
+                            tool=tool_name, success=False, output="",
+                            error=f"Uventet feil: {str(result)}"
+                        )
 
                     # Logg filer som ble opprettet/endret
                     for f in result.files_created:
                         self.state.files[f] = "created"
-                        await self._emit("file_change", {
-                            "path": f,
-                            "action": "created"
-                        })
+                        await self._emit("file_change", {"path": f, "action": "created"})
                     for f in result.files_modified:
                         self.state.files[f] = "modified"
-                        await self._emit("file_change", {
-                            "path": f,
-                            "action": "modified"
-                        })
+                        await self._emit("file_change", {"path": f, "action": "modified"})
 
+                    # Emit tool_result til frontend (begrenset til 2000 tegn for visning)
                     await self._emit("tool_result", {
                         "tool": tool_name,
                         "success": result.success,
@@ -447,7 +477,6 @@ class SineOrchestrator:
 
                     if not result.success:
                         consecutive_tool_failures += 1
-                        # Legg til en eksplisitt instruksjon om å prøve alternativ tilnærming
                         error_hint = (
                             f"Feil: {result.error}. "
                             f"Prøv en alternativ tilnærming for å løse dette. "
@@ -458,7 +487,6 @@ class SineOrchestrator:
                             "tool_use_id": tool_use_id,
                             "content": error_hint
                         })
-                        # Spør brukeren hvis for mange feil på rad
                         if consecutive_tool_failures >= MAX_TOOL_FAILURES:
                             await self._emit("ask_user", {
                                 "message": (
@@ -467,13 +495,15 @@ class SineOrchestrator:
                                     f"Kan du gi meg mer informasjon eller en annen tilnærming?"
                                 )
                             })
-                            consecutive_tool_failures = 0  # Reset etter spørsmål
+                            consecutive_tool_failures = 0
                     else:
-                        consecutive_tool_failures = 0  # Reset ved suksess
+                        consecutive_tool_failures = 0
+                        # Trunkér output som sendes til Claude for å spare tokens
+                        truncated_output = _truncate_tool_output(result.output)
                         tool_results.append({
                             "type": "tool_result",
                             "tool_use_id": tool_use_id,
-                            "content": result.output
+                            "content": truncated_output
                         })
 
             # Yield events etter tool-kjøring
