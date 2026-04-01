@@ -76,6 +76,8 @@ export interface Conversation {
   model: SineModel
   type?: 'chat' | 'agent'
   agentType?: 'code' | 'writing'
+  isFavorite?: boolean
+  creditsUsed?: number
 }
 
 export type SineModel = 'sine-1' | 'sine-pro'

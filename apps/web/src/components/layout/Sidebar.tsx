@@ -1,12 +1,16 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import {
-  Plus, Search, BookOpen, FolderPlus, Trash2,
+  Plus, Search, BookOpen, FolderPlus,
   Bot, PanelLeftClose, PanelLeftOpen, CalendarDays,
   LayoutGrid, Monitor, Terminal, ChevronRight, SlidersHorizontal,
-  MessageSquare, X, Copy, Mail, Check, ShieldCheck,
-  Bell, User, MoreHorizontal, Share2, Pencil, Star,
-  ExternalLink, FolderInput
+  X, Copy, Mail, Check, ShieldCheck, MoreHorizontal,
+  Bell, User
 } from 'lucide-react'
+import { VenterIcon } from '@/assets/icons/VenterIcon'
+import { FavorittIcon } from '@/assets/icons/FavorittIcon'
+import { GulSirkelIcon } from '@/assets/icons/GulSirkelIcon'
+import { ConvContextMenu } from './ConvContextMenu'
+import { buildShareLink } from '@/services/conversationService'
 import { useApp } from '@/store/AppContext'
 import { getTranslations } from '@/i18n'
 import { useAuth } from '@/hooks/useAuth'
@@ -114,6 +118,7 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
     activeConversationId,
     setActiveConversationId,
     deleteConversation,
+    toggleFavorite,
     renameConversation,
     settings,
     sidebarOpen,
@@ -123,7 +128,6 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
   const { user } = useAuth()
 
   const t = getTranslations(settings.language)
-  // Determine effective theme (resolve 'system' to actual dark/light)
   const effectiveTheme = settings.theme === 'system'
     ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
     : settings.theme
@@ -131,6 +135,12 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [referralOpen, setReferralOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null)
+  const [contextMenu, setContextMenu] = useState<{
+    convId: string; convTitle: string; isFavorite: boolean; x: number; y: number
+  } | null>(null)
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameDraft, setRenameDraft] = useState('')
+  const renameInputRef = useRef<HTMLInputElement>(null)
 
   const handleNewChat = () => {
     if (onNewChatProp) {
@@ -153,13 +163,37 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
     }
   }
 
+  const handleOpenContextMenu = (
+    e: React.MouseEvent, convId: string, convTitle: string, isFavorite: boolean,
+  ) => {
+    e.stopPropagation()
+    e.preventDefault()
+    setContextMenu({ convId, convTitle, isFavorite, x: e.clientX, y: e.clientY })
+  }
+
+  const handleRenameCommit = () => {
+    if (renamingId && renameDraft.trim()) {
+      renameConversation(renamingId, renameDraft.trim())
+    }
+    setRenamingId(null)
+    setRenameDraft('')
+  }
+
+  const handleShare = (convId: string) => {
+    const link = buildShareLink(convId)
+    navigator.clipboard.writeText(link).catch(() => {})
+    // Brief visual feedback via window toast if available — fallback silent
+  }
+
   const groupedConversations = () => {
+    const favorites: typeof conversations = []
     const today: typeof conversations = []
     const yesterday: typeof conversations = []
     const week: typeof conversations = []
     const older: typeof conversations = []
     const now = new Date()
     for (const c of conversations) {
+      if (c.isFavorite) { favorites.push(c); continue }
       const diff = now.getTime() - c.updatedAt.getTime()
       const days = diff / (1000 * 60 * 60 * 24)
       if (days < 1) today.push(c)
@@ -167,7 +201,7 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
       else if (days < 7) week.push(c)
       else older.push(c)
     }
-    return { today, yesterday, week, older }
+    return { favorites, today, yesterday, week, older }
   }
 
   const groups = groupedConversations()
@@ -315,10 +349,12 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
             </p>
           ) : (
             <>
-              <ConvGroup label="I dag" conversations={groups.today} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { if (onSelectConversation) { onSelectConversation(id) } else { setActiveConversationId(id); onNavigate?.('chat') } }} onDelete={handleDeleteRequest} onRename={renameConversation} activeAgentRunId={activeAgentRunId} />
-              <ConvGroup label="I går" conversations={groups.yesterday} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { if (onSelectConversation) { onSelectConversation(id) } else { setActiveConversationId(id); onNavigate?.('chat') } }} onDelete={handleDeleteRequest} onRename={renameConversation} activeAgentRunId={activeAgentRunId} />
-              <ConvGroup label="Siste 7 dager" conversations={groups.week} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { if (onSelectConversation) { onSelectConversation(id) } else { setActiveConversationId(id); onNavigate?.('chat') } }} onDelete={handleDeleteRequest} onRename={renameConversation} activeAgentRunId={activeAgentRunId} />
-              <ConvGroup label="Eldre" conversations={groups.older} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { if (onSelectConversation) { onSelectConversation(id) } else { setActiveConversationId(id); onNavigate?.('chat') } }} onDelete={handleDeleteRequest} onRename={renameConversation} activeAgentRunId={activeAgentRunId} />
+              {/* Favourites first */}
+              <ConvGroup label={settings.language === 'no' ? 'Favoritter' : 'Favourites'} conversations={groups.favorites} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { if (onSelectConversation) { onSelectConversation(id) } else { setActiveConversationId(id); onNavigate?.('chat') } }} onContextMenu={handleOpenContextMenu} activeAgentRunId={activeAgentRunId} renamingId={renamingId} renameDraft={renameDraft} onRenameDraftChange={setRenameDraft} onRenameCommit={handleRenameCommit} renameInputRef={renameInputRef} />
+              <ConvGroup label="I dag" conversations={groups.today} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { if (onSelectConversation) { onSelectConversation(id) } else { setActiveConversationId(id); onNavigate?.('chat') } }} onContextMenu={handleOpenContextMenu} activeAgentRunId={activeAgentRunId} renamingId={renamingId} renameDraft={renameDraft} onRenameDraftChange={setRenameDraft} onRenameCommit={handleRenameCommit} renameInputRef={renameInputRef} />
+              <ConvGroup label="I går" conversations={groups.yesterday} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { if (onSelectConversation) { onSelectConversation(id) } else { setActiveConversationId(id); onNavigate?.('chat') } }} onContextMenu={handleOpenContextMenu} activeAgentRunId={activeAgentRunId} renamingId={renamingId} renameDraft={renameDraft} onRenameDraftChange={setRenameDraft} onRenameCommit={handleRenameCommit} renameInputRef={renameInputRef} />
+              <ConvGroup label="Siste 7 dager" conversations={groups.week} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { if (onSelectConversation) { onSelectConversation(id) } else { setActiveConversationId(id); onNavigate?.('chat') } }} onContextMenu={handleOpenContextMenu} activeAgentRunId={activeAgentRunId} renamingId={renamingId} renameDraft={renameDraft} onRenameDraftChange={setRenameDraft} onRenameCommit={handleRenameCommit} renameInputRef={renameInputRef} />
+              <ConvGroup label="Eldre" conversations={groups.older} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { if (onSelectConversation) { onSelectConversation(id) } else { setActiveConversationId(id); onNavigate?.('chat') } }} onContextMenu={handleOpenContextMenu} activeAgentRunId={activeAgentRunId} renamingId={renamingId} renameDraft={renameDraft} onRenameDraftChange={setRenameDraft} onRenameCommit={handleRenameCommit} renameInputRef={renameInputRef} />
             </>
           )}
         </div>
@@ -380,6 +416,31 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
           title={deleteTarget.title}
           onConfirm={handleDeleteConfirm}
           onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {/* Context menu */}
+      {contextMenu && (
+        <ConvContextMenu
+          convId={contextMenu.convId}
+          convTitle={contextMenu.convTitle}
+          isFavorite={contextMenu.isFavorite}
+          position={{ x: contextMenu.x, y: contextMenu.y }}
+          language={settings.language}
+          onClose={() => setContextMenu(null)}
+          onShare={() => handleShare(contextMenu.convId)}
+          onRename={() => {
+            const conv = conversations.find(c => c.id === contextMenu.convId)
+            setRenameDraft(conv?.title ?? '')
+            setRenamingId(contextMenu.convId)
+            setTimeout(() => renameInputRef.current?.focus(), 50)
+          }}
+          onToggleFavorite={() => toggleFavorite(contextMenu.convId)}
+          onOpenInNewTab={() => {
+            const url = `${window.location.origin}${window.location.pathname}?chat=${contextMenu.convId}`
+            window.open(url, '_blank')
+          }}
+          onDelete={() => handleDeleteRequest(contextMenu.convId, contextMenu.convTitle)}
         />
       )}
     </>
@@ -664,17 +725,25 @@ function ConvContextMenu({
 }
 
 function ConvGroup({
-  label, conversations, activeId, hoveredId, onHover, onSelect, onDelete, onRename, activeAgentRunId,
+  label, conversations, activeId, hoveredId, onHover, onSelect, onContextMenu,
+  activeAgentRunId, renamingId, renameDraft, onRenameDraftChange, onRenameCommit, renameInputRef,
 }: {
   label: string
-  conversations: { id: string; title: string; updatedAt: Date; type?: string }[]
+  conversations: {
+    id: string; title: string; updatedAt: Date; type?: string;
+    isFavorite?: boolean; messages?: { agentStatus?: string }[]
+  }[]
   activeId: string | null
   hoveredId: string | null
   onHover: (id: string | null) => void
   onSelect: (id: string) => void
-  onDelete: (id: string, title: string) => void
-  onRename: (id: string, newTitle: string) => void
+  onContextMenu: (e: React.MouseEvent, id: string, title: string, isFavorite: boolean) => void
   activeAgentRunId?: string | null
+  renamingId: string | null
+  renameDraft: string
+  onRenameDraftChange: (v: string) => void
+  onRenameCommit: () => void
+  renameInputRef: React.RefObject<HTMLInputElement>
 }) {
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
 
@@ -683,51 +752,90 @@ function ConvGroup({
     <div style={{ marginBottom: 4 }}>
       <p className="conv-group-label">{label}</p>
       {conversations.map(conv => {
-        const isAgent = conv.type === 'agent'
-        const isRunning = isAgent && activeAgentRunId != null && activeId === conv.id
-        const showActions = hoveredId === conv.id || activeId === conv.id
+        const isRunning = activeAgentRunId != null && activeId === conv.id
+        const lastStatus = conv.messages?.[conv.messages.length - 1]?.agentStatus
+        const isFav = conv.isFavorite ?? false
+        const needsApproval = lastStatus === 'waiting_approval'
+
+        let iconColor: string | undefined
+        let iconOpacity = 0.45
+        if (isFav) {
+          iconColor = '#F59E0B'
+          iconOpacity = 1
+        } else if (isRunning || lastStatus === 'running') {
+          iconColor = '#F59E0B'
+          iconOpacity = 1
+        } else if (lastStatus === 'completed') {
+          iconColor = '#22C55E'
+          iconOpacity = 1
+        } else if (lastStatus === 'failed' || lastStatus === 'stopped') {
+          iconColor = '#EF4444'
+          iconOpacity = 1
+        } else if (needsApproval) {
+          iconOpacity = 1
+        }
+
+        const isRenaming = renamingId === conv.id
 
         return (
           <div
             key={conv.id}
-            style={{ position: 'relative' }}
+            className={`conv-item${activeId === conv.id ? ' active' : ''}`}
+            onClick={() => { if (!isRenaming) onSelect(conv.id) }}
             onMouseEnter={() => onHover(conv.id)}
             onMouseLeave={() => { if (menuOpenId !== conv.id) onHover(null) }}
           >
-            <button
-              className={`conv-item${activeId === conv.id ? ' active' : ''}`}
-              onClick={() => onSelect(conv.id)}
-            >
-              <span style={{ flexShrink: 0, fontSize: 11, opacity: 0.5, display: 'flex', alignItems: 'center', width: 14 }}>
-                {isRunning ? (
-                  <span className="conv-spinner" />
-                ) : isAgent ? (
-                  <Bot size={12} />
-                ) : (
-                  <MessageSquare size={12} />
-                )}
-              </span>
-              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {conv.title}
-              </span>
-              {showActions && (
-                <button
-                  onClick={e => { e.stopPropagation(); setMenuOpenId(menuOpenId === conv.id ? null : conv.id) }}
-                  className="conv-menu-btn"
-                  title="Mer"
-                >
-                  <MoreHorizontal size={13} />
-                </button>
-              )}
-            </button>
-            {menuOpenId === conv.id && (
-              <ConvContextMenu
-                convId={conv.id}
-                convTitle={conv.title}
-                onClose={() => { setMenuOpenId(null); onHover(null) }}
-                onDelete={onDelete}
-                onRename={onRename}
+            {/* Status / favourite icon */}
+            <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', width: 18, opacity: iconOpacity }}>
+              {needsApproval
+                ? <GulSirkelIcon size={18} />
+                : isFav
+                  ? <FavorittIcon size={18} color={iconColor ?? 'currentColor'} />
+                  : <VenterIcon size={18} color={iconColor ?? 'currentColor'} />
+              }
+            </span>
+
+            {/* Title or inline rename input */}
+            {isRenaming ? (
+              <input
+                ref={renameInputRef}
+                value={renameDraft}
+                onChange={e => onRenameDraftChange(e.target.value)}
+                onBlur={onRenameCommit}
+                onKeyDown={e => {
+                  e.stopPropagation()
+                  if (e.key === 'Enter') onRenameCommit()
+                  if (e.key === 'Escape') { onRenameDraftChange(''); onRenameCommit() }
+                }}
+                onClick={e => e.stopPropagation()}
+                style={{
+                  flex: 1, background: 'transparent', border: 'none',
+                  borderBottom: '1px solid #1A93FE', outline: 'none',
+                  color: 'inherit', fontSize: 13, fontFamily: 'inherit',
+                  padding: '1px 0', minWidth: 0,
+                }}
               />
+            ) : (
+              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {conv.title.length > 26 ? conv.title.slice(0, 26) + '…' : conv.title}
+              </span>
+            )}
+
+            {/* Three-dot menu button on hover */}
+            {hoveredId === conv.id && !isRenaming && (
+              <button
+                onClick={e => onContextMenu(e, conv.id, conv.title, isFav)}
+                style={{
+                  position: 'absolute', right: 6,
+                  width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  borderRadius: 5, border: 'none', background: 'transparent',
+                  color: '#5A5A5A', cursor: 'pointer', flexShrink: 0,
+                }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#A0A0A0')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#5A5A5A')}
+              >
+                <MoreHorizontal size={13} />
+              </button>
             )}
           </div>
         )

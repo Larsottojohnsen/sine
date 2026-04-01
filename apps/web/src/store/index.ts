@@ -27,6 +27,7 @@ import {
   deleteConversationFromDb,
   insertMessage,
   updateMessageContent,
+  toggleFavoriteInDb,
 } from '../services/conversationService'
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -71,6 +72,11 @@ export function useAppStore() {
   useEffect(() => {
     userIdRef.current = user?.id ?? null
   }, [user?.id])
+
+  // ── Track pending DB conversation creations to avoid FK race ──
+  // When createConversation fires, the DB insert is async. addMessage
+  // must wait for it before inserting messages or the FK constraint fails.
+  const pendingConvCreates = useRef<Map<string, Promise<void>>>(new Map())
 
   // ── Load conversations from Supabase when user changes ───────
   useEffect(() => {
@@ -119,7 +125,11 @@ export function useAppStore() {
 
     const uid = userIdRef.current
     if (uid) {
-      createConversationInDb(uid, id, 'Ny samtale', 'chat').catch(console.error)
+      // Register pending promise so addMessage can wait before inserting (FK constraint)
+      const p = createConversationInDb(uid, id, 'Ny samtale', 'chat')
+        .catch(console.error)
+        .finally(() => pendingConvCreates.current.delete(id)) as Promise<void>
+      pendingConvCreates.current.set(id, p)
     }
 
     return id
@@ -166,7 +176,14 @@ export function useAppStore() {
 
     // Persist to Supabase — skip streaming placeholder (empty assistant messages)
     if (!message.isStreaming) {
-      insertMessage(conversationId, newMsg).catch(console.error)
+      // Wait for conversation row to exist in DB before inserting message
+      // (avoids FK constraint violation when conversation was just created)
+      const pending = pendingConvCreates.current.get(conversationId)
+      if (pending) {
+        pending.then(() => insertMessage(conversationId, newMsg)).catch(console.error)
+      } else {
+        insertMessage(conversationId, newMsg).catch(console.error)
+      }
     }
 
     return id
@@ -253,6 +270,26 @@ export function useAppStore() {
     deleteConversationFromDb(id).catch(console.error)
   }, [activeConversationId])
 
+  // ── Toggle favourite ──────────────────────────────────────────
+  const toggleFavorite = useCallback((id: string) => {
+    let newVal = false
+    setConversations(prev => prev.map(c => {
+      if (c.id !== id) return c
+      newVal = !c.isFavorite
+      return { ...c, isFavorite: newVal }
+    }))
+    toggleFavoriteInDb(id, newVal).catch(console.error)
+  }, [])
+
+  // ── Rename conversation ───────────────────────────────────────
+  const renameConversation = useCallback((id: string, newTitle: string) => {
+    if (!newTitle.trim()) return
+    setConversations(prev => prev.map(c =>
+      c.id === id ? { ...c, title: newTitle.trim() } : c
+    ))
+    updateConversationTitle(id, newTitle.trim()).catch(console.error)
+  }, [])
+
   // ── Settings ──────────────────────────────────────────────────
   const updateSettings = useCallback((updates: Partial<AppSettings>) => {
     setSettings(prev => {
@@ -273,6 +310,7 @@ export function useAppStore() {
     updateMessage,
     updateAgentMessage,
     deleteConversation,
+    toggleFavorite,
     renameConversation,
     settings,
     updateSettings,

@@ -5588,13 +5588,29 @@ button { font-family: inherit; }
 .conn-app-name{font-size:13.5px;font-weight:500;color:#E0E0E0;display:flex;align-items:center;gap:6px}
 .conn-beta-badge{font-size:10px;font-weight:500;color:#9A9A9A;background:#2A2A2A;border:1px solid #3A3A3A;border-radius:4px;padding:1px 5px;line-height:1.4}
 .conn-app-action{flex-shrink:0;display:flex;align-items:center;min-width:70px;justify-content:flex-end}
-.conn-connect-btn{background:none;border:none;color:#9A9A9A;font-size:13px;font-weight:400;cursor:pointer;padding:0;transition:color 0.15s;white-space:nowrap}
-.conn-connect-btn:hover{color:#E0E0E0}
+.conn-app-desc{font-size:12px;color:#5A5A5A;margin-top:2px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:320px}
+.conn-category-group{margin-bottom:4px}
+.conn-category-label{font-size:11px;font-weight:600;color:#4A4A4A;text-transform:uppercase;letter-spacing:0.06em;padding:12px 4px 6px;border-bottom:1px solid #1E1E1E;margin-bottom:0}
+.conn-connect-btn{background:none;border:1px solid #2E2E2E;color:#9A9A9A;font-size:12px;font-weight:500;cursor:pointer;padding:4px 10px;border-radius:6px;transition:all 0.15s;white-space:nowrap}
+.conn-connect-btn:hover{border-color:#4A4A4A;color:#E0E0E0}
 .conn-connect-btn:disabled{opacity:0.5;cursor:not-allowed}
+.conn-connected-btn{display:flex;align-items:center;gap:5px;background:none;border:1px solid rgba(34,197,94,0.25);color:#22c55e;font-size:12px;font-weight:500;cursor:pointer;padding:4px 10px;border-radius:6px;transition:all 0.15s;white-space:nowrap}
+.conn-connected-btn:hover{background:rgba(34,197,94,0.08)}
 .conn-toggle{width:36px;height:20px;border-radius:10px;background:#3A3A3A;border:none;cursor:pointer;position:relative;transition:background 0.2s;padding:0;flex-shrink:0}
 .conn-toggle--on{background:#2563EB}
 .conn-toggle-thumb{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform 0.2s;display:block}
 .conn-toggle--on .conn-toggle-thumb{transform:translateX(16px)}
+/* Connector detail modal */
+.connector-detail-modal{max-width:440px}
+.conn-detail-icon{width:48px;height:48px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;border:1px solid rgba(255,255,255,0.08)}
+.conn-detail-icon img{width:32px;height:32px;object-fit:contain}
+.connector-detail-section{margin-top:14px}
+.connector-detail-label{font-size:11px;font-weight:600;color:#4A4A4A;text-transform:uppercase;letter-spacing:0.06em}
+.connector-scope-badge{font-size:11px;color:#7A7A7A;background:#1E1E1E;border:1px solid #2E2E2E;border-radius:4px;padding:2px 7px}
+.connector-docs-link{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#1A93FE;text-decoration:none;margin-top:8px}
+.connector-docs-link:hover{text-decoration:underline}
+.connector-disconnect-btn{display:flex;align-items:center;gap:6px;background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;font-size:12px;font-weight:500;cursor:pointer;padding:5px 12px;border-radius:6px;transition:all 0.15s}
+.connector-disconnect-btn:hover{background:rgba(239,68,68,0.08)}
 
 /* SKILLS V2 — Manus-style design */
 .skills-v2-container{display:flex;flex-direction:column;gap:16px;padding-bottom:24px}
@@ -5835,23 +5851,35 @@ test
 [data-theme="light"] .message-action-btn:hover { background: #F0F0F0; color: #333333; }
 [data-theme="light"] .prose { color: #222222; }
 
-/* ── Chat input ──────────────────────────────────────────────── */
+/* ── Chat input — Manus-stil ─────────────────────────────────── */
 [data-theme="light"] .chat-input-area {
-  background: #FFFFFF;
-  border-top: 1px solid #EEEEEE;
+  background: #F7F7F5;
+  border-top: 1px solid #E8E8E6;
 }
 [data-theme="light"] .chat-input-box {
-  background: #F5F5F5;
-  border: 1px solid #E0E0E0;
+  background: #FFFFFF;
+  border: 1px solid #E2E2DF;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.04);
 }
-[data-theme="light"] .chat-input-box:focus-within { border-color: #CCCCCC; }
-[data-theme="light"] .chat-textarea { color: #111111; }
-[data-theme="light"] .chat-textarea::placeholder { color: #AAAAAA; }
-[data-theme="light"] .chat-input-btn { color: #666666; }
-[data-theme="light"] .chat-input-btn:hover { background: #EBEBEB; color: #333333; }
-[data-theme="light"] .send-btn { background: #111111; color: #FFFFFF; }
+[data-theme="light"] .chat-input-box:focus-within {
+  border-color: #C8C8C4;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
+}
+[data-theme="light"] .chat-input-box.agent-mode {
+  border-color: rgba(99,102,241,0.3);
+  box-shadow: 0 2px 12px rgba(99,102,241,0.08);
+}
+[data-theme="light"] .chat-textarea { color: #1A1A1A; }
+[data-theme="light"] .chat-textarea::placeholder { color: #9A9A95; }
+[data-theme="light"] .toolbar-btn { color: #6A6A65; }
+[data-theme="light"] .toolbar-btn:hover { background: #F0F0ED; color: #1A1A1A; }
+[data-theme="light"] .toolbar-btn.skill-active { color: #1A93FE; }
+[data-theme="light"] .toolbar-btn.connector-active { color: #16A34A; }
+[data-theme="light"] .chat-input-btn { color: #6A6A65; }
+[data-theme="light"] .chat-input-btn:hover { background: #F0F0ED; color: #1A1A1A; }
+[data-theme="light"] .send-btn { background: #1A1A1A; color: #FFFFFF; }
 [data-theme="light"] .send-btn:hover { background: #333333; }
-[data-theme="light"] .send-btn:disabled { background: #DDDDDD; color: #AAAAAA; }
+[data-theme="light"] .send-btn:disabled { background: #E5E5E2; color: #AAAAAA; }
 
 /* ── Agent task steps ────────────────────────────────────────── */
 [data-theme="light"] .mns-phase-title { color: #111111; }

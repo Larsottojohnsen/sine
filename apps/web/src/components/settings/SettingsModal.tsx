@@ -10,6 +10,7 @@ import { getTranslations } from '@/i18n'
 import { SkillsContent } from './SkillsContent'
 import { ConnectorsContent } from './ConnectorsContent'
 import { BillingContent as BillingContentExternal } from './BillingContent'
+import { ScheduledTasksContent } from './ScheduledTasksContent'
 import { useAuth } from '@/hooks/useAuth'
 import { useCredits } from '@/hooks/useCredits'
 
@@ -143,7 +144,10 @@ export function SettingsModal() {
           {activeTab === 'connectors' && (
             <ConnectorsContent />
           )}
-          {(activeTab === 'scheduled' || activeTab === 'mail' || activeTab === 'data' ||
+          {activeTab === 'scheduled' && (
+            <ScheduledTasksContent />
+          )}
+          {(activeTab === 'mail' || activeTab === 'data' ||
             activeTab === 'integrations') && (
             <PlaceholderContent
               title={tabs.find(t => t.id === activeTab)?.label ?? ''}
