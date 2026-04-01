@@ -255,14 +255,6 @@ export function useAppStore() {
     }
   }, [])
 
-  // ── Rename conversation ──────────────────────────────────────
-  const renameConversation = useCallback((id: string, newTitle: string) => {
-    setConversations(prev => prev.map(c =>
-      c.id === id ? { ...c, title: newTitle } : c
-    ))
-    updateConversationTitle(id, newTitle).catch(console.error)
-  }, [])
-
   // ── Delete conversation ───────────────────────────────────────
   const deleteConversation = useCallback((id: string) => {
     setConversations(prev => prev.filter(c => c.id !== id))

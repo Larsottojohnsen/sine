@@ -609,9 +609,9 @@ function ConvGroup({
   renameDraft: string
   onRenameDraftChange: (v: string) => void
   onRenameCommit: () => void
-  renameInputRef: React.RefObject<HTMLInputElement>
+  renameInputRef: React.RefObject<HTMLInputElement | null>
 }) {
-  const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
+  const [menuOpenId] = useState<string | null>(null)
 
   if (conversations.length === 0) return null
   return (
