@@ -188,7 +188,7 @@ async def extract_memory(
 
     try:
         response = await client.messages.create(
-            model="claude-haiku-4-20",
+            model="claude-haiku-4-5",
             max_tokens=512,
             messages=[{
                 "role": "user",
@@ -315,7 +315,7 @@ async def get_relevant_memories(
 
     try:
         response = await client.messages.create(
-            model="claude-haiku-4-20",
+            model="claude-haiku-4-5",
             max_tokens=256,
             messages=[{
                 "role": "user",

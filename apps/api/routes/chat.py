@@ -32,7 +32,7 @@ async def _compress_history(
 ) -> list[dict]:
     """
     Komprimer eldre meldinger til et sammendrag når samtalen blir lang.
-    Bruker claude-haiku-4-20 (billigste modell) for komprimeringen.
+    Bruker claude-haiku-4-5 (billigste modell) for komprimeringen.
     Returnerer en ny meldingsliste: [sammendrag-melding] + siste MAX_FULL_MESSAGES meldinger.
     """
     if len(messages) <= MIN_MESSAGES_FOR_COMPRESSION:
@@ -57,7 +57,7 @@ async def _compress_history(
 
     try:
         response = await client.messages.create(
-            model="claude-haiku-4-20",
+            model="claude-haiku-4-5",
             max_tokens=300,
             messages=[{"role": "user", "content": summary_prompt}],
         )
@@ -82,8 +82,8 @@ router = APIRouter(prefix="/api/chat", tags=["chat"])
 client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY") or os.getenv("claude_key"))
 
 MODEL_MAP = {
-    "sine-1":   "claude-haiku-4-20",
-    "sine-pro":  "claude-sonnet-4-5-20251101",
+    "sine-1":   "claude-haiku-4-5",
+    "sine-pro":  "claude-sonnet-4-6",
 }
 
 # ── Intelligent modellruting ───────────────────────────────────────────────
@@ -123,7 +123,7 @@ def _route_model(base_model: str, last_user_message: str) -> str:
     3. Inneholder komplekse nøkkelord → Sonnet
     4. Ellers → Haiku
     """
-    if base_model != "claude-sonnet-4-5-20251101":
+    if base_model != "claude-sonnet-4-6":
         # Sine 1 eller ukjent modell: ikke ruter
         return base_model
 
@@ -132,7 +132,7 @@ def _route_model(base_model: str, last_user_message: str) -> str:
 
     # Alltid Sonnet for lange meldinger
     if msg_len > 300:
-        return "claude-sonnet-4-5-20251101"
+        return "claude-sonnet-4-6"
 
     # Sjekk for komplekse nøkkelord
     words = set(msg.split())
@@ -141,10 +141,10 @@ def _route_model(base_model: str, last_user_message: str) -> str:
     all_tokens = words | bigrams
 
     if any(kw in all_tokens or kw in msg for kw in _COMPLEX_KEYWORDS):
-        return "claude-sonnet-4-5-20251101"
+        return "claude-sonnet-4-6"
 
     # Kort, enkel melding → Haiku (mye billigere)
-    return "claude-haiku-4-20"
+    return "claude-haiku-4-5"
 
 SYSTEM_PROMPT_NO = """Du er Sine, en intelligent AI-assistent. Du svarer alltid på norsk med mindre brukeren skriver på et annet språk.
 Vær presis, hjelpsom og vennlig. Bruk markdown for formatering der det er naturlig."""
@@ -252,7 +252,7 @@ def _build_system_blocks(
 
 async def _stream_chat(request: ChatRequest) -> AsyncGenerator[str, None]:
     # Basismodell fra brukerens plan (sine-1 → haiku, sine-pro → sonnet)
-    base_model = MODEL_MAP.get(request.model, "claude-haiku-4-20")
+    base_model = MODEL_MAP.get(request.model, "claude-haiku-4-5")
 
     # Bygg meldingsliste og anvend kontekstvinduforvaltning
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
@@ -334,7 +334,7 @@ async def generate_title(request: TitleRequest):
             f"Message: {request.message[:500]}"
         )
         response = await client.messages.create(
-            model="claude-haiku-4-20",
+            model="claude-haiku-4-5",
             max_tokens=30,
             messages=[{"role": "user", "content": prompt}],
         )
