@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import {
   Plus, Search, BookOpen, FolderPlus, Trash2,
   Bot, PanelLeftClose, PanelLeftOpen, CalendarDays,
   LayoutGrid, Monitor, Terminal, ChevronRight, SlidersHorizontal,
   MessageSquare, X, Copy, Mail, Check, ShieldCheck,
-  Bell, User
+  Bell, User, MoreHorizontal, Share2, Pencil, Star,
+  ExternalLink, FolderInput
 } from 'lucide-react'
 import { useApp } from '@/store/AppContext'
 import { getTranslations } from '@/i18n'
@@ -113,6 +114,7 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
     activeConversationId,
     setActiveConversationId,
     deleteConversation,
+    renameConversation,
     settings,
     sidebarOpen,
     setSidebarOpen,
@@ -313,10 +315,10 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
             </p>
           ) : (
             <>
-              <ConvGroup label="I dag" conversations={groups.today} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { if (onSelectConversation) { onSelectConversation(id) } else { setActiveConversationId(id); onNavigate?.('chat') } }} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
-              <ConvGroup label="I går" conversations={groups.yesterday} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { if (onSelectConversation) { onSelectConversation(id) } else { setActiveConversationId(id); onNavigate?.('chat') } }} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
-              <ConvGroup label="Siste 7 dager" conversations={groups.week} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { if (onSelectConversation) { onSelectConversation(id) } else { setActiveConversationId(id); onNavigate?.('chat') } }} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
-              <ConvGroup label="Eldre" conversations={groups.older} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { if (onSelectConversation) { onSelectConversation(id) } else { setActiveConversationId(id); onNavigate?.('chat') } }} onDelete={handleDeleteRequest} activeAgentRunId={activeAgentRunId} />
+              <ConvGroup label="I dag" conversations={groups.today} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { if (onSelectConversation) { onSelectConversation(id) } else { setActiveConversationId(id); onNavigate?.('chat') } }} onDelete={handleDeleteRequest} onRename={renameConversation} activeAgentRunId={activeAgentRunId} />
+              <ConvGroup label="I går" conversations={groups.yesterday} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { if (onSelectConversation) { onSelectConversation(id) } else { setActiveConversationId(id); onNavigate?.('chat') } }} onDelete={handleDeleteRequest} onRename={renameConversation} activeAgentRunId={activeAgentRunId} />
+              <ConvGroup label="Siste 7 dager" conversations={groups.week} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { if (onSelectConversation) { onSelectConversation(id) } else { setActiveConversationId(id); onNavigate?.('chat') } }} onDelete={handleDeleteRequest} onRename={renameConversation} activeAgentRunId={activeAgentRunId} />
+              <ConvGroup label="Eldre" conversations={groups.older} activeId={activeConversationId} hoveredId={hoveredId} onHover={setHoveredId} onSelect={(id) => { if (onSelectConversation) { onSelectConversation(id) } else { setActiveConversationId(id); onNavigate?.('chat') } }} onDelete={handleDeleteRequest} onRename={renameConversation} activeAgentRunId={activeAgentRunId} />
             </>
           )}
         </div>
@@ -534,8 +536,135 @@ function ReferralModal({ onClose }: { onClose: () => void }) {
   )
 }
 
+function ConvContextMenu({
+  convId, convTitle, onClose, onDelete, onRename,
+}: {
+  convId: string
+  convTitle: string
+  onClose: () => void
+  onDelete: (id: string, title: string) => void
+  onRename: (id: string, newTitle: string) => void
+}) {
+  const [renaming, setRenaming] = useState(false)
+  const [renameVal, setRenameVal] = useState(convTitle)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose()
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [onClose])
+
+  const menuItems = [
+    {
+      icon: <Share2 size={13} />,
+      label: 'Del',
+      action: () => { navigator.clipboard.writeText(window.location.href); onClose() },
+    },
+    {
+      icon: <Pencil size={13} />,
+      label: 'Endre navn',
+      action: () => setRenaming(true),
+    },
+    {
+      icon: <Star size={13} />,
+      label: 'Legg til favoritter',
+      action: () => onClose(),
+    },
+    {
+      icon: <ExternalLink size={13} />,
+      label: 'Åpne i ny tab',
+      action: () => { window.open(window.location.href, '_blank'); onClose() },
+    },
+    {
+      icon: <FolderInput size={13} />,
+      label: 'Flytt til prosjekt',
+      action: () => onClose(),
+    },
+  ]
+
+  return (
+    <div
+      ref={menuRef}
+      style={{
+        position: 'absolute', right: 0, top: '100%', zIndex: 9999,
+        background: '#1e1e20', border: '1px solid #2e2e30',
+        borderRadius: 10, padding: '4px', minWidth: 190,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+      }}
+      onClick={e => e.stopPropagation()}
+    >
+      {renaming ? (
+        <div style={{ padding: '6px 8px' }}>
+          <input
+            autoFocus
+            value={renameVal}
+            onChange={e => setRenameVal(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') { onRename(convId, renameVal.trim() || convTitle); onClose() }
+              if (e.key === 'Escape') onClose()
+            }}
+            style={{
+              width: '100%', background: '#2a2a2c', border: '1px solid #3a3a3c',
+              borderRadius: 6, color: '#E5E5E5', fontSize: 12, padding: '5px 8px',
+              outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
+            }}
+          />
+          <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+            <button
+              onClick={() => { onRename(convId, renameVal.trim() || convTitle); onClose() }}
+              style={{ flex: 1, padding: '4px 0', borderRadius: 6, border: 'none', background: '#E5E5E5', color: '#111', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+            >Lagre</button>
+            <button
+              onClick={onClose}
+              style={{ flex: 1, padding: '4px 0', borderRadius: 6, border: '1px solid #3a3a3c', background: 'transparent', color: '#aaa', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}
+            >Avbryt</button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {menuItems.map(item => (
+            <button
+              key={item.label}
+              onClick={item.action}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                width: '100%', padding: '7px 10px', border: 'none',
+                background: 'transparent', color: '#C0C0C0', fontSize: 12.5,
+                cursor: 'pointer', borderRadius: 7, fontFamily: 'inherit', textAlign: 'left',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#2a2a2c')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              <span style={{ color: '#7A7A7A', flexShrink: 0 }}>{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+          <div style={{ height: 1, background: '#2e2e30', margin: '4px 0' }} />
+          <button
+            onClick={() => { onDelete(convId, convTitle); onClose() }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              width: '100%', padding: '7px 10px', border: 'none',
+              background: 'transparent', color: '#ef4444', fontSize: 12.5,
+              cursor: 'pointer', borderRadius: 7, fontFamily: 'inherit', textAlign: 'left',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >
+            <span style={{ color: '#ef4444', flexShrink: 0 }}><Trash2 size={13} /></span>
+            Slett
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+
 function ConvGroup({
-  label, conversations, activeId, hoveredId, onHover, onSelect, onDelete, activeAgentRunId,
+  label, conversations, activeId, hoveredId, onHover, onSelect, onDelete, onRename, activeAgentRunId,
 }: {
   label: string
   conversations: { id: string; title: string; updatedAt: Date; type?: string }[]
@@ -544,8 +673,11 @@ function ConvGroup({
   onHover: (id: string | null) => void
   onSelect: (id: string) => void
   onDelete: (id: string, title: string) => void
+  onRename: (id: string, newTitle: string) => void
   activeAgentRunId?: string | null
 }) {
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
+
   if (conversations.length === 0) return null
   return (
     <div style={{ marginBottom: 4 }}>
@@ -553,42 +685,51 @@ function ConvGroup({
       {conversations.map(conv => {
         const isAgent = conv.type === 'agent'
         const isRunning = isAgent && activeAgentRunId != null && activeId === conv.id
+        const showActions = hoveredId === conv.id || activeId === conv.id
 
         return (
-          <button
+          <div
             key={conv.id}
-            className={`conv-item${activeId === conv.id ? ' active' : ''}`}
-            onClick={() => onSelect(conv.id)}
+            style={{ position: 'relative' }}
             onMouseEnter={() => onHover(conv.id)}
-            onMouseLeave={() => onHover(null)}
+            onMouseLeave={() => { if (menuOpenId !== conv.id) onHover(null) }}
           >
-            <span style={{ flexShrink: 0, fontSize: 11, opacity: 0.5, display: 'flex', alignItems: 'center', width: 14 }}>
-              {isRunning ? (
-                <span className="conv-spinner" />
-              ) : isAgent ? (
-                <Bot size={12} />
-              ) : (
-                <MessageSquare size={12} />
+            <button
+              className={`conv-item${activeId === conv.id ? ' active' : ''}`}
+              onClick={() => onSelect(conv.id)}
+            >
+              <span style={{ flexShrink: 0, fontSize: 11, opacity: 0.5, display: 'flex', alignItems: 'center', width: 14 }}>
+                {isRunning ? (
+                  <span className="conv-spinner" />
+                ) : isAgent ? (
+                  <Bot size={12} />
+                ) : (
+                  <MessageSquare size={12} />
+                )}
+              </span>
+              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {conv.title}
+              </span>
+              {showActions && (
+                <button
+                  onClick={e => { e.stopPropagation(); setMenuOpenId(menuOpenId === conv.id ? null : conv.id) }}
+                  className="conv-menu-btn"
+                  title="Mer"
+                >
+                  <MoreHorizontal size={13} />
+                </button>
               )}
-            </span>
-            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {conv.title.length > 26 ? conv.title.slice(0, 26) + '…' : conv.title}
-            </span>
-            {hoveredId === conv.id && (
-              <button
-                onClick={e => { e.stopPropagation(); onDelete(conv.id, conv.title) }}
-                style={{
-                  position: 'absolute', right: 6,
-                  width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  borderRadius: 5, border: 'none', background: 'transparent', color: '#4A4A4A', cursor: 'pointer'
-                }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}
-              >
-                <Trash2 size={11} />
-              </button>
+            </button>
+            {menuOpenId === conv.id && (
+              <ConvContextMenu
+                convId={conv.id}
+                convTitle={conv.title}
+                onClose={() => { setMenuOpenId(null); onHover(null) }}
+                onDelete={onDelete}
+                onRename={onRename}
+              />
             )}
-          </button>
+          </div>
         )
       })}
     </div>

@@ -119,3 +119,34 @@ async def chat_stream(request: ChatRequest):
             "Connection": "keep-alive",
         },
     )
+
+
+class TitleRequest(BaseModel):
+    message: str
+    language: str = "no"
+
+@router.post("/generate-title")
+async def generate_title(request: TitleRequest):
+    """Generate a short, descriptive conversation title from the first user message."""
+    try:
+        lang_hint = "Norwegian" if request.language == "no" else "English"
+        prompt = (
+            f"Generate a short, descriptive title for a conversation that starts with this message. "
+            f"The title should be in {lang_hint}, 3-6 words, no quotes, no punctuation at the end. "
+            f"Capture the essence of what the user wants. Do not use generic titles like 'New conversation'. "
+            f"Message: {request.message[:500]}"
+        )
+        response = await client.messages.create(
+            model="claude-haiku-4-5",
+            max_tokens=30,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        title = response.content[0].text.strip().strip('"').strip("'")
+        return {"title": title}
+    except Exception as e:
+        # Fallback: truncate the message
+        words = request.message.split()
+        fallback = " ".join(words[:6])
+        if len(words) > 6:
+            fallback += "…"
+        return {"title": fallback}

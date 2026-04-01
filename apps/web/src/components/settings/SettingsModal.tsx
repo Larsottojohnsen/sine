@@ -563,6 +563,22 @@ function UsageContent() {
 }
 
 function PersonalizationContent() {
+  const { settings, updateSettings } = useApp()
+  const [name, setName] = useState(settings.userName ?? '')
+  const [instructions, setInstructions] = useState(settings.customInstructions ?? '')
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    setName(settings.userName ?? '')
+    setInstructions(settings.customInstructions ?? '')
+  }, [settings.userName, settings.customInstructions])
+
+  const handleSave = () => {
+    updateSettings({ userName: name.trim(), customInstructions: instructions.trim() })
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
   return (
     <div>
       <h2 className="settings-title">Personalisering</h2>
@@ -576,6 +592,8 @@ function PersonalizationContent() {
           <input
             type="text"
             placeholder="Ditt navn"
+            value={name}
+            onChange={e => setName(e.target.value)}
             style={{
               background: '#252525', border: '1px solid #2E2E2E', borderRadius: 8,
               color: '#E5E5E5', fontSize: 13, padding: '6px 12px',
@@ -590,14 +608,30 @@ function PersonalizationContent() {
           </div>
           <textarea
             placeholder="F.eks. Svar alltid på norsk og vær kortfattet..."
-            rows={4}
+            rows={5}
+            value={instructions}
+            onChange={e => setInstructions(e.target.value)}
             style={{
               width: '100%', background: '#252525', border: '1px solid #2E2E2E',
               borderRadius: 8, color: '#E5E5E5', fontSize: 13, padding: '10px 12px',
               outline: 'none', fontFamily: 'inherit', resize: 'vertical',
-              lineHeight: 1.6,
+              lineHeight: 1.6, boxSizing: 'border-box',
             }}
           />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+          <button
+            onClick={handleSave}
+            style={{
+              padding: '8px 20px', borderRadius: 8, border: 'none',
+              background: saved ? '#22c55e' : '#E5E5E5',
+              color: saved ? '#fff' : '#111',
+              fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              fontFamily: 'inherit', transition: 'background 0.2s',
+            }}
+          >
+            {saved ? 'Lagret ✓' : 'Lagre'}
+          </button>
         </div>
       </div>
     </div>

@@ -84,6 +84,9 @@ export interface AppSettings {
   language: 'no' | 'en'
   model: SineModel
   theme: 'dark' | 'light' | 'system'
+  // Personalisering
+  userName?: string
+  customInstructions?: string
   // Bruker-minne
   userMemory?: UserMemory[]
   // Agent-standardinnstillinger

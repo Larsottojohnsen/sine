@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useCallback } from 'react'
 import {
   LayoutGrid, List, Search, ChevronDown,
   FileText, Image, Archive, Code, FileAudio, Table, Globe, File, MoreHorizontal,
-  X, Download, ExternalLink, Upload, Loader2, CheckCircle2, AlertCircle
+  X, Download, ExternalLink
 } from 'lucide-react'
 import { useApp } from '@/store/AppContext'
 import type { AgentFile, Conversation } from '@/types'
@@ -368,8 +368,6 @@ export function LibraryView() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [filterType, setFilterType] = useState<FileType>('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [showUpload, setShowUpload] = useState(false)
-
   const allFiles = useMemo<LibraryFile[]>(() => {
     const result: LibraryFile[] = []
     for (const conv of conversations) {
@@ -437,17 +435,7 @@ export function LibraryView() {
             {searchQuery && <button onClick={() => setSearchQuery('')}><X size={11} /></button>}
           </div>
 
-          {/* Upload button */}
-          <button
-            className={`lib-manus-upload-btn${showUpload ? ' active' : ''}`}
-            onClick={() => setShowUpload(v => !v)}
-            title="Last opp dokumenter"
-          >
-            <Upload size={14} />
-            <span>Last opp</span>
-          </button>
-
-          {/* View toggle */}
+          {/* View toggle */
           <div className="lib-manus-view-toggle">
             <button className={viewMode === 'grid' ? 'active' : ''} onClick={() => setViewMode('grid')} title="Rutenett">
               <LayoutGrid size={15} />
@@ -459,16 +447,13 @@ export function LibraryView() {
         </div>
       </div>
 
-      {/* Upload panel */}
-      {showUpload && <DocumentUploadPanel />}
-
       {/* Content */}
       <div className="lib-manus-content">
         {filteredGroups.length === 0 ? (
           <div className="lib-manus-empty">
             <Archive size={40} style={{ color: '#2A2A2A', marginBottom: 12 }} />
             <p style={{ fontSize: 15, fontWeight: 600, color: '#5A5A5A', margin: '0 0 6px' }}>Ingen filer ennå</p>
-            <p style={{ fontSize: 13, color: '#3A3A3A', margin: 0 }}>Filer fra agent-oppgaver vises her, eller last opp dokumenter ovenfor</p>
+            <p style={{ fontSize: 13, color: '#3A3A3A', margin: 0 }}>Filer fra agent-oppgaver vises her automatisk</p>
           </div>
         ) : (
           filteredGroups.map(({ conversation, files }) => (

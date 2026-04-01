@@ -3,6 +3,23 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Conversation, Message, SineModel, AppSettings } from '../types'
 import { generateTitle } from '../lib/utils'
 import { useAuth } from '../hooks/useAuth'
+
+const API_BASE = import.meta.env.VITE_API_URL || 'https://sineapi-production-8db6.up.railway.app'
+
+async function generateAITitle(message: string, language = 'no'): Promise<string> {
+  try {
+    const res = await fetch(`${API_BASE}/api/chat/generate-title`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, language }),
+    })
+    if (!res.ok) throw new Error('API error')
+    const data = await res.json()
+    return data.title || generateTitle(message)
+  } catch {
+    return generateTitle(message)
+  }
+}
 import {
   fetchConversations,
   createConversationInDb,
@@ -133,7 +150,18 @@ export function useAppStore() {
     })
 
     if (titleChanged) {
+      // Immediately set the truncated title, then replace with AI title asynchronously
       updateConversationTitle(conversationId, newTitle).catch(console.error)
+      // Fire AI title generation in background — update when ready
+      const langForTitle = loadSettings(userIdRef.current).language ?? 'no'
+      generateAITitle(message.content, langForTitle).then(aiTitle => {
+        if (aiTitle && aiTitle !== newTitle) {
+          setConversations(prev => prev.map(c =>
+            c.id === conversationId ? { ...c, title: aiTitle } : c
+          ))
+          updateConversationTitle(conversationId, aiTitle).catch(console.error)
+        }
+      })
     }
 
     // Persist to Supabase — skip streaming placeholder (empty assistant messages)
@@ -210,6 +238,14 @@ export function useAppStore() {
     }
   }, [])
 
+  // ── Rename conversation ──────────────────────────────────────
+  const renameConversation = useCallback((id: string, newTitle: string) => {
+    setConversations(prev => prev.map(c =>
+      c.id === id ? { ...c, title: newTitle } : c
+    ))
+    updateConversationTitle(id, newTitle).catch(console.error)
+  }, [])
+
   // ── Delete conversation ───────────────────────────────────────
   const deleteConversation = useCallback((id: string) => {
     setConversations(prev => prev.filter(c => c.id !== id))
@@ -237,6 +273,7 @@ export function useAppStore() {
     updateMessage,
     updateAgentMessage,
     deleteConversation,
+    renameConversation,
     settings,
     updateSettings,
     sidebarOpen,
