@@ -24,6 +24,8 @@ app = FastAPI(
 
 # CORS – tillat GitHub Pages og lokal utvikling
 ALLOWED_ORIGINS = [
+    "https://sine.no",
+    "https://www.sine.no",
     "https://larsottojohnsen.github.io",
     "http://localhost:5173",
     "http://localhost:3000",
