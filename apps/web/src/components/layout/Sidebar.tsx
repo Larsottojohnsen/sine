@@ -385,14 +385,7 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
                 <Terminal size={18} />
               </button>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 11, color: '#8A8A8A', letterSpacing: '0.02em', fontWeight: 500 }}>av</span>
-              <img
-                src="/sine/jtg-logo.png"
-                alt="Johnsen Technology AS"
-                style={{ height: 26, opacity: 0.85, objectFit: 'contain', maxWidth: 120 }}
-              />
-            </div>
+
           </div>
         </div>
       </div>

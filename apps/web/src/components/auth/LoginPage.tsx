@@ -5,7 +5,6 @@ import { getSupabase } from '../../hooks/useAuth'
 // CDN logo URLs
 const LOGO_LIGHT = "/sine/Sine-hvit.svg"
 const ICON_LIGHT = "/sine/Sine-ikon-hvit.svg"
-const JTG_LOGO = "/sine/jtg-logo-white.png"
 
 type LoginStep = 'main' | 'email-password' | 'create-account' | 'forgot-password' | 'forgot-password-sent'
 
@@ -422,10 +421,7 @@ export function LoginPage() {
         </div>
       </div>
 
-      {/* JTG branding — sentrert nederst, absolutt posisjonert */}
-      <div className="login-bottom-brand">
-        <img src={JTG_LOGO} alt="Johnsen Technology Group" className="login-jtg-logo" />
-      </div>
+
     </div>
   )
 }

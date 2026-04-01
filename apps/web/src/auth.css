@@ -394,24 +394,7 @@
 
 /* Dev-bypass button removed */
 
-/* ---- Johnsen Technology branding ---- */
-.login-bottom-brand {
-  position: absolute;
-  bottom: 28px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  pointer-events: none;
-  user-select: none;
-}
 
-.login-jtg-logo {
-  height: 22px;
-  width: auto;
-  opacity: 0.35;
-  /* CDN logo is already white — no filter needed */
-  display: block;
-}
 
 /* ---- Responsive ---- */
 @media (max-width: 480px) {
@@ -423,10 +406,6 @@
   .login-logo {
     top: 20px;
     left: 20px;
-  }
-
-  .login-bottom-brand {
-    display: none;
   }
 
   .login-card-wrapper {

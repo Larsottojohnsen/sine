@@ -435,7 +435,7 @@ export function LibraryView() {
             {searchQuery && <button onClick={() => setSearchQuery('')}><X size={11} /></button>}
           </div>
 
-          {/* View toggle */
+          {/* View toggle */}
           <div className="lib-manus-view-toggle">
             <button className={viewMode === 'grid' ? 'active' : ''} onClick={() => setViewMode('grid')} title="Rutenett">
               <LayoutGrid size={15} />
