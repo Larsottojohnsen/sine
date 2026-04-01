@@ -139,7 +139,7 @@ class SineOrchestrator:
         self.workspace.mkdir(parents=True, exist_ok=True)
 
         self.client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY") or os.getenv("claude_key"))
-        self.model = "claude-sonnet-4-5"
+        self.model = "claude-sonnet-4-5-20251101"
 
         # Velg terminal-verktøy: E2B cloud sandkasse hvis API-nøkkel finnes, ellers lokal
         e2b_key = os.getenv("E2B_API_KEY") or os.getenv("e2b_adc2a4765b2c0b1e4e7c291a5de3910160041901")
