@@ -22,7 +22,7 @@ from schemas.agent import (
 from tools import (
     GitCloneTool, ListFilesTool, ReadFileTool,
     TerminalTool, WebSearchTool, WriteFileTool,
-    E2BSandboxTool,
+    E2BSandboxTool, BrowserTool,
 )
 
 WORKSPACES_DIR = Path(os.getenv("WORKSPACES_DIR", "/tmp/sine_workspaces"))
@@ -167,6 +167,9 @@ class SineOrchestrator:
         self.pending_approval: Optional[asyncio.Event] = None
         self.approval_result: Optional[bool] = None
         self._event_queue: asyncio.Queue = asyncio.Queue()
+        # BrowserTool trenger event_queue, initialiseres etter køen
+        self.browser_tool = BrowserTool(event_queue=self._event_queue, run_id=run_id)
+        self.tools["browser"] = self.browser_tool
 
     def _system_prompt_blocks(self, user_memory: list[dict] | None = None) -> list[dict]:
         """

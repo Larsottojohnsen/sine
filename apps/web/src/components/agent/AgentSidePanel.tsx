@@ -2,16 +2,20 @@ import { useState, useEffect, useRef } from 'react';
 import type { AgentState, AgentLogEntry } from '../../hooks/useAgent';
 import {
   X, Monitor, FileText, SkipBack, SkipForward, Play, Pause,
-  CheckCircle2, ChevronUp, ChevronDown, Terminal, Edit3
+  CheckCircle2, ChevronUp, ChevronDown, Terminal, Edit3,
+  Globe, MousePointer, AlertTriangle, RefreshCw
 } from 'lucide-react';
 
 interface AgentSidePanelProps {
   state: AgentState;
   onClose: () => void;
   onFetchFile: (path: string) => Promise<string>;
+  onRequestTakeover?: () => void;
+  onResumeTakeover?: () => void;
+  onSetBrowserTab?: (tab: 'terminal' | 'browser') => void;
 }
 
-type PanelTab = 'terminal' | 'files';
+type PanelTab = 'terminal' | 'files' | 'browser';
 
 // ─── Syntax highlight helper ──────────────────────────────────
 function syntaxHighlight(code: string, ext: string): React.ReactNode[] {
@@ -49,7 +53,6 @@ function syntaxHighlight(code: string, ext: string): React.ReactNode[] {
 // ─── Determine if a log entry is a file read or write ─────────
 function getFileLineClass(entry: AgentLogEntry): string {
   if (entry.type === 'file_change') {
-    // "created" or "modified" → green; "read" or "opened" → red
     const msg = entry.message.toLowerCase();
     if (msg.includes('lest') || msg.includes('read') || msg.includes('åpn') || msg.includes('open')) {
       return 'terminal-log-line file-read';
@@ -140,16 +143,36 @@ function getFileIcon(path: string): React.ReactNode {
 }
 
 // ─── Main panel ───────────────────────────────────────────────
-export default function AgentSidePanel({ state, onClose, onFetchFile }: AgentSidePanelProps) {
+export default function AgentSidePanel({
+  state,
+  onClose,
+  onFetchFile,
+  onRequestTakeover,
+  onResumeTakeover,
+  onSetBrowserTab,
+}: AgentSidePanelProps) {
   const [activeTab, setActiveTab] = useState<PanelTab>('terminal');
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string>('');
   const [loadingFile, setLoadingFile] = useState(false);
   const [taskExpanded, setTaskExpanded] = useState(true);
   const [isPlaying, setIsPlaying] = useState(true);
-  // Track previous log count to animate only new lines
   const prevLogCountRef = useRef(0);
   const logsEndRef = useRef<HTMLDivElement>(null);
+
+  // Switch to browser tab automatically when a screenshot arrives
+  useEffect(() => {
+    if (state.browserScreenshot && activeTab !== 'browser') {
+      setActiveTab('browser');
+    }
+  }, [state.browserScreenshot]);
+
+  // Sync external browserTab state
+  useEffect(() => {
+    if (state.browserTab === 'browser' && activeTab !== 'browser') {
+      setActiveTab('browser');
+    }
+  }, [state.browserTab]);
 
   useEffect(() => {
     if (activeTab === 'terminal' && isPlaying) {
@@ -166,6 +189,13 @@ export default function AgentSidePanel({ state, onClose, onFetchFile }: AgentSid
     setLoadingFile(false);
   };
 
+  const handleTabChange = (tab: PanelTab) => {
+    setActiveTab(tab);
+    if (tab === 'browser' || tab === 'terminal') {
+      onSetBrowserTab?.(tab === 'browser' ? 'browser' : 'terminal');
+    }
+  };
+
   const isActive = ['planning', 'running'].includes(state.status);
   const lastTask = state.liveTasks?.slice(-1)[0];
   const totalTasks = state.liveTasks?.length ?? 0;
@@ -176,11 +206,12 @@ export default function AgentSidePanel({ state, onClose, onFetchFile }: AgentSid
   const lastFileChange = [...state.logs].reverse().find(l => l.type === 'file_change');
   const selectedExt = selectedFile?.split('.').pop()?.toLowerCase() ?? '';
 
-  // Compute animation delay for each log line (new lines get staggered delay)
   const prevCount = prevLogCountRef.current;
   if (state.logs.length !== prevCount) {
     prevLogCountRef.current = state.logs.length;
   }
+
+  const hasBrowser = !!state.browserScreenshot;
 
   return (
     <div className="computer-panel">
@@ -195,14 +226,31 @@ export default function AgentSidePanel({ state, onClose, onFetchFile }: AgentSid
         <div className="computer-panel-tabs">
           <button
             className={`computer-tab${activeTab === 'terminal' ? ' active' : ''}`}
-            onClick={() => setActiveTab('terminal')}
+            onClick={() => handleTabChange('terminal')}
           >
             <Terminal size={11} />
             Terminal
           </button>
+          {hasBrowser && (
+            <button
+              className={`computer-tab${activeTab === 'browser' ? ' active' : ''}${state.needsTakeover ? ' needs-takeover' : ''}`}
+              onClick={() => handleTabChange('browser')}
+              style={state.needsTakeover ? { color: '#FBBF24' } : undefined}
+            >
+              <Globe size={11} />
+              Nettleser
+              {state.needsTakeover && (
+                <span style={{
+                  width: 6, height: 6, borderRadius: '50%',
+                  background: '#FBBF24', display: 'inline-block', marginLeft: 2,
+                  animation: 'blink 1s step-end infinite',
+                }} />
+              )}
+            </button>
+          )}
           <button
             className={`computer-tab${activeTab === 'files' ? ' active' : ''}`}
-            onClick={() => setActiveTab('files')}
+            onClick={() => handleTabChange('files')}
           >
             <FileText size={11} />
             Filer {state.files.length > 0 && `(${state.files.length})`}
@@ -215,7 +263,7 @@ export default function AgentSidePanel({ state, onClose, onFetchFile }: AgentSid
       </div>
 
       {/* ── Active file/command breadcrumb bar ─────────────── */}
-      {lastToolCall && (
+      {lastToolCall && activeTab !== 'browser' && (
         <div className="computer-panel-status-bar">
           {lastFileChange ? (
             <>
@@ -241,6 +289,23 @@ export default function AgentSidePanel({ state, onClose, onFetchFile }: AgentSid
                   : lastToolCall.message}
               </span>
             </>
+          )}
+        </div>
+      )}
+
+      {/* ── Browser URL bar ─────────────────────────────────── */}
+      {activeTab === 'browser' && state.browserUrl && (
+        <div className="computer-panel-status-bar">
+          <Globe size={11} style={{ color: 'rgba(255,255,255,0.4)', flexShrink: 0 }} />
+          <span className="computer-panel-status-cmd" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {state.browserUrl}
+          </span>
+          {isActive && (
+            <span style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: '#60A5FA', display: 'inline-block', flexShrink: 0,
+              animation: 'blink 1s step-end infinite',
+            }} />
           )}
         </div>
       )}
@@ -278,7 +343,6 @@ export default function AgentSidePanel({ state, onClose, onFetchFile }: AgentSid
                 </div>
               ) : (
                 state.logs.map((entry, idx) => {
-                  // New lines (added after panel opened) get a small staggered delay
                   const isNew = idx >= prevCount;
                   const delay = isNew ? Math.min((idx - prevCount) * 30, 200) : 0;
                   return <LogLine key={entry.id} entry={entry} animationDelay={delay} />;
@@ -298,6 +362,152 @@ export default function AgentSidePanel({ state, onClose, onFetchFile }: AgentSid
               )}
               <div ref={logsEndRef} />
             </div>
+          </div>
+        )}
+
+        {/* Browser tab */}
+        {activeTab === 'browser' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+
+            {/* Takeover banner */}
+            {state.needsTakeover && (
+              <div style={{
+                background: 'rgba(251,191,36,0.12)',
+                border: '1px solid rgba(251,191,36,0.3)',
+                borderRadius: 8,
+                margin: '8px 10px',
+                padding: '10px 14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                flexShrink: 0,
+              }}>
+                <AlertTriangle size={16} style={{ color: '#FBBF24', flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, color: '#FBBF24', fontWeight: 600 }}>Agenten trenger hjelp</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
+                    Klikk "Ta over" for å logge inn eller hjelpe til i nettleseren
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                  <button
+                    onClick={onRequestTakeover}
+                    style={{
+                      background: '#FBBF24',
+                      color: '#1a1a1a',
+                      border: 'none',
+                      borderRadius: 6,
+                      padding: '5px 12px',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                    }}
+                  >
+                    <MousePointer size={11} />
+                    Ta over
+                  </button>
+                  <button
+                    onClick={onResumeTakeover}
+                    style={{
+                      background: 'rgba(255,255,255,0.08)',
+                      color: 'rgba(255,255,255,0.6)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      borderRadius: 6,
+                      padding: '5px 10px',
+                      fontSize: 12,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                    }}
+                  >
+                    <RefreshCw size={11} />
+                    Fortsett
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Screenshot viewer */}
+            {state.browserScreenshot ? (
+              <div style={{
+                flex: 1,
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                position: 'relative',
+              }}>
+                <img
+                  src={`data:image/png;base64,${state.browserScreenshot}`}
+                  alt="Nettleser-skjermbilde"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    objectPosition: 'top center',
+                    display: 'block',
+                  }}
+                />
+
+                {/* Action overlay */}
+                {state.browserAction && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 8,
+                    left: 8,
+                    right: 8,
+                    background: 'rgba(0,0,0,0.75)',
+                    backdropFilter: 'blur(6px)',
+                    borderRadius: 6,
+                    padding: '6px 10px',
+                    fontSize: 11,
+                    color: '#93C5FD',
+                    fontFamily: '"SF Mono", Menlo, monospace',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    border: '1px solid rgba(255,255,255,0.08)',
+                  }}>
+                    <MousePointer size={10} style={{ flexShrink: 0 }} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {state.browserAction}
+                    </span>
+                    {isActive && (
+                      <div style={{
+                        width: 6, height: 6, borderRadius: '50%',
+                        background: '#60A5FA', flexShrink: 0,
+                        animation: 'blink 1s step-end infinite',
+                      }} />
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 12,
+                color: 'rgba(255,255,255,0.2)',
+              }}>
+                <Globe size={32} style={{ opacity: 0.3 }} />
+                <div style={{ fontSize: 12, fontFamily: 'monospace', textAlign: 'center' }}>
+                  {isActive ? 'Venter på nettleser-aktivitet...' : 'Ingen nettleser-aktivitet ennå'}
+                </div>
+                {isActive && (
+                  <div style={{
+                    width: 8, height: 14,
+                    background: 'rgba(255,255,255,0.2)',
+                    animation: 'blink 1s step-end infinite',
+                  }} />
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -379,7 +589,6 @@ export default function AgentSidePanel({ state, onClose, onFetchFile }: AgentSid
             {/* File content viewer */}
             {selectedFile && (
               <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'rgba(0,0,0,0.3)' }}>
-                {/* File title bar */}
                 <div style={{
                   padding: '7px 12px',
                   borderBottom: '1px solid rgba(255,255,255,0.07)',
@@ -412,7 +621,6 @@ export default function AgentSidePanel({ state, onClose, onFetchFile }: AgentSid
                   </button>
                 </div>
 
-                {/* Code content */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
                   {loadingFile ? (
                     <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12, fontFamily: 'monospace', display: 'flex', alignItems: 'center', gap: 6 }}>

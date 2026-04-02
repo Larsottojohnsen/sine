@@ -12,3 +12,6 @@ psutil==6.1.1
 python-multipart==0.0.20
 supabase>=2.10.0
 e2b-code-interpreter>=1.0.3
+browser-use>=0.1.40
+playwright>=1.49.0
+pillow>=10.0.0

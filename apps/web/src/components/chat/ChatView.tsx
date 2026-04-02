@@ -196,7 +196,7 @@ function WelcomeLayout({
 export function ChatView() {
   const { activeConversation, settings, updateSettings, updateAgentMessage } = useApp()
   const { sendMessage, stopStreaming, isStreaming } = useChat()
-  const { state: agentState, startAgent, stopAgent, approveAction, fetchFileContent } = useAgent()
+  const { state: agentState, startAgent, stopAgent, approveAction, fetchFileContent, requestBrowserTakeover, resumeFromTakeover, setBrowserTab } = useAgent()
   const { user } = useAuth()
   const { memory, addMemory, removeMemory, clearMemory, extractFromMessage } = useUserMemory(user?.id)
 
@@ -432,6 +432,9 @@ export function ChatView() {
             state={agentState}
             onClose={() => setShowSidePanel(false)}
             onFetchFile={fetchFileContent}
+            onRequestTakeover={requestBrowserTakeover}
+            onResumeTakeover={resumeFromTakeover}
+            onSetBrowserTab={setBrowserTab}
           />
         )}
         {openFile && (
@@ -598,6 +601,9 @@ export function ChatView() {
           state={agentState}
           onClose={() => setShowSidePanel(false)}
           onFetchFile={fetchFileContent}
+          onRequestTakeover={requestBrowserTakeover}
+          onResumeTakeover={resumeFromTakeover}
+          onSetBrowserTab={setBrowserTab}
         />
       )}
       {openFile && (

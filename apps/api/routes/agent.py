@@ -190,6 +190,28 @@ async def _cleanup_run(run_id: str, delay: int = 300):
             pass
 
 
+@router.post("/{run_id}/browser/takeover")
+async def browser_takeover(run_id: str):
+    """Be agenten om å pause så brukeren kan ta over nettleseren"""
+    orchestrator = active_runs.get(run_id)
+    if not orchestrator:
+        raise HTTPException(status_code=404, detail="Kjøring ikke funnet")
+    if hasattr(orchestrator, 'browser_tool') and orchestrator.browser_tool:
+        orchestrator.browser_tool.request_takeover()
+    return {"status": "takeover_requested"}
+
+
+@router.post("/{run_id}/browser/resume")
+async def browser_resume(run_id: str):
+    """Fortsett agent-kjøring etter at brukeren er ferdig med å ta over"""
+    orchestrator = active_runs.get(run_id)
+    if not orchestrator:
+        raise HTTPException(status_code=404, detail="Kjøring ikke funnet")
+    if hasattr(orchestrator, 'browser_tool') and orchestrator.browser_tool:
+        orchestrator.browser_tool.resume_from_takeover()
+    return {"status": "resumed"}
+
+
 @router.get("/status")
 async def agent_status():
     """Returner status for agent-systemet inkl. E2B-tilgjengelighet"""
