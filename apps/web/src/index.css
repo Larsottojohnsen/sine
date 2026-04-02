@@ -55,6 +55,8 @@ button { font-family: inherit; }
   height: 100%;
   overflow: hidden;
   flex-shrink: 0;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .sidebar-collapsed {
   width: 52px;
@@ -68,6 +70,8 @@ button { font-family: inherit; }
   padding: 12px 0;
   gap: 4px;
   flex-shrink: 0;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .sidebar-logo {
   display: flex;
@@ -885,8 +889,18 @@ button { font-family: inherit; }
 .prose li { margin-bottom: 0.3em; }
 .prose strong { color: #E5E5E5; font-weight: 600; }
 .prose em { color: #B0B0B0; }
-.prose a { color: #1A93FE; text-decoration: none; }
-.prose a:hover { text-decoration: underline; }
+.prose a, .prose-link { color: #1A93FE; text-decoration: none; }
+.prose a:hover, .prose-link:hover { text-decoration: underline; }
+/* Theme-aware inline code (used in ChatMessage.tsx) */
+.prose-inline-code {
+  font-family: 'SF Mono','Fira Code',Menlo,Consolas,monospace;
+  font-size: 0.875em;
+  background: #222222;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  color: #E879F9;
+  border: 1px solid #2E2E2E;
+}
 .prose blockquote {
   border-left: 3px solid #2E2E2E;
   padding-left: 1em;

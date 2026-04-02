@@ -2,14 +2,15 @@ import { useState, useRef } from 'react'
 import {
   Plus, Search, BookOpen, FolderPlus,
   Bot, PanelLeftClose, PanelLeftOpen, CalendarDays,
-  LayoutGrid, Monitor, Terminal, ChevronRight, SlidersHorizontal,
-  X, Copy, Mail, Check, ShieldCheck, MoreHorizontal,
-  Bell, User
+  LayoutGrid, Monitor, Terminal, ChevronRight,
+  X, Copy, Mail, Check, ShieldCheck,
+  Bell, User, Folder
 } from 'lucide-react'
 import { VenterIcon } from '@/assets/icons/VenterIcon'
 import { FavorittIcon } from '@/assets/icons/FavorittIcon'
 import { GulSirkelIcon } from '@/assets/icons/GulSirkelIcon'
 import { ConvContextMenu } from './ConvContextMenu'
+import { CreateProjectModal, type Project } from './CreateProjectModal'
 import { buildShareLink } from '@/services/conversationService'
 import { useApp } from '@/store/AppContext'
 import { getTranslations } from '@/i18n'
@@ -135,12 +136,28 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [referralOpen, setReferralOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null)
+  const [createProjectOpen, setCreateProjectOpen] = useState(false)
+  const [projects, setProjects] = useState<Project[]>(() => {
+    try { return JSON.parse(localStorage.getItem('sine_projects') || '[]') } catch { return [] }
+  })
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
   const [contextMenu, setContextMenu] = useState<{
     convId: string; convTitle: string; isFavorite: boolean; x: number; y: number
   } | null>(null)
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameDraft, setRenameDraft] = useState('')
   const renameInputRef = useRef<HTMLInputElement>(null)
+
+  const handleCreateProject = (data: Omit<Project, 'id' | 'createdAt'>) => {
+    const newProject: Project = {
+      ...data,
+      id: Math.random().toString(36).slice(2),
+      createdAt: new Date(),
+    }
+    const updated = [...projects, newProject]
+    setProjects(updated)
+    try { localStorage.setItem('sine_projects', JSON.stringify(updated)) } catch { /* ignore */ }
+  }
 
   const handleNewChat = () => {
     if (onNewChatProp) {
@@ -209,10 +226,19 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
   if (!sidebarOpen) {
     return (
       <div className="sidebar-collapsed">
-        <button className="icon-btn" onClick={() => setSidebarOpen(true)} title="Åpne meny">
+        {/* Top: logo + expand button */}
+        <button
+          className="icon-btn"
+          onClick={() => setSidebarOpen(true)}
+          title="Åpne meny"
+          style={{ marginBottom: 4 }}
+        >
           <PanelLeftOpen size={18} />
         </button>
-        <div style={{ width: '100%', height: 1, background: '#252525', margin: '4px 0' }} />
+
+        <div style={{ width: 32, height: 1, background: '#303030', margin: '4px 0' }} />
+
+        {/* Nav icons */}
         <button className="icon-btn" onClick={handleNewChat} title={t.app.newChat}>
           <Plus size={18} />
         </button>
@@ -227,6 +253,21 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
         </button>
         <button className="icon-btn" onClick={() => onNavigate?.('calendar')} title="Kalender">
           <CalendarDays size={18} />
+        </button>
+
+        {/* Spacer pushes bottom icons down */}
+        <div style={{ flex: 1 }} />
+
+        <div style={{ width: 32, height: 1, background: '#303030', margin: '4px 0' }} />
+
+        {/* Bottom icons */}
+        {user?.isAdmin && (
+          <button className="icon-btn" onClick={() => onNavigate?.('admin')} title="Admin">
+            <ShieldCheck size={18} />
+          </button>
+        )}
+        <button className="icon-btn" onClick={() => setSettingsOpen(true)} title="Innstillinger">
+          <User size={18} />
         </button>
       </div>
     )
@@ -318,24 +359,69 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
         <div className="sidebar-section">
           <div className="sidebar-section-header">
             <span className="sidebar-section-label">{t.app.projects}</span>
-            <button className="icon-btn" style={{ width: 20, height: 20 }}>
+            <button className="icon-btn" style={{ width: 20, height: 20 }} onClick={() => setCreateProjectOpen(true)} title="Nytt prosjekt">
               <Plus size={12} />
             </button>
           </div>
-          <button className="nav-item" onClick={() => {}}>
-            <FolderPlus size={18} style={{ flexShrink: 0 }} />
-            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.app.newProject}</span>
-          </button>
-        </div>
-
-        {/* All tasks header */}
-        <div style={{ padding: '4px 8px 0', flexShrink: 0 }}>
-          <div className="sidebar-section-header">
-            <span className="sidebar-section-label">{t.app.allTasks}</span>
-            <button className="icon-btn" style={{ width: 20, height: 20 }}>
-              <SlidersHorizontal size={11} />
+          {projects.length === 0 ? (
+            <button className="nav-item" onClick={() => setCreateProjectOpen(true)}>
+              <FolderPlus size={18} style={{ flexShrink: 0 }} />
+              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.app.newProject}</span>
             </button>
-          </div>
+          ) : (
+            <>
+              {projects.map(project => (
+                <div key={project.id}>
+                  <button
+                    className="nav-item"
+                    onClick={() => setExpandedProjects(prev => {
+                      const next = new Set(prev)
+                      if (next.has(project.id)) next.delete(project.id)
+                      else next.add(project.id)
+                      return next
+                    })}
+                    style={{ paddingLeft: 8 }}
+                  >
+                    <Folder size={15} style={{ flexShrink: 0, color: '#7A7A7A' }} />
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13 }}>{project.name}</span>
+                    <ChevronRight
+                      size={12}
+                      style={{
+                        flexShrink: 0,
+                        color: '#5A5A5A',
+                        transform: expandedProjects.has(project.id) ? 'rotate(90deg)' : 'none',
+                        transition: 'transform 0.15s',
+                      }}
+                    />
+                  </button>
+                  {expandedProjects.has(project.id) && (
+                    <div style={{ paddingLeft: 24 }}>
+                      {conversations
+                        .filter(c => (c as any).projectId === project.id)
+                        .map(c => (
+                          <button
+                            key={c.id}
+                            className={`nav-item${activeConversationId === c.id ? ' active' : ''}`}
+                            onClick={() => { setActiveConversationId(c.id); onNavigate?.('chat') }}
+                            style={{ fontSize: 12, paddingLeft: 8 }}
+                          >
+                            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.title}</span>
+                          </button>
+                        ))
+                      }
+                      {conversations.filter(c => (c as any).projectId === project.id).length === 0 && (
+                        <p style={{ fontSize: 11, color: '#5A5A5A', padding: '4px 8px' }}>Ingen samtaler</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+              <button className="nav-item" onClick={() => setCreateProjectOpen(true)} style={{ opacity: 0.6 }}>
+                <Plus size={14} style={{ flexShrink: 0 }} />
+                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12 }}>Nytt prosjekt</span>
+              </button>
+            </>
+          )}
         </div>
 
         {/* Conversations list */}
@@ -402,6 +488,14 @@ export function Sidebar({ onNavigate, currentPage = 'chat', activeAgentRunId, on
 
       {/* Referral Modal */}
       {referralOpen && <ReferralModal onClose={() => setReferralOpen(false)} />}
+
+      {/* Create Project Modal */}
+      {createProjectOpen && (
+        <CreateProjectModal
+          onClose={() => setCreateProjectOpen(false)}
+          onCreate={handleCreateProject}
+        />
+      )}
 
       {/* Slett-bekreftelsesdialog */}
       {deleteTarget && (

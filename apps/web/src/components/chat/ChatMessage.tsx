@@ -68,51 +68,46 @@ export function ChatMessage({ message, onRegenerate, isLast, conversationHasSkil
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
-                // Klikkbare lenker som åpner i ny fane
+                // Klikkbare lenker
                 a({ href, children }) {
                   return (
                     <a
                       href={href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ color: '#60A5FA', textDecoration: 'underline', cursor: 'pointer' }}
+                      className="prose-link"
                     >
                       {children}
                     </a>
                   )
                 },
-                // Overskrifter
+                // Overskrifter — no inline color so CSS theme overrides work
                 h1({ children }) {
-                  return <h1 style={{ fontSize: '1.2rem', fontWeight: 700, margin: '0.75rem 0 0.4rem', color: '#F3F4F6' }}>{children}</h1>
+                  return <h1 style={{ fontSize: '1.2rem', fontWeight: 700, margin: '0.75rem 0 0.4rem' }}>{children}</h1>
                 },
                 h2({ children }) {
-                  return <h2 style={{ fontSize: '1.05rem', fontWeight: 600, margin: '0.65rem 0 0.35rem', color: '#F3F4F6' }}>{children}</h2>
+                  return <h2 style={{ fontSize: '1.05rem', fontWeight: 600, margin: '0.65rem 0 0.35rem' }}>{children}</h2>
                 },
                 h3({ children }) {
-                  return <h3 style={{ fontSize: '0.95rem', fontWeight: 600, margin: '0.55rem 0 0.3rem', color: '#E5E7EB' }}>{children}</h3>
+                  return <h3 style={{ fontSize: '0.95rem', fontWeight: 600, margin: '0.55rem 0 0.3rem' }}>{children}</h3>
                 },
                 // Paragraf
                 p({ children }) {
                   return <p style={{ margin: '0 0 0.55rem 0', lineHeight: 1.65 }}>{children}</p>
                 },
-                // Sterk tekst
+                // Sterk tekst — inherit color from .prose CSS
                 strong({ children }) {
-                  return <strong style={{ fontWeight: 600, color: '#F3F4F6' }}>{children}</strong>
+                  return <strong style={{ fontWeight: 600 }}>{children}</strong>
                 },
-                // Kode
+                em({ children }) {
+                  return <em>{children}</em>
+                },
+                // Kode — use CSS class for theme-aware styling
                 code({ className, children }) {
                   const match = /language-(\w+)/.exec(className || '')
                   if (!match) {
                     return (
-                      <code style={{
-                        background: '#1E1E1E',
-                        border: '1px solid #2E2E2E',
-                        borderRadius: 4,
-                        padding: '1px 5px',
-                        fontSize: '0.8em',
-                        fontFamily: 'monospace',
-                        color: '#E2E8F0',
-                      }}>
+                      <code className="prose-inline-code">
                         {children}
                       </code>
                     )

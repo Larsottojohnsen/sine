@@ -211,3 +211,44 @@
   .adm-quick-actions { gap: 8px; }
   .adm-quick-btn { font-size: 12px; padding: 8px 12px; }
 }
+
+/* ─── Modals ─────────────────────────────────────────────────── */
+.adm-modal-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.65); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.adm-modal {
+  background: #1E1E1E; border: 1px solid #2E2E2E; border-radius: 16px;
+  width: 100%; max-width: 480px; max-height: 90vh;
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+}
+.adm-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px 16px; border-bottom: 1px solid #2A2A2A;
+}
+.adm-modal-title { font-size: 16px; font-weight: 600; color: #E5E5E5; }
+.adm-modal-close {
+  width: 28px; height: 28px; border-radius: 8px; border: none;
+  background: transparent; color: #7A7A7A; cursor: pointer; font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.adm-modal-close:hover { background: #2A2A2A; color: #E5E5E5; }
+.adm-modal-body { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+.adm-modal-footer {
+  display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+  padding: 16px 24px; border-top: 1px solid #2A2A2A;
+}
+.adm-user-detail-avatar {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: linear-gradient(135deg, #1A93FE22, #1A93FE44);
+  border: 2px solid #1A93FE44; color: #1A93FE;
+  font-size: 24px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 8px;
+}
+.adm-msg { font-size: 12px; padding: 6px 10px; border-radius: 6px; margin: 0; }
+.adm-msg.success { background: rgba(34,197,94,0.1); color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
+.adm-msg.error { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }

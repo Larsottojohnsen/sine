@@ -139,9 +139,33 @@ export function AdminPanel() {
   })
   const [loadingStats, setLoadingStats] = useState(false)
 
+  // User detail / edit state
+  const [selectedUser, setSelectedUser] = useState<UserRow | null>(null)
+  const [editUserOpen, setEditUserOpen] = useState(false)
+  const [editUserData, setEditUserData] = useState<Partial<UserRow>>({})
+  const [savingUser, setSavingUser] = useState(false)
+  const [userMsg, setUserMsg] = useState('')
+  const [addUserOpen, setAddUserOpen] = useState(false)
+  const [newUserEmail, setNewUserEmail] = useState('')
+  const [newUserRole, setNewUserRole] = useState('user')
+  const [newUserPlan, setNewUserPlan] = useState('free')
+  const [addingUser, setAddingUser] = useState(false)
+  const [addUserMsg, setAddUserMsg] = useState('')
+
   // Settings state
   const [maintenanceMode, setMaintenanceMode] = useState(false)
   const [registrationOpen, setRegistrationOpen] = useState(true)
+
+  // Integration settings state
+  const [stripeKey, setStripeKey] = useState('')
+  const [stripeWebhook, setStripeWebhook] = useState('')
+  const [vippsClientId, setVippsClientId] = useState('')
+  const [vippsClientSecret, setVippsClientSecret] = useState('')
+  const [vippsMerchantSerial, setVippsMerchantSerial] = useState('')
+  const [gaTrackingId, setGaTrackingId] = useState('')
+  const [gscSiteUrl, setGscSiteUrl] = useState('')
+  const [savingIntegration, setSavingIntegration] = useState<string | null>(null)
+  const [integrationMsg, setIntegrationMsg] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (tab === 'users') loadUsers()
@@ -254,6 +278,65 @@ export function AdminPanel() {
     const supabase = getSupabase()
     await supabase.from('users').update({ plan }).eq('id', userId)
     loadUsers()
+  }
+
+  // ─── Add user ─────────────────────────────────────────────────
+  async function addUser() {
+    if (!newUserEmail.trim()) { setAddUserMsg('E-post er påkrevd'); return }
+    setAddingUser(true)
+    setAddUserMsg('')
+    const supabase = getSupabase()
+    try {
+      const { error } = await supabase.from('users').insert({
+        email: newUserEmail.trim(),
+        role: newUserRole,
+        plan: newUserPlan,
+        created_at: new Date().toISOString(),
+      })
+      if (error) throw error
+      setAddUserMsg('Bruker lagt til!')
+      setNewUserEmail('')
+      setNewUserRole('user')
+      setNewUserPlan('free')
+      setTimeout(() => { setAddUserOpen(false); setAddUserMsg('') }, 1500)
+      loadUsers()
+    } catch (e: unknown) {
+      setAddUserMsg('Feil: ' + (e instanceof Error ? e.message : 'Ukjent'))
+    }
+    setAddingUser(false)
+  }
+
+  // ─── Save user edits ──────────────────────────────────────────
+  async function saveUserEdit() {
+    if (!selectedUser) return
+    setSavingUser(true)
+    setUserMsg('')
+    const supabase = getSupabase()
+    try {
+      const { error } = await supabase.from('users').update(editUserData).eq('id', selectedUser.id)
+      if (error) throw error
+      setUserMsg('Lagret!')
+      loadUsers()
+      setTimeout(() => { setEditUserOpen(false); setUserMsg('') }, 1500)
+    } catch (e: unknown) {
+      setUserMsg('Feil: ' + (e instanceof Error ? e.message : 'Ukjent'))
+    }
+    setSavingUser(false)
+  }
+
+  // ─── Save integration settings ────────────────────────────────
+  async function saveIntegration(key: string, value: string, label: string) {
+    setSavingIntegration(key)
+    const supabase = getSupabase()
+    try {
+      const { error } = await supabase.from('app_settings').upsert({ key, value }, { onConflict: 'key' })
+      if (error) throw error
+      setIntegrationMsg(prev => ({ ...prev, [key]: label + ' lagret!' }))
+    } catch {
+      setIntegrationMsg(prev => ({ ...prev, [key]: 'Feil ved lagring' }))
+    }
+    setSavingIntegration(null)
+    setTimeout(() => setIntegrationMsg(prev => ({ ...prev, [key]: '' })), 3000)
   }
 
   // ─── Notification actions ─────────────────────────────────────
@@ -401,12 +484,15 @@ export function AdminPanel() {
           </div>
         )}
 
-        {/* ── USERS ──────────────────────────────────────────── */}
+        {/* ── USERS ────────────────────────────────────────────────── */}
         {tab === 'users' && (
           <div className="adm-content">
             <div className="adm-page-header">
               <h1 className="adm-page-title">Brukere</h1>
               <div className="adm-header-actions">
+                <button className="adm-btn-primary" onClick={() => { setAddUserOpen(true); setAddUserMsg('') }}>
+                  <Plus size={14} /> Legg til bruker
+                </button>
                 <button className="adm-btn-ghost" onClick={exportUsersCSV}>
                   <Download size={14} /> Eksporter CSV
                 </button>
@@ -483,6 +569,9 @@ export function AdminPanel() {
                         <td className="adm-date-cell">{u.created_at ? new Date(u.created_at).toLocaleDateString('nb-NO') : '—'}</td>
                         <td>
                           <div className="adm-row-actions">
+                            <button className="adm-action-btn" onClick={() => { setSelectedUser(u); setEditUserData({ role: u.role, plan: u.plan, email: u.email, credits: u.credits }); setEditUserOpen(true); setUserMsg('') }} title="Se / rediger bruker">
+                              <Eye size={13} />
+                            </button>
                             {u.role !== 'admin' ? (
                               <button className="adm-action-btn promote" onClick={() => promoteUser(u.id)} title="Gjør admin">
                                 <UserCheck size={13} />
@@ -750,6 +839,116 @@ export function AdminPanel() {
               </div>
             </div>
 
+            {/* ── Stripe ── */}
+            <div className="adm-settings-section">
+              <h2 className="adm-section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <CreditCard size={16} /> Stripe-betaling
+              </h2>
+              <div className="adm-form-group">
+                <label className="adm-label">Stripe Secret Key</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input className="adm-input" type="password" placeholder="sk_live_..." value={stripeKey} onChange={e => setStripeKey(e.target.value)} />
+                  <button className="adm-btn-primary" style={{ flexShrink: 0 }} onClick={() => saveIntegration('stripe_secret_key', stripeKey, 'Stripe nøkkel')} disabled={savingIntegration === 'stripe_secret_key'}>
+                    {savingIntegration === 'stripe_secret_key' ? 'Lagrer...' : 'Lagre'}
+                  </button>
+                </div>
+                {integrationMsg['stripe_secret_key'] && <p className="adm-msg success">{integrationMsg['stripe_secret_key']}</p>}
+              </div>
+              <div className="adm-form-group">
+                <label className="adm-label">Stripe Webhook Secret</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input className="adm-input" type="password" placeholder="whsec_..." value={stripeWebhook} onChange={e => setStripeWebhook(e.target.value)} />
+                  <button className="adm-btn-primary" style={{ flexShrink: 0 }} onClick={() => saveIntegration('stripe_webhook_secret', stripeWebhook, 'Stripe webhook')} disabled={savingIntegration === 'stripe_webhook_secret'}>
+                    {savingIntegration === 'stripe_webhook_secret' ? 'Lagrer...' : 'Lagre'}
+                  </button>
+                </div>
+                {integrationMsg['stripe_webhook_secret'] && <p className="adm-msg success">{integrationMsg['stripe_webhook_secret']}</p>}
+              </div>
+              <div className="adm-setting-desc" style={{ marginTop: 4 }}>
+                Finn nøklene på <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer" style={{ color: '#1A93FE' }}>dashboard.stripe.com/apikeys</a>
+              </div>
+            </div>
+
+            {/* ── Vipps ── */}
+            <div className="adm-settings-section">
+              <h2 className="adm-section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 16 }}>💳</span> Vipps MobilePay
+              </h2>
+              <div className="adm-form-group">
+                <label className="adm-label">Client ID</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input className="adm-input" placeholder="Vipps Client ID" value={vippsClientId} onChange={e => setVippsClientId(e.target.value)} />
+                  <button className="adm-btn-primary" style={{ flexShrink: 0 }} onClick={() => saveIntegration('vipps_client_id', vippsClientId, 'Vipps Client ID')} disabled={savingIntegration === 'vipps_client_id'}>
+                    {savingIntegration === 'vipps_client_id' ? 'Lagrer...' : 'Lagre'}
+                  </button>
+                </div>
+                {integrationMsg['vipps_client_id'] && <p className="adm-msg success">{integrationMsg['vipps_client_id']}</p>}
+              </div>
+              <div className="adm-form-group">
+                <label className="adm-label">Client Secret</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input className="adm-input" type="password" placeholder="Vipps Client Secret" value={vippsClientSecret} onChange={e => setVippsClientSecret(e.target.value)} />
+                  <button className="adm-btn-primary" style={{ flexShrink: 0 }} onClick={() => saveIntegration('vipps_client_secret', vippsClientSecret, 'Vipps Client Secret')} disabled={savingIntegration === 'vipps_client_secret'}>
+                    {savingIntegration === 'vipps_client_secret' ? 'Lagrer...' : 'Lagre'}
+                  </button>
+                </div>
+                {integrationMsg['vipps_client_secret'] && <p className="adm-msg success">{integrationMsg['vipps_client_secret']}</p>}
+              </div>
+              <div className="adm-form-group">
+                <label className="adm-label">Merchant Serial Number (MSN)</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input className="adm-input" placeholder="123456" value={vippsMerchantSerial} onChange={e => setVippsMerchantSerial(e.target.value)} />
+                  <button className="adm-btn-primary" style={{ flexShrink: 0 }} onClick={() => saveIntegration('vipps_merchant_serial', vippsMerchantSerial, 'Vipps MSN')} disabled={savingIntegration === 'vipps_merchant_serial'}>
+                    {savingIntegration === 'vipps_merchant_serial' ? 'Lagrer...' : 'Lagre'}
+                  </button>
+                </div>
+                {integrationMsg['vipps_merchant_serial'] && <p className="adm-msg success">{integrationMsg['vipps_merchant_serial']}</p>}
+              </div>
+              <div className="adm-setting-desc" style={{ marginTop: 4 }}>
+                Finn nøklene på <a href="https://portal.vipps.no" target="_blank" rel="noreferrer" style={{ color: '#1A93FE' }}>portal.vipps.no</a> under Utvikler → API-nøkler
+              </div>
+            </div>
+
+            {/* ── Google Analytics ── */}
+            <div className="adm-settings-section">
+              <h2 className="adm-section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <BarChart2 size={16} /> Google Analytics
+              </h2>
+              <div className="adm-form-group">
+                <label className="adm-label">Measurement ID (GA4)</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input className="adm-input" placeholder="G-XXXXXXXXXX" value={gaTrackingId} onChange={e => setGaTrackingId(e.target.value)} />
+                  <button className="adm-btn-primary" style={{ flexShrink: 0 }} onClick={() => saveIntegration('ga_measurement_id', gaTrackingId, 'GA4 ID')} disabled={savingIntegration === 'ga_measurement_id'}>
+                    {savingIntegration === 'ga_measurement_id' ? 'Lagrer...' : 'Lagre'}
+                  </button>
+                </div>
+                {integrationMsg['ga_measurement_id'] && <p className="adm-msg success">{integrationMsg['ga_measurement_id']}</p>}
+              </div>
+              <div className="adm-setting-desc" style={{ marginTop: 4 }}>
+                Finn Measurement ID i <a href="https://analytics.google.com" target="_blank" rel="noreferrer" style={{ color: '#1A93FE' }}>Google Analytics</a> → Admin → Data Streams
+              </div>
+            </div>
+
+            {/* ── Google Search Console ── */}
+            <div className="adm-settings-section">
+              <h2 className="adm-section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Search size={16} /> Google Search Console
+              </h2>
+              <div className="adm-form-group">
+                <label className="adm-label">Nettsted-URL</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input className="adm-input" placeholder="https://sine.no" value={gscSiteUrl} onChange={e => setGscSiteUrl(e.target.value)} />
+                  <button className="adm-btn-primary" style={{ flexShrink: 0 }} onClick={() => saveIntegration('gsc_site_url', gscSiteUrl, 'GSC URL')} disabled={savingIntegration === 'gsc_site_url'}>
+                    {savingIntegration === 'gsc_site_url' ? 'Lagrer...' : 'Lagre'}
+                  </button>
+                </div>
+                {integrationMsg['gsc_site_url'] && <p className="adm-msg success">{integrationMsg['gsc_site_url']}</p>}
+              </div>
+              <div className="adm-setting-desc" style={{ marginTop: 4 }}>
+                Verifiser nettstedet ditt på <a href="https://search.google.com/search-console" target="_blank" rel="noreferrer" style={{ color: '#1A93FE' }}>search.google.com/search-console</a>
+              </div>
+            </div>
+
             <div className="adm-settings-section">
               <h2 className="adm-section-title">Farlig sone</h2>
               <div className="adm-danger-zone">
@@ -770,6 +969,101 @@ export function AdminPanel() {
           </div>
         )}
       </main>
+
+      {/* ── Add User Modal ── */}
+      {addUserOpen && (
+        <div className="adm-modal-overlay" onClick={() => setAddUserOpen(false)}>
+          <div className="adm-modal" onClick={e => e.stopPropagation()}>
+            <div className="adm-modal-header">
+              <h2 className="adm-modal-title">Legg til bruker</h2>
+              <button className="adm-modal-close" onClick={() => setAddUserOpen(false)}>×</button>
+            </div>
+            <div className="adm-modal-body">
+              <div className="adm-form-group">
+                <label className="adm-label">E-post *</label>
+                <input className="adm-input" placeholder="bruker@eksempel.no" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} />
+              </div>
+              <div className="adm-form-group">
+                <label className="adm-label">Rolle</label>
+                <select className="adm-input" value={newUserRole} onChange={e => setNewUserRole(e.target.value)}>
+                  <option value="user">Bruker</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div className="adm-form-group">
+                <label className="adm-label">Plan</label>
+                <select className="adm-input" value={newUserPlan} onChange={e => setNewUserPlan(e.target.value)}>
+                  <option value="free">Free</option>
+                  <option value="pro">Pro</option>
+                  <option value="enterprise">Enterprise</option>
+                </select>
+              </div>
+              {addUserMsg && <p className={`adm-msg${addUserMsg.startsWith('Feil') ? ' error' : ' success'}`}>{addUserMsg}</p>}
+            </div>
+            <div className="adm-modal-footer">
+              <button className="adm-btn-ghost" onClick={() => setAddUserOpen(false)}>Avbryt</button>
+              <button className="adm-btn-primary" onClick={addUser} disabled={addingUser}>
+                {addingUser ? 'Legger til...' : <><Plus size={14} /> Legg til bruker</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit User Modal ── */}
+      {editUserOpen && selectedUser && (
+        <div className="adm-modal-overlay" onClick={() => setEditUserOpen(false)}>
+          <div className="adm-modal" onClick={e => e.stopPropagation()}>
+            <div className="adm-modal-header">
+              <h2 className="adm-modal-title">Brukerdetaljer</h2>
+              <button className="adm-modal-close" onClick={() => setEditUserOpen(false)}>×</button>
+            </div>
+            <div className="adm-modal-body">
+              <div className="adm-user-detail-avatar">
+                {(selectedUser.email?.[0] ?? '?').toUpperCase()}
+              </div>
+              <div className="adm-form-group">
+                <label className="adm-label">E-post</label>
+                <input className="adm-input" value={editUserData.email ?? selectedUser.email} onChange={e => setEditUserData(d => ({ ...d, email: e.target.value }))} />
+              </div>
+              <div className="adm-form-group">
+                <label className="adm-label">Rolle</label>
+                <select className="adm-input" value={editUserData.role ?? selectedUser.role ?? 'user'} onChange={e => setEditUserData(d => ({ ...d, role: e.target.value }))}>
+                  <option value="user">Bruker</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div className="adm-form-group">
+                <label className="adm-label">Plan</label>
+                <select className="adm-input" value={editUserData.plan ?? selectedUser.plan ?? 'free'} onChange={e => setEditUserData(d => ({ ...d, plan: e.target.value }))}>
+                  <option value="free">Free</option>
+                  <option value="pro">Pro</option>
+                  <option value="enterprise">Enterprise</option>
+                </select>
+              </div>
+              <div className="adm-form-group">
+                <label className="adm-label">Kreditter</label>
+                <input className="adm-input" type="number" value={editUserData.credits ?? selectedUser.credits ?? 0} onChange={e => setEditUserData(d => ({ ...d, credits: Number(e.target.value) }))} />
+              </div>
+              <div className="adm-form-group">
+                <label className="adm-label">Bruker-ID</label>
+                <input className="adm-input" value={selectedUser.id} readOnly style={{ opacity: 0.5, cursor: 'default' }} />
+              </div>
+              <div className="adm-form-group">
+                <label className="adm-label">Opprettet</label>
+                <input className="adm-input" value={selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleString('nb-NO') : '—'} readOnly style={{ opacity: 0.5, cursor: 'default' }} />
+              </div>
+              {userMsg && <p className={`adm-msg${userMsg.startsWith('Feil') ? ' error' : ' success'}`}>{userMsg}</p>}
+            </div>
+            <div className="adm-modal-footer">
+              <button className="adm-btn-ghost" onClick={() => setEditUserOpen(false)}>Avbryt</button>
+              <button className="adm-btn-primary" onClick={saveUserEdit} disabled={savingUser}>
+                {savingUser ? 'Lagrer...' : <><Edit2 size={14} /> Lagre endringer</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

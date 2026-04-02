@@ -4,7 +4,7 @@ import {
   ChevronDown, Bot, BotOff,
   Plus, Paperclip, ChevronRight,
   Plug, Zap, ToggleRight, ToggleLeft, Settings,
-  Brain, Trash2, BarChart2, BookOpen, Lightbulb
+  Brain, Trash2, BarChart2, BookOpen, Lightbulb, X, FileText, Image
 } from 'lucide-react'
 
 // ─── Slash-kommandoer (inspirert av Claude Code) ────────────────────────────────────
@@ -552,13 +552,31 @@ export function ChatInput({
     }
   }, [handleSend, slashMenuOpen, filteredSlashCommands, slashSelectedIndex])
 
+  const [attachments, setAttachments] = useState<Array<{ name: string; type: string; url: string; size: number }>>([])  
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
-    const fileNames = Array.from(files).map(f => f.name).join(', ')
-    setValue(prev => prev ? `${prev} [${fileNames}]` : `[${fileNames}]`)
+    const newAttachments = Array.from(files).map(f => ({
+      name: f.name,
+      type: f.type,
+      url: URL.createObjectURL(f),
+      size: f.size,
+    }))
+    setAttachments(prev => [...prev, ...newAttachments])
     setShowPlusMenu(false)
     textareaRef.current?.focus()
+    // Reset input so same file can be re-uploaded
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const removeAttachment = (idx: number) => {
+    setAttachments(prev => {
+      const next = [...prev]
+      URL.revokeObjectURL(next[idx].url)
+      next.splice(idx, 1)
+      return next
+    })
   }
 
   const handleSkillToggle = (id: string) => {
@@ -634,6 +652,68 @@ export function ChatInput({
             )}
             <ChevronDown size={14} style={{ color: '#6B7280' }} />
           </div>
+        </div>
+      )}
+
+      {/* ── Attachment previews ── */}
+      {attachments.length > 0 && (
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 8,
+          padding: '8px 12px 0',
+        }}>
+          {attachments.map((att, idx) => (
+            <div
+              key={idx}
+              style={{
+                position: 'relative',
+                borderRadius: 8,
+                overflow: 'hidden',
+                background: '#1E1E1E',
+                border: '1px solid #2E2E2E',
+                flexShrink: 0,
+              }}
+            >
+              {att.type.startsWith('image/') ? (
+                <img
+                  src={att.url}
+                  alt={att.name}
+                  style={{ width: 72, height: 72, objectFit: 'cover', display: 'block' }}
+                />
+              ) : (
+                <div style={{
+                  width: 72, height: 72,
+                  display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center',
+                  gap: 4, padding: 6,
+                }}>
+                  <FileText size={24} style={{ color: '#4A4A4A' }} />
+                  <span style={{
+                    fontSize: 9, color: '#6A6A6A',
+                    textAlign: 'center', wordBreak: 'break-all',
+                    lineHeight: 1.2, maxWidth: 60,
+                    overflow: 'hidden', display: '-webkit-box',
+                    WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                  }}>{att.name}</span>
+                </div>
+              )}
+              <button
+                onClick={() => removeAttachment(idx)}
+                style={{
+                  position: 'absolute', top: 2, right: 2,
+                  width: 16, height: 16, borderRadius: '50%',
+                  background: 'rgba(0,0,0,0.7)', border: 'none',
+                  cursor: 'pointer', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  color: '#E5E5E5',
+                }}
+                title="Fjern vedlegg"
+              >
+                <X size={10} />
+              </button>
+            </div>
+          ))}
         </div>
       )}
 
