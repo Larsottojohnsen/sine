@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { TaskPanel, type AgentTask } from './TaskPanel'
 import { ChatMessage } from '../chat/ChatMessage'
 import { ChatInput } from '../chat/ChatInput'
-import type { Message } from '@/types'
+import type { Message, SineModel } from '@/types'
 
 // Demo-data for å vise agent-visningen
 const DEMO_TASK: AgentTask = {
@@ -63,11 +63,11 @@ Er du klar for å ta over browseren et lite øyeblikk?`,
 
 interface AgentViewProps {
   language?: 'no' | 'en'
-  model?: 'sine-1' | 'sine-pro'
-  onModelChange?: (m: 'sine-1' | 'sine-pro') => void
+  model?: SineModel
+  onModelChange?: (m: SineModel) => void
 }
 
-export function AgentView({ language = 'no', model = 'sine-1', onModelChange }: AgentViewProps) {
+export function AgentView({ language = 'no', model = 'sine-lite', onModelChange }: AgentViewProps) {
   const [messages] = useState<Message[]>(DEMO_MESSAGES)
   const [task] = useState<AgentTask>(DEMO_TASK)
   const bottomRef = useRef<HTMLDivElement>(null)

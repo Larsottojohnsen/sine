@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from 'react'
 import {
   Monitor, Mic, ArrowUp, Square,
-  ChevronDown, Globe, Cpu, Bot, BotOff,
+  ChevronDown, Globe, Bot, BotOff,
   Plus, Paperclip, ChevronRight,
   Plug, Zap, Check, ToggleRight, ToggleLeft, Settings,
   Brain, Trash2, BarChart2, BookOpen, Lightbulb,
