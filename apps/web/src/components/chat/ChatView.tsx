@@ -362,8 +362,6 @@ export function ChatView() {
     onSend: handleSend,
     onStop: stopStreaming,
     isStreaming,
-    model: settings.model,
-    onModelChange: (m: typeof settings.model) => updateSettings({ model: m }),
     language: settings.language,
     agentMode,
     onAgentModeChange: (m: AgentMode) => setAgentSettings(s => ({ ...s, agentMode: m })),
@@ -555,8 +553,6 @@ export function ChatView() {
           onSend={handleSend}
           onStop={stopStreaming}
           isStreaming={isStreaming}
-          model={settings.model}
-          onModelChange={(m) => updateSettings({ model: m })}
           language={settings.language}
           agentMode={agentMode}
           onAgentModeChange={(m) => setAgentSettings(s => ({ ...s, agentMode: m }))}

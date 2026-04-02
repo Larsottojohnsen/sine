@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from 'react'
 import {
   Monitor, Mic, ArrowUp, Square,
-  ChevronDown, Globe, Bot, BotOff,
+  ChevronDown, Bot, BotOff,
   Plus, Paperclip, ChevronRight,
-  Plug, Zap, Check, ToggleRight, ToggleLeft, Settings,
-  Brain, Trash2, BarChart2, BookOpen, Lightbulb,
-  Lock, Sparkles, Zap as ZapIcon
+  Plug, Zap, ToggleRight, ToggleLeft, Settings,
+  Brain, Trash2, BarChart2, BookOpen, Lightbulb
 } from 'lucide-react'
 
 // ─── Slash-kommandoer (inspirert av Claude Code) ────────────────────────────────────
@@ -109,7 +108,7 @@ function SlashCommandMenu({
     </div>
   )
 }
-import type { SineModel, Skill } from '@/types'
+import type { Skill } from '@/types'
 import { getTranslations } from '@/i18n'
 import type { AgentMode, AgentState } from '@/hooks/useAgent'
 import { AgentSettingsPopover, type AgentSettings } from './AgentSettingsPopover'
@@ -120,8 +119,6 @@ interface ChatInputProps {
   onSend: (message: string, mode?: AgentMode) => void
   onStop?: () => void
   isStreaming?: boolean
-  model: SineModel
-  onModelChange: (model: SineModel) => void
   language: 'no' | 'en'
   disabled?: boolean
   agentMode?: AgentMode
@@ -331,8 +328,6 @@ export function ChatInput({
   onSend,
   onStop,
   isStreaming,
-  model,
-  onModelChange,
   language,
   disabled,
   agentMode = 'safe',
@@ -888,126 +883,3 @@ export function ChatInput({
   )
 }
 
-function ModelSelector({ model, onModelChange, isPro = false }: {
-  model: SineModel
-  onModelChange: (m: SineModel) => void
-  isPro?: boolean
-}) {
-  const [open, setOpen] = useState(false)
-
-  type TierInfo = { name: string; desc: string; credits: string; icon: React.ReactNode; proOnly: boolean }
-  const tiers: { id: SineModel; info: TierInfo }[] = [
-    {
-      id: 'sine-lite',
-      info: {
-        name: 'Sine Lite',
-        desc: 'Rask og effektiv',
-        credits: '1 kreditt / melding',
-        icon: <ZapIcon size={12} />,
-        proOnly: false,
-      },
-    },
-    {
-      id: 'sine-pro',
-      info: {
-        name: 'Sine Pro',
-        desc: 'Haiku + Sonnet routing',
-        credits: '2 kreditter / melding',
-        icon: <Globe size={12} />,
-        proOnly: true,
-      },
-    },
-    {
-      id: 'sine-max',
-      info: {
-        name: 'Sine Max',
-        desc: 'Haiku + Sonnet + Opus',
-        credits: '6 kreditter / melding',
-        icon: <Sparkles size={12} />,
-        proOnly: true,
-      },
-    },
-  ]
-
-  // Normalize legacy model
-  const normalizedModel: SineModel = model === 'sine-1' ? 'sine-lite' : model
-  const currentTier = tiers.find(t => t.id === normalizedModel) ?? tiers[0]
-
-  return (
-    <div style={{ position: 'relative' }}>
-      <button className="model-select-btn" onClick={() => setOpen(!open)}>
-        <span style={{ color: currentTier.info.proOnly && !isPro ? '#5A5A5A' : undefined }}>
-          {currentTier.info.name}
-        </span>
-        <ChevronDown size={10} />
-      </button>
-      {open && (
-        <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setOpen(false)} />
-          <div style={{
-            position: 'absolute',
-            bottom: '100%',
-            right: 0,
-            marginBottom: 6,
-            background: '#1E1E1E',
-            border: '1px solid #2A2A2A',
-            borderRadius: 10,
-            padding: 4,
-            zIndex: 50,
-            minWidth: 220,
-          }}>
-            <div style={{ padding: '6px 12px 4px', fontSize: 10, color: '#4A4A4A', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-              Velg modus
-            </div>
-            {tiers.map(({ id, info }) => {
-              const locked = info.proOnly && !isPro
-              const isActive = normalizedModel === id
-              return (
-                <button
-                  key={id}
-                  onClick={() => {
-                    if (!locked) { onModelChange(id); setOpen(false) }
-                  }}
-                  title={locked ? 'Krever Sine Pro-abonnement' : undefined}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    width: '100%', padding: '8px 12px', borderRadius: 7,
-                    background: isActive ? '#252525' : 'transparent',
-                    border: 'none',
-                    cursor: locked ? 'not-allowed' : 'pointer',
-                    color: locked ? '#3A3A3A' : '#E5E5E5',
-                    fontFamily: 'inherit', textAlign: 'left',
-                    opacity: locked ? 0.6 : 1,
-                  }}
-                >
-                  <span style={{ color: locked ? '#3A3A3A' : '#5A5A5A' }}>{info.icon}</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {info.name}
-                      {locked && <Lock size={10} style={{ color: '#4A4A4A' }} />}
-                    </div>
-                    <div style={{ fontSize: 11, color: locked ? '#3A3A3A' : '#5A5A5A' }}>{info.desc}</div>
-                    <div style={{ fontSize: 10, color: locked ? '#2A2A2A' : '#3A3A3A', marginTop: 1 }}>{info.credits}</div>
-                  </div>
-                  {isActive && !locked && <Check size={12} style={{ marginLeft: 'auto', color: '#1A93FE', flexShrink: 0 }} />}
-                </button>
-              )
-            })}
-            {!isPro && (
-              <div style={{
-                margin: '4px 8px 4px',
-                padding: '8px 10px',
-                background: 'rgba(26, 147, 254, 0.08)',
-                borderRadius: 7,
-                border: '1px solid rgba(26, 147, 254, 0.15)',
-              }}>
-                <div style={{ fontSize: 11, color: '#1A93FE', fontWeight: 500 }}>Oppgrader til Sine Pro</div>
-                <div style={{ fontSize: 10, color: '#5A5A5A', marginTop: 2 }}>Få tilgang til Pro og Max</div>
-              </div>
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
