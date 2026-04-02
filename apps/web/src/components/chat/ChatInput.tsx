@@ -857,8 +857,6 @@ export function ChatInput({
           </div>
 
           <div className="chat-toolbar-right">
-            <ModelSelector model={model} onModelChange={onModelChange} isPro={false} />
-
             <button className="mic-btn" title={t.chat.voiceInput}>
               <Mic size={18} />
             </button>

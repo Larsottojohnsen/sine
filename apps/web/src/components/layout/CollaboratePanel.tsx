@@ -41,10 +41,10 @@ export function CollaboratePanel({ open, onClose, anchorRef }: CollaboratePanelP
         top: 48,
         right: 16,
         width: 320,
-        background: '#1C1C1C',
-        border: '1px solid #2A2A2A',
-        borderRadius: 12,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        background: '#38383a',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 16,
+        boxShadow: '0 12px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3)',
         zIndex: 1000,
         padding: '16px',
         animation: 'fadeInDown 0.15s ease',
@@ -72,8 +72,8 @@ export function CollaboratePanel({ open, onClose, anchorRef }: CollaboratePanelP
           style={{
             flex: 1,
             padding: '8px 12px',
-            background: '#252525',
-            border: '1px solid #2E2E2E',
+            background: 'rgba(255,255,255,0.07)',
+            border: '1px solid rgba(255,255,255,0.1)',
             borderRadius: 8,
             color: '#E5E5E5',
             fontSize: 13,
@@ -87,8 +87,8 @@ export function CollaboratePanel({ open, onClose, anchorRef }: CollaboratePanelP
           onClick={handleInvite}
           style={{
             padding: '8px 14px',
-            background: '#2A2A2A',
-            border: '1px solid #3A3A3A',
+            background: 'rgba(255,255,255,0.1)',
+            border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: 8,
             color: '#E5E5E5',
             fontSize: 13,
@@ -97,8 +97,8 @@ export function CollaboratePanel({ open, onClose, anchorRef }: CollaboratePanelP
             whiteSpace: 'nowrap',
             transition: 'background 0.1s',
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = '#333')}
-          onMouseLeave={e => (e.currentTarget.style.background = '#2A2A2A')}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.15)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
         >
           Inviter
         </button>
@@ -159,7 +159,7 @@ export function CollaboratePanel({ open, onClose, anchorRef }: CollaboratePanelP
       <div style={{
         marginTop: 12,
         paddingTop: 12,
-        borderTop: '1px solid #252525',
+        borderTop: '1px solid rgba(255,255,255,0.08)',
         display: 'flex',
         alignItems: 'flex-start',
         gap: 6,

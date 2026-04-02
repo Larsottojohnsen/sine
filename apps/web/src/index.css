@@ -1902,14 +1902,14 @@ button { font-family: inherit; }
   position: absolute;
   bottom: calc(100% + 8px);
   left: 0;
-  background: #1E1E1E;
-  border: 1px solid #2E2E2E;
-  border-radius: 12px;
+  background: #38383a;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
   overflow: hidden;
   z-index: 60;
   min-width: 190px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-  padding: 4px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+  padding: 6px;
 }
 .plus-menu-item {
   display: flex;
@@ -1927,7 +1927,7 @@ button { font-family: inherit; }
   text-align: left;
   transition: background 0.1s, color 0.1s;
 }
-.plus-menu-item:hover { background: #2A2A2A; color: #E5E5E5; }
+.plus-menu-item:hover { background: rgba(255,255,255,0.07); color: #E5E5E5; }
 .plus-menu-icon { color: #7A7A7A; flex-shrink: 0; }
 .plus-menu-item:hover .plus-menu-icon { color: #C0C0C0; }/* ─── Live task-boks (over input ved agent-aktivitet) ───────────────── */
 .live-task-bar {
@@ -3813,12 +3813,12 @@ button { font-family: inherit; }
   bottom: calc(100% + 8px);
   left: 0;
   min-width: 240px;
-  background: #1E1E1E;
-  border: 1px solid #2A2A2A;
-  border-radius: 12px;
+  background: #38383a;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
   padding: 6px;
   z-index: 60;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
 }
 .chat-skills-header {
   display: flex;
@@ -3871,7 +3871,7 @@ button { font-family: inherit; }
   text-align: left;
   transition: background 0.1s;
 }
-.chat-skill-item:hover { background: #252525; }
+.chat-skill-item:hover { background: rgba(255,255,255,0.07); }
 .chat-skill-item.active { color: #E5E5E5; }
 .chat-skill-icon { display: flex; align-items: center; justify-content: center; width: 20px; flex-shrink: 0; }
 .chat-skill-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -3882,12 +3882,12 @@ button { font-family: inherit; }
   bottom: calc(100% + 8px);
   left: 0;
   min-width: 240px;
-  background: #1E1E1E;
-  border: 1px solid #2A2A2A;
-  border-radius: 12px;
+  background: #38383a;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
   padding: 6px;
   z-index: 60;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
 }
 .chat-connector-section-label {
   font-size: 10px;
@@ -3920,7 +3920,7 @@ button { font-family: inherit; }
   font-family: inherit;
   text-align: center;
 }
-.chat-connector-manage-btn:hover { background: #252525; }
+.chat-connector-manage-btn:hover { background: rgba(255,255,255,0.07); }
 
 /* Plus menu badge */
 .plus-menu-badge {
@@ -5382,12 +5382,12 @@ button { font-family: inherit; }
   bottom: calc(100% + 8px);
   left: 0;
   width: 280px;
-  background: #1E1E1E;
-  border: 1px solid #2A2A2A;
-  border-radius: 12px;
+  background: #38383a;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
   padding: 6px 0;
   z-index: 100;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .connectors-mini-row {
@@ -5398,7 +5398,7 @@ button { font-family: inherit; }
   transition: background 0.1s;
 }
 .connectors-mini-row:hover {
-  background: #252525;
+  background: rgba(255,255,255,0.07);
 }
 
 .connectors-mini-icon {
@@ -5495,7 +5495,7 @@ button { font-family: inherit; }
 
 .connectors-mini-divider {
   height: 1px;
-  background: #2A2A2A;
+  background: rgba(255,255,255,0.08);
   margin: 4px 0;
 }
 
@@ -5513,7 +5513,7 @@ button { font-family: inherit; }
   text-align: left;
   transition: background 0.1s;
 }
-.connectors-mini-add:hover { background: #252525; }
+.connectors-mini-add:hover { background: rgba(255,255,255,0.07); }
 
 .connectors-mini-add-icons {
   display: flex;
@@ -5973,9 +5973,9 @@ test
 .uad-panel {
   position: absolute; top: calc(100% + 10px); right: 0;
   width: 272px;
-  background: #1C1C1E;
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 14px;
+  background: #38383a;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 18px;
   box-shadow: 0 12px 48px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.3);
   z-index: 2000;
   overflow: hidden;
@@ -6014,7 +6014,7 @@ test
 /* ── Plan card ──────────────────────────────────────────────── */
 .uad-plan-card {
   margin: 0 10px 4px;
-  background: #2C2C2E;
+  background: rgba(255,255,255,0.07);
   border: 1px solid rgba(255,255,255,0.07);
   border-radius: 10px;
   overflow: hidden;
