@@ -5,7 +5,7 @@
   "description": "Sine AI – Norsk AI-plattform med chat og agentmodus",
   "scripts": {
     "dev": "pnpm --filter @sine/web dev",
-    "build": "pnpm --filter @sine/web build",
+    "build": "find . -name '*.tsbuildinfo' -delete && pnpm --filter @sine/web build",
     "lint": "pnpm -r lint"
   },
   "engines": {
