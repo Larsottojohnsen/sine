@@ -314,9 +314,11 @@ export function BillingContent() {
   const [selectedPack, setSelectedPack] = useState('2000')
   const [purchasing, setPurchasing] = useState(false)
 
-  const totalMonthlyCredits = isPro ? 1000 : 1000
-  const freeCredits = 7
-  const monthlyCredits = (profile?.credits ?? 1000) - freeCredits
+  // Sine Lite (free): 50 credits/month. Sine Pro: 500 credits/month
+  const MONTHLY_LIMIT = isPro ? 500 : 50
+  const totalMonthlyCredits = MONTHLY_LIMIT
+  const availableCredits = profile?.credits ?? 0
+  const usedCredits = Math.max(0, MONTHLY_LIMIT - availableCredits)
   const renewalDate = 'apr. 10, 2026'
 
   const handleBuyCredits = async () => {
@@ -387,17 +389,17 @@ export function BillingContent() {
               <HelpCircle size={12} style={{ color: '#5A5A5A', cursor: 'help' }} />
             </div>
             <span style={{ fontSize: 15, fontWeight: 700, color: '#E5E5E5' }}>
-              {(profile?.credits ?? 1000).toLocaleString('no-NO')}
+              {availableCredits.toLocaleString('no-NO')}
             </span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-            <span style={{ fontSize: 12, color: '#5A5A5A', paddingLeft: 20 }}>Gratis kreditter</span>
-            <span style={{ fontSize: 12, color: '#5A5A5A' }}>{freeCredits}</span>
+            <span style={{ fontSize: 12, color: '#5A5A5A', paddingLeft: 20 }}>Brukt denne måneden</span>
+            <span style={{ fontSize: 12, color: '#5A5A5A' }}>{usedCredits.toLocaleString('no-NO')}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 12, color: '#5A5A5A', paddingLeft: 20 }}>Månedlige kreditter</span>
             <span style={{ fontSize: 12, color: '#5A5A5A' }}>
-              {monthlyCredits.toLocaleString('no-NO')} / {totalMonthlyCredits.toLocaleString('no-NO')}
+              {availableCredits.toLocaleString('no-NO')} / {totalMonthlyCredits.toLocaleString('no-NO')}
             </span>
           </div>
         </div>

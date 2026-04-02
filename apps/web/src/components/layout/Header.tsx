@@ -26,13 +26,15 @@ export function Header({ onMobileBack }: HeaderProps) {
   const moreRef = useRef<HTMLButtonElement>(null)
 
   const modelLabels: Record<string, string> = {
-    'sine-1':   'Sine 1.0',
-    'sine-pro': 'Sine Pro',
+    'sine-1':    'Sine Lite',
+    'sine-lite': 'Sine Lite',
+    'sine-pro':  'Sine Pro',
+    'sine-max':  'Sine Max',
   }
 
   const currentModel = activeConversation
-    ? (modelLabels[activeConversation.model] ?? 'Sine 1.0')
-    : 'Sine 1.0'
+    ? (modelLabels[activeConversation.model] ?? 'Sine Lite')
+    : 'Sine Lite'
 
   const handleShare = () => {
     if (!activeConversation) return
@@ -69,18 +71,6 @@ export function Header({ onMobileBack }: HeaderProps) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <button className="header-icon-btn" title="Varsler">
             <Bell size={18} />
-          </button>
-
-          <button
-            className="header-credits-btn"
-            onClick={() => openSettingsTab('billing')}
-            title="Kreditter"
-          >
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-              <circle cx="8" cy="8" r="6.5" stroke="#1A93FE" strokeWidth="1.5"/>
-              <path d="M8 5v3l2 1.5" stroke="#1A93FE" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-            <span style={{ fontWeight: 500 }}>1 000</span>
           </button>
 
           {activeConversation && (

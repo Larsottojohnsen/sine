@@ -485,9 +485,12 @@ function AccountContent() {
 function UsageContent() {
   const { user } = useAuth()
   const { profile, transactions } = useCredits(user?.id ?? null)
-  const totalCredits = profile?.plan === 'pro' ? profile.credits : 1000
-  const usedCredits = profile ? (profile.plan === 'free' ? 1000 - profile.credits : 0) : 0
-  const usedPct = totalCredits > 0 ? Math.min(100, (usedCredits / totalCredits) * 100) : 0
+  const isPro = profile?.plan === 'pro'
+  // Sine Lite (free): 50 credits/month. Sine Pro: 500 credits/month
+  const MONTHLY_LIMIT = isPro ? 500 : 50
+  const availableCredits = profile?.credits ?? 0
+  const usedCredits = Math.max(0, MONTHLY_LIMIT - availableCredits)
+  const usedPct = MONTHLY_LIMIT > 0 ? Math.min(100, (usedCredits / MONTHLY_LIMIT) * 100) : 0
 
   return (
     <div>
@@ -502,22 +505,22 @@ function UsageContent() {
           <div>
             <div style={{ fontSize: 13, color: '#9A9A9A', marginBottom: 4 }}>Tilgjengelige kreditter</div>
             <div style={{ fontSize: 28, fontWeight: 700, color: '#E5E5E5' }}>
-              {(profile?.credits ?? 0).toLocaleString('no-NO')}
+              {availableCredits.toLocaleString('no-NO')}
             </div>
           </div>
           <div style={{
             padding: '4px 10px', borderRadius: 20,
-            background: profile?.plan === 'pro' ? 'rgba(26,147,254,0.15)' : '#1A1A1A',
-            border: `1px solid ${profile?.plan === 'pro' ? '#1A93FE' : '#2E2E2E'}`,
-            fontSize: 11, color: profile?.plan === 'pro' ? '#1A93FE' : '#9A9A9A',
+            background: isPro ? 'rgba(26,147,254,0.15)' : '#1A1A1A',
+            border: `1px solid ${isPro ? '#1A93FE' : '#2E2E2E'}`,
+            fontSize: 11, color: isPro ? '#1A93FE' : '#9A9A9A',
             fontWeight: 600,
           }}>
-            {profile?.plan === 'pro' ? 'Pro' : 'Gratis'}
+            {isPro ? 'Pro' : 'Gratis'}
           </div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
           <span style={{ fontSize: 12, color: '#5A5A5A' }}>Brukt denne måneden</span>
-          <span style={{ fontSize: 12, color: '#9A9A9A' }}>{usedCredits.toLocaleString('no-NO')} / {totalCredits.toLocaleString('no-NO')}</span>
+          <span style={{ fontSize: 12, color: '#9A9A9A' }}>{usedCredits.toLocaleString('no-NO')} / {MONTHLY_LIMIT.toLocaleString('no-NO')}</span>
         </div>
         <div style={{ height: 6, borderRadius: 3, background: '#2E2E2E', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: `${usedPct}%`, background: usedPct > 80 ? '#ef4444' : '#1A93FE', borderRadius: 3, transition: 'width 0.5s' }} />
