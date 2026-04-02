@@ -214,6 +214,8 @@ export function ChatView() {
   const [openFile, setOpenFile] = useState<AgentFile | null>(null)
   const [openFileAllFiles, setOpenFileAllFiles] = useState<AgentFile[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
+  const messagesAreaRef = useRef<HTMLDivElement>(null)
+  const [showScrollBtn, setShowScrollBtn] = useState(false)
   const { pendingAgentTask, setPendingAgentTask } = useNav()
 
   // Blob fade state (brukes for å fade ut ved melding)
@@ -241,6 +243,18 @@ export function ChatView() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [activeConversation?.messages, agentState.liveTasks.length])
+
+  // Scroll-to-bottom button: show when user scrolls up
+  useEffect(() => {
+    const el = messagesAreaRef.current
+    if (!el) return
+    const handleScroll = () => {
+      const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+      setShowScrollBtn(distFromBottom > 200)
+    }
+    el.addEventListener('scroll', handleScroll, { passive: true })
+    return () => el.removeEventListener('scroll', handleScroll)
+  }, [])
 
   // Når bruker klikker agent i sidebar, aktiver agent-modus
   useEffect(() => {
@@ -446,7 +460,7 @@ export function ChatView() {
             />
           </div>
         )}
-        <div className="chat-messages-area">
+        <div className="chat-messages-area" ref={messagesAreaRef}>
           <div className="chat-messages-inner">
             {activeConversation.messages.map((msg, i) => {
               const isLast = i === activeConversation.messages.length - 1
@@ -502,6 +516,19 @@ export function ChatView() {
             <div ref={bottomRef} style={{ height: 16 }} />
           </div>
         </div>
+
+        {/* Scroll-to-bottom button */}
+        {showScrollBtn && (
+          <button
+            className="scroll-to-bottom-btn"
+            onClick={() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' })}
+            title="Scroll til bunnen"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 5v14M5 12l7 7 7-7" />
+            </svg>
+          </button>
+        )}
 
         {/* Godkjenning-banner */}
         {agentState.pendingApproval && (
