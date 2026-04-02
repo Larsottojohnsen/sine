@@ -38,7 +38,7 @@ function dbConvToLocal(row: DbConversation, messages: Message[] = []): Conversat
     messages,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
-    model: 'sine-1' as SineModel,
+    model: 'sine-lite' as SineModel,
     type: (row.mode as 'chat' | 'agent') ?? 'chat',
     agentType: (row.agent_type as 'code' | 'writing') ?? undefined,
     isFavorite: row.is_favorite ?? false,

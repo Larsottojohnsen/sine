@@ -80,7 +80,7 @@ export interface Conversation {
   creditsUsed?: number
 }
 
-export type SineModel = 'sine-1' | 'sine-pro'
+export type SineModel = 'sine-lite' | 'sine-pro' | 'sine-max' | 'sine-1'  // sine-1 is legacy alias for sine-lite
 
 export interface AppSettings {
   language: 'no' | 'en'

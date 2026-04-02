@@ -29,8 +29,10 @@ export const no = {
     copied: 'Kopiert!',
     thinking: 'Tenker...',
     model: {
-      'sine-1': 'Sine 1.0',
+      'sine-lite': 'Sine Lite',
       'sine-pro': 'Sine Pro',
+      'sine-max': 'Sine Max',
+      'sine-1': 'Sine Lite',  // legacy
     },
     welcome: {
       title: 'Hva kan jeg gjøre for deg?',

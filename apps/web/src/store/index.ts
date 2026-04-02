@@ -32,7 +32,7 @@ import {
 
 const DEFAULT_SETTINGS: AppSettings = {
   language: 'no',
-  model: 'sine-1',
+  model: 'sine-lite',
   theme: 'dark',
 }
 

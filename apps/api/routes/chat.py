@@ -81,19 +81,36 @@ router = APIRouter(prefix="/api/chat", tags=["chat"])
 
 client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY") or os.getenv("claude_key"))
 
+# ── Tier-konfigurasjon ────────────────────────────────────────────────────
+# sine-lite: Gratis-tier. Kun Haiku. 1 kreditt/melding.
+# sine-pro:  Betalt-tier. Haiku + Sonnet routing. 2 kreditter/melding.
+# sine-max:  Inkludert i Pro. Haiku + Sonnet + Opus routing. 6 kreditter/melding.
+
 MODEL_MAP = {
-    "sine-1":   "claude-haiku-4-5",
-    "sine-pro":  "claude-sonnet-4-6",
+    "sine-lite": "claude-haiku-4-5",    # Alltid Haiku
+    "sine-pro":  "claude-sonnet-4-6",   # Haiku + Sonnet routing
+    "sine-max":  "claude-opus-4-6",     # Haiku + Sonnet + Opus routing
+    # Legacy alias
+    "sine-1":    "claude-haiku-4-5",
+}
+
+# Kreditter trukket per melding per tier
+CREDIT_COST = {
+    "sine-lite": 1,
+    "sine-pro":  2,
+    "sine-max":  6,
+    "sine-1":    1,  # legacy
 }
 
 # ── Intelligent modellruting ───────────────────────────────────────────────
-# For Sine Pro-brukere: ruter enkle spørsmål til Haiku (billig) og
-# komplekse spørsmål til Sonnet (kraftig). Sine 1 bruker alltid Haiku.
+# sine-lite: alltid Haiku
+# sine-pro:  Haiku for enkle spørsmål, Sonnet for komplekse
+# sine-max:  Haiku for enkle, Sonnet for middels, Opus for avanserte
 #
 # Enkle spørsmål: korte meldinger, oversettelse, fakta, enkel formatering
 # Komplekse spørsmål: kode, analyse, planlegging, lange meldinger, flerstegs
 
-# Nøkkelord som indikerer komplekse oppgaver
+# Nøkkelord som indikerer komplekse oppgaver (Sonnet-nivå)
 _COMPLEX_KEYWORDS = {
     # Kode og teknisk
     "kod", "kode", "skriv", "lag", "bygg", "implement", "debug", "fiks",
@@ -110,40 +127,70 @@ _COMPLEX_KEYWORDS = {
     "compare", "explain", "summarize", "plan", "generate", "code",
 }
 
+# Nøkkelord som indikerer avanserte oppgaver (Opus-nivå, kun for sine-max)
+_ADVANCED_KEYWORDS = {
+    # Dype analyser og forskning
+    "forskning", "vitenskapelig", "akademisk", "avhandling", "doktorgrad",
+    "metaanalyse", "systematisk", "hypotese", "eksperiment",
+    # Kompleks kode og arkitektur
+    "arkitektur", "microservices", "distribuert", "skalering", "optimalisering",
+    "maskinlæring", "ai", "ml", "dyp læring", "neural", "llm", "modell",
+    # Strategisk og forretningsmessig
+    "forretningsplan", "investering", "finansiell", "juridisk", "kontrakt",
+    "strategi", "konkurrentanalyse", "markedsanalyse",
+    # Kreativt på høyt nivå
+    "roman", "manus", "screenplay", "bok", "kapittel",
+    # Engelsk
+    "research", "scientific", "academic", "thesis", "dissertation",
+    "architecture", "machine learning", "deep learning", "neural network",
+    "business plan", "financial", "legal", "contract", "novel", "screenplay",
+}
 
-def _route_model(base_model: str, last_user_message: str) -> str:
+
+def _route_model(tier: str, base_model: str, last_user_message: str) -> str:
     """
-    Velg modell basert på meldingskompleksitet.
-    - Sine 1: alltid Haiku (ingen endring)
-    - Sine Pro: Haiku for enkle spørsmål, Sonnet for komplekse
+    Velg modell basert på tier og meldingskompleksitet.
+
+    sine-lite: alltid Haiku
+    sine-pro:  Haiku → Sonnet basert på kompleksitet
+    sine-max:  Haiku → Sonnet → Opus basert på kompleksitet
 
     Heuristikk:
-    1. Kort melding (< 60 tegn) uten komplekse nøkkelord → Haiku
-    2. Lang melding (> 300 tegn) → Sonnet
-    3. Inneholder komplekse nøkkelord → Sonnet
-    4. Ellers → Haiku
+    1. Kort melding (< 60 tegn) uten nøkkelord → Haiku
+    2. Lang melding (> 300 tegn) → Sonnet (Pro) / Opus (Max)
+    3. Avanserte nøkkelord → Opus (kun Max)
+    4. Komplekse nøkkelord → Sonnet
+    5. Ellers → Haiku
     """
-    if base_model != "claude-sonnet-4-6":
-        # Sine 1 eller ukjent modell: ikke ruter
-        return base_model
+    # Lite og legacy sine-1: alltid Haiku
+    if tier in ("sine-lite", "sine-1") or base_model == "claude-haiku-4-5":
+        return "claude-haiku-4-5"
 
     msg = last_user_message.lower().strip()
     msg_len = len(msg)
-
-    # Alltid Sonnet for lange meldinger
-    if msg_len > 300:
-        return "claude-sonnet-4-6"
-
-    # Sjekk for komplekse nøkkelord
     words = set(msg.split())
-    # Sjekk både enkeltord og bigrams
     bigrams = {f"{msg.split()[i]} {msg.split()[i+1]}" for i in range(len(msg.split()) - 1)} if len(msg.split()) > 1 else set()
     all_tokens = words | bigrams
 
+    # ── Sine Max: kan bruke Opus for avanserte oppgaver ──
+    if tier == "sine-max":
+        # Veldig lang melding → Opus
+        if msg_len > 500:
+            return "claude-opus-4-6"
+        # Avanserte nøkkelord → Opus
+        if any(kw in all_tokens or kw in msg for kw in _ADVANCED_KEYWORDS):
+            return "claude-opus-4-6"
+        # Komplekse nøkkelord → Sonnet
+        if msg_len > 200 or any(kw in all_tokens or kw in msg for kw in _COMPLEX_KEYWORDS):
+            return "claude-sonnet-4-6"
+        # Enkel melding → Haiku (sparer kreditter)
+        return "claude-haiku-4-5"
+
+    # ── Sine Pro: Haiku eller Sonnet ──
+    if msg_len > 300:
+        return "claude-sonnet-4-6"
     if any(kw in all_tokens or kw in msg for kw in _COMPLEX_KEYWORDS):
         return "claude-sonnet-4-6"
-
-    # Kort, enkel melding → Haiku (mye billigere)
     return "claude-haiku-4-5"
 
 SYSTEM_PROMPT_NO = """Du er Sine, en intelligent AI-assistent bygget på Claude Haiku 4.5 (for enkle spørsmål) og Claude Sonnet 4.6 (for komplekse oppgaver) fra Anthropic. Du svarer alltid på norsk med mindre brukeren skriver på et annet språk.
@@ -253,19 +300,21 @@ def _build_system_blocks(
 
 
 async def _stream_chat(request: ChatRequest) -> AsyncGenerator[str, None]:
-    # Basismodell fra brukerens plan (sine-1 → haiku, sine-pro → sonnet)
-    base_model = MODEL_MAP.get(request.model, "claude-haiku-4-5")
+    # Tier og basismodell
+    tier = request.model if request.model in MODEL_MAP else "sine-lite"
+    base_model = MODEL_MAP.get(tier, "claude-haiku-4-5")
+    credit_cost = CREDIT_COST.get(tier, 1)
 
     # Bygg meldingsliste og anvend kontekstvinduforvaltning
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
     messages = await _compress_history(client, messages, request.language)
 
-    # Intelligent modellruting: velg billigere modell for enkle spørsmål
+    # Intelligent modellruting: velg riktig modell basert på tier og kompleksitet
     last_user_msg = next(
         (m["content"] for m in reversed(messages) if m["role"] == "user"),
         ""
     )
-    model = _route_model(base_model, last_user_msg)
+    model = _route_model(tier, base_model, last_user_msg)
 
     system_blocks = _build_system_blocks(
         request.language,
@@ -288,7 +337,7 @@ async def _stream_chat(request: ChatRequest) -> AsyncGenerator[str, None]:
                 data = json.dumps({"type": "token", "content": text}, ensure_ascii=False)
                 yield f"data: {data}\n\n"
 
-            # Send usage stats inkl. cache-info
+            # Send usage stats inkl. cache-info og kreditt-kostnad
             final = await stream.get_final_message()
             usage = {
                 "input_tokens": final.usage.input_tokens,
@@ -296,7 +345,7 @@ async def _stream_chat(request: ChatRequest) -> AsyncGenerator[str, None]:
                 "cache_creation_input_tokens": getattr(final.usage, "cache_creation_input_tokens", 0),
                 "cache_read_input_tokens": getattr(final.usage, "cache_read_input_tokens", 0),
             }
-            yield f"data: {json.dumps({'type': 'done', 'usage': usage})}\n\n"
+            yield f"data: {json.dumps({'type': 'done', 'usage': usage, 'credit_cost': credit_cost, 'model_used': model})}\n\n"
 
     except anthropic.APIStatusError as e:
         err = json.dumps({"type": "error", "message": str(e)})

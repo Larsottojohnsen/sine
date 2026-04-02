@@ -4,7 +4,8 @@ import {
   ChevronDown, Globe, Cpu, Bot, BotOff,
   Plus, Paperclip, ChevronRight,
   Plug, Zap, Check, ToggleRight, ToggleLeft, Settings,
-  Brain, Trash2, BarChart2, BookOpen, Lightbulb
+  Brain, Trash2, BarChart2, BookOpen, Lightbulb,
+  Lock, Sparkles, Zap as ZapIcon
 } from 'lucide-react'
 
 // ─── Slash-kommandoer (inspirert av Claude Code) ────────────────────────────────────
@@ -856,7 +857,7 @@ export function ChatInput({
           </div>
 
           <div className="chat-toolbar-right">
-            <ModelSelector model={model} onModelChange={onModelChange} />
+            <ModelSelector model={model} onModelChange={onModelChange} isPro={false} />
 
             <button className="mic-btn" title={t.chat.voiceInput}>
               <Mic size={18} />
@@ -889,16 +890,57 @@ export function ChatInput({
   )
 }
 
-function ModelSelector({ model, onModelChange }: { model: SineModel; onModelChange: (m: SineModel) => void }) {
+function ModelSelector({ model, onModelChange, isPro = false }: {
+  model: SineModel
+  onModelChange: (m: SineModel) => void
+  isPro?: boolean
+}) {
   const [open, setOpen] = useState(false)
-  const labels: Record<SineModel, { name: string; desc: string; icon: React.ReactNode }> = {
-    'sine-1':   { name: 'Sine 1.0',  desc: 'Rask og effektiv',    icon: <Cpu size={12} /> },
-    'sine-pro': { name: 'Sine Pro',  desc: 'Kraftfull og presis',  icon: <Globe size={12} /> },
-  }
+
+  type TierInfo = { name: string; desc: string; credits: string; icon: React.ReactNode; proOnly: boolean }
+  const tiers: { id: SineModel; info: TierInfo }[] = [
+    {
+      id: 'sine-lite',
+      info: {
+        name: 'Sine Lite',
+        desc: 'Rask og effektiv',
+        credits: '1 kreditt / melding',
+        icon: <ZapIcon size={12} />,
+        proOnly: false,
+      },
+    },
+    {
+      id: 'sine-pro',
+      info: {
+        name: 'Sine Pro',
+        desc: 'Haiku + Sonnet routing',
+        credits: '2 kreditter / melding',
+        icon: <Globe size={12} />,
+        proOnly: true,
+      },
+    },
+    {
+      id: 'sine-max',
+      info: {
+        name: 'Sine Max',
+        desc: 'Haiku + Sonnet + Opus',
+        credits: '6 kreditter / melding',
+        icon: <Sparkles size={12} />,
+        proOnly: true,
+      },
+    },
+  ]
+
+  // Normalize legacy model
+  const normalizedModel: SineModel = model === 'sine-1' ? 'sine-lite' : model
+  const currentTier = tiers.find(t => t.id === normalizedModel) ?? tiers[0]
+
   return (
     <div style={{ position: 'relative' }}>
       <button className="model-select-btn" onClick={() => setOpen(!open)}>
-        <span>{labels[model].name}</span>
+        <span style={{ color: currentTier.info.proOnly && !isPro ? '#5A5A5A' : undefined }}>
+          {currentTier.info.name}
+        </span>
         <ChevronDown size={10} />
       </button>
       {open && (
@@ -914,28 +956,57 @@ function ModelSelector({ model, onModelChange }: { model: SineModel; onModelChan
             borderRadius: 10,
             padding: 4,
             zIndex: 50,
-            minWidth: 180,
+            minWidth: 220,
           }}>
-            {(Object.entries(labels) as [SineModel, typeof labels[SineModel]][]).map(([id, info]) => (
-              <button
-                key={id}
-                onClick={() => { onModelChange(id); setOpen(false) }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  width: '100%', padding: '8px 12px', borderRadius: 7,
-                  background: model === id ? '#252525' : 'transparent',
-                  border: 'none', cursor: 'pointer', color: '#E5E5E5',
-                  fontFamily: 'inherit', textAlign: 'left',
-                }}
-              >
-                <span style={{ color: '#5A5A5A' }}>{info.icon}</span>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>{info.name}</div>
-                  <div style={{ fontSize: 11, color: '#5A5A5A' }}>{info.desc}</div>
-                </div>
-                {model === id && <Check size={12} style={{ marginLeft: 'auto', color: '#1A93FE' }} />}
-              </button>
-            ))}
+            <div style={{ padding: '6px 12px 4px', fontSize: 10, color: '#4A4A4A', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              Velg modus
+            </div>
+            {tiers.map(({ id, info }) => {
+              const locked = info.proOnly && !isPro
+              const isActive = normalizedModel === id
+              return (
+                <button
+                  key={id}
+                  onClick={() => {
+                    if (!locked) { onModelChange(id); setOpen(false) }
+                  }}
+                  title={locked ? 'Krever Sine Pro-abonnement' : undefined}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    width: '100%', padding: '8px 12px', borderRadius: 7,
+                    background: isActive ? '#252525' : 'transparent',
+                    border: 'none',
+                    cursor: locked ? 'not-allowed' : 'pointer',
+                    color: locked ? '#3A3A3A' : '#E5E5E5',
+                    fontFamily: 'inherit', textAlign: 'left',
+                    opacity: locked ? 0.6 : 1,
+                  }}
+                >
+                  <span style={{ color: locked ? '#3A3A3A' : '#5A5A5A' }}>{info.icon}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {info.name}
+                      {locked && <Lock size={10} style={{ color: '#4A4A4A' }} />}
+                    </div>
+                    <div style={{ fontSize: 11, color: locked ? '#3A3A3A' : '#5A5A5A' }}>{info.desc}</div>
+                    <div style={{ fontSize: 10, color: locked ? '#2A2A2A' : '#3A3A3A', marginTop: 1 }}>{info.credits}</div>
+                  </div>
+                  {isActive && !locked && <Check size={12} style={{ marginLeft: 'auto', color: '#1A93FE', flexShrink: 0 }} />}
+                </button>
+              )
+            })}
+            {!isPro && (
+              <div style={{
+                margin: '4px 8px 4px',
+                padding: '8px 10px',
+                background: 'rgba(26, 147, 254, 0.08)',
+                borderRadius: 7,
+                border: '1px solid rgba(26, 147, 254, 0.15)',
+              }}>
+                <div style={{ fontSize: 11, color: '#1A93FE', fontWeight: 500 }}>Oppgrader til Sine Pro</div>
+                <div style={{ fontSize: 10, color: '#5A5A5A', marginTop: 2 }}>Få tilgang til Pro og Max</div>
+              </div>
+            )}
           </div>
         </>
       )}
