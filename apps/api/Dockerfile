@@ -7,6 +7,9 @@ RUN apt-get update && apt-get install -y \
     git \
     curl \
     build-essential \
+    wget \
+    gnupg \
+    ca-certificates \
     # Playwright / Chromium runtime-avhengigheter
     libnss3 \
     libatk1.0-0 \
@@ -19,7 +22,6 @@ RUN apt-get update && apt-get install -y \
     libxfixes3 \
     libxrandr2 \
     libgbm1 \
-    libasound2 \
     libpango-1.0-0 \
     libpangocairo-1.0-0 \
     libcairo2 \
@@ -28,15 +30,15 @@ RUN apt-get update && apt-get install -y \
     libxcb-dri3-0 \
     fonts-liberation \
     xvfb \
+    libasound2t64 \
     && rm -rf /var/lib/apt/lists/*
 
 # Kopier requirements og installer Python-pakker
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Installer Playwright og Chromium
-RUN pip install --no-cache-dir playwright && \
-    playwright install chromium --with-deps
+# Installer Playwright og Chromium (med alle system-avhengigheter)
+RUN playwright install chromium --with-deps
 
 # Kopier kildekode
 COPY . .
