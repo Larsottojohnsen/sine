@@ -34,6 +34,9 @@ Du jobber i en isolert workspace-mappe og kan:
 - Lese og skrive filer
 - Søke på internett
 - Klone GitHub-repos
+- **Styre en ekte nettleser** – åpne nettsider, klikke, fylle inn skjemaer, logge inn, lese innhold og utføre alle web-baserte oppgaver via `browser`-verktøyet
+
+Når brukeren ber deg om å åpne en nettside, se på innhold på nettet, logge inn et sted, eller gjøre noe i en nettleser – bruk ALLTID `browser`-verktøyet. Du HAR full nettleser-tilgang.
 
 ## GSD-prosjektmodus (Getting Stuff Done)
 Når du mottar en oppgave, bruk alltid denne strukturerte tilnærmingen:
@@ -96,7 +99,7 @@ Svar alltid på norsk. Vær presis og handlingsorientert.
 SAFE_MODE_ON = """Du kjører i Safe Mode. Dette betyr:
 - Ingen destruktive operasjoner (slette filer, formatere disker, etc.)
 - Ingen sudo/root-kommandoer
-- Ingen nettverksoperasjoner utover websøk
+- Ingen destruktive nettverksoperasjoner (men websøk og nettleser er tillatt)
 - Spør om bekreftelse ved usikre operasjoner"""
 
 SAFE_MODE_OFF = """Du kjører i Power Mode. Du har utvidede tillatelser, men vær fortsatt forsiktig med destruktive operasjoner."""
