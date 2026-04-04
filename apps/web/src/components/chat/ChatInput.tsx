@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from 'react'
 import {
   Monitor, Mic, ArrowUp, Square,
-  Bot, BotOff,
+  ChevronDown, Bot, BotOff,
   Plus, Paperclip, ChevronRight,
   Plug, Zap, ToggleRight, ToggleLeft, Settings,
   Brain, Trash2, BarChart2, BookOpen, Lightbulb, X, FileText, Image
@@ -594,11 +594,66 @@ export function ChatInput({
         : 'Beskriv hva agenten skal gjøre...')
       : t.app.placeholder
 
+  const showLiveTask = isAgentActive || (agentState && ['planning', 'running'].includes(agentState.status))
+  const lastTask = agentState?.liveTasks?.slice(-1)[0]
+  const totalTasks = agentState?.liveTasks?.length ?? 0
+  const doneTasks = agentState?.liveTasks?.filter(t => t.status === 'done').length ?? 0
+  const currentTaskLabel = lastTask?.label ?? agentState?.currentTask ?? 'Planlegger...'
+
   return (
     <div
       className="chat-input-area"
       style={compact ? { padding: 0, margin: 0 } : undefined}
     >
+      {/* ── Live task-boks ── */}
+      {showLiveTask && !compact && (
+        <div className="live-task-bar" onClick={onOpenTerminal}>
+          <div className="live-task-thumb">
+            <div className="live-task-logs">
+              {agentState?.logs?.slice(-3).map((log, i) => (
+                <div key={i} style={{
+                  fontSize: 9,
+                  color: log.type === 'tool_result' && log.success ? '#4ADE80'
+                    : log.type === 'error' ? '#F87171'
+                    : '#60A5FA',
+                  fontFamily: 'monospace',
+                  lineHeight: 1.4,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {log.message.slice(0, 40)}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="live-task-content">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                width: 8, height: 8, borderRadius: '50%',
+                background: '#1A93FE', flexShrink: 0,
+                animation: 'pulse-dot 1.5s ease-in-out infinite',
+              }} />
+              <span className="live-task-label">
+                {currentTaskLabel}
+              </span>
+            </div>
+            {agentState?.logs && agentState.logs.length > 0 && (
+              <span className="live-task-sublabel">
+                {agentState.logs[agentState.logs.length - 1].message.slice(0, 60)}
+              </span>
+            )}
+          </div>
+
+          <div className="live-task-right">
+            {totalTasks > 0 && (
+              <span className="live-task-counter">{doneTasks}/{totalTasks}</span>
+            )}
+            <ChevronDown size={14} style={{ color: '#6B7280' }} />
+          </div>
+        </div>
+      )}
 
       {/* ── Attachment previews ── */}
       {attachments.length > 0 && (
@@ -881,9 +936,9 @@ export function ChatInput({
               <Mic size={18} />
             </button>
 
-            {(isStreaming || isAgentActive) ? (
-              <button onClick={onStop} className="send-btn send-btn-stop" title={t.chat.stop}>
-                <Square size={12} fill="currentColor" />
+            {isStreaming ? (
+              <button onClick={onStop} className="send-btn" title={t.chat.stop}>
+                <Square size={12} fill="#1C1C1C" style={{ color: '#1C1C1C' }} />
               </button>
             ) : (
               <button

@@ -2,20 +2,16 @@ import { useState, useEffect, useRef } from 'react';
 import type { AgentState, AgentLogEntry } from '../../hooks/useAgent';
 import {
   X, Monitor, FileText, SkipBack, SkipForward, Play, Pause,
-  CheckCircle2, ChevronUp, ChevronDown, Terminal, Edit3,
-  Globe, MousePointer, AlertTriangle, RefreshCw
+  CheckCircle2, ChevronUp, ChevronDown, Terminal, Edit3
 } from 'lucide-react';
 
 interface AgentSidePanelProps {
   state: AgentState;
   onClose: () => void;
   onFetchFile: (path: string) => Promise<string>;
-  onRequestTakeover?: () => void;
-  onResumeTakeover?: () => void;
-  onSetBrowserTab?: (tab: 'terminal' | 'browser') => void;
 }
 
-type PanelTab = 'terminal' | 'files' | 'browser';
+type PanelTab = 'terminal' | 'files';
 
 // ─── Syntax highlight helper ──────────────────────────────────
 function syntaxHighlight(code: string, ext: string): React.ReactNode[] {
@@ -28,17 +24,28 @@ function syntaxHighlight(code: string, ext: string): React.ReactNode[] {
     let color = '#D1D5DB';
     const trimmed = line.trim();
 
+    // Comments
     if (trimmed.startsWith('//') || trimmed.startsWith('#') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
       color = '#6B7280';
-    } else if (/^(import|export|const|let|var|function|class|return|if|else|for|while|async|await|type|interface|from|default|extends|implements)\b/.test(trimmed)) {
+    }
+    // Keywords
+    else if (/^(import|export|const|let|var|function|class|return|if|else|for|while|async|await|type|interface|from|default|extends|implements)\b/.test(trimmed)) {
       color = '#C084FC';
-    } else if (/^['"`]/.test(trimmed) || (trimmed.includes(': "') || trimmed.includes(': \''))) {
+    }
+    // Strings
+    else if (/^['"`]/.test(trimmed) || (trimmed.includes(': "') || trimmed.includes(': \''))) {
       color = '#86EFAC';
-    } else if (ext === 'json' && /^"[^"]+":/.test(trimmed)) {
+    }
+    // JSON keys
+    else if (ext === 'json' && /^"[^"]+":/.test(trimmed)) {
       color = '#93C5FD';
-    } else if (ext === 'css' && trimmed.includes(':')) {
+    }
+    // CSS properties
+    else if (ext === 'css' && trimmed.includes(':')) {
       color = '#67E8F9';
-    } else if (ext === 'md' && trimmed.startsWith('#')) {
+    }
+    // Markdown headings
+    else if (ext === 'md' && trimmed.startsWith('#')) {
       color = '#FCA5A5';
     }
 
@@ -50,28 +57,16 @@ function syntaxHighlight(code: string, ext: string): React.ReactNode[] {
   });
 }
 
-// ─── Determine if a log entry is a file read or write ─────────
-function getFileLineClass(entry: AgentLogEntry): string {
-  if (entry.type === 'file_change') {
-    const msg = entry.message.toLowerCase();
-    if (msg.includes('lest') || msg.includes('read') || msg.includes('åpn') || msg.includes('open')) {
-      return 'terminal-log-line file-read';
-    }
-    return 'terminal-log-line file-write';
-  }
-  return 'terminal-log-line';
-}
-
-// ─── Log line with typewriter animation ───────────────────────
-function LogLine({ entry, animationDelay = 0 }: { entry: AgentLogEntry; animationDelay?: number }) {
+// ─── Log line ─────────────────────────────────────────────────
+function LogLine({ entry }: { entry: AgentLogEntry }) {
   const getColor = () => {
     switch (entry.type) {
       case 'tool_call': return '#93C5FD';
       case 'tool_result': return entry.success ? '#86EFAC' : '#F87171';
       case 'file_change': return '#C084FC';
       case 'error': return '#F87171';
-      case 'thinking': return 'rgba(255,255,255,0.3)';
-      default: return 'rgba(255,255,255,0.75)';
+      case 'thinking': return '#6B7280';
+      default: return '#D1D5DB';
     }
   };
 
@@ -85,22 +80,16 @@ function LogLine({ entry, animationDelay = 0 }: { entry: AgentLogEntry; animatio
     }
   };
 
-  const lineClass = getFileLineClass(entry);
-
   return (
-    <div
-      className={lineClass}
-      style={{
-        display: 'flex',
-        padding: '1px 0',
-        fontSize: '12px',
-        lineHeight: '1.65',
-        fontFamily: '"SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", Menlo, Monaco, Consolas, monospace',
-        animationDelay: `${animationDelay}ms`,
-      }}
-    >
+    <div style={{
+      display: 'flex',
+      padding: '1px 0',
+      fontSize: '12px',
+      lineHeight: '1.65',
+      fontFamily: '"SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", Menlo, Monaco, Consolas, monospace',
+    }}>
       <span style={{ color: getColor(), whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
-        <span style={{ opacity: 0.5 }}>{getPrefix()}</span>
+        <span style={{ opacity: 0.55 }}>{getPrefix()}</span>
         {entry.message}
       </span>
     </div>
@@ -139,40 +128,18 @@ function getFileIcon(path: string): React.ReactNode {
   if (['sh', 'bash'].includes(ext)) {
     return <Terminal size={12} style={{ color: '#86EFAC' }} />;
   }
-  return <Edit3 size={12} style={{ color: 'rgba(255,255,255,0.4)' }} />;
+  return <Edit3 size={12} style={{ color: '#9CA3AF' }} />;
 }
 
 // ─── Main panel ───────────────────────────────────────────────
-export default function AgentSidePanel({
-  state,
-  onClose,
-  onFetchFile,
-  onRequestTakeover,
-  onResumeTakeover,
-  onSetBrowserTab,
-}: AgentSidePanelProps) {
+export default function AgentSidePanel({ state, onClose, onFetchFile }: AgentSidePanelProps) {
   const [activeTab, setActiveTab] = useState<PanelTab>('terminal');
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string>('');
   const [loadingFile, setLoadingFile] = useState(false);
   const [taskExpanded, setTaskExpanded] = useState(true);
   const [isPlaying, setIsPlaying] = useState(true);
-  const prevLogCountRef = useRef(0);
   const logsEndRef = useRef<HTMLDivElement>(null);
-
-  // Switch to browser tab automatically when a screenshot arrives
-  useEffect(() => {
-    if (state.browserScreenshot && activeTab !== 'browser') {
-      setActiveTab('browser');
-    }
-  }, [state.browserScreenshot]);
-
-  // Sync external browserTab state
-  useEffect(() => {
-    if (state.browserTab === 'browser' && activeTab !== 'browser') {
-      setActiveTab('browser');
-    }
-  }, [state.browserTab]);
 
   useEffect(() => {
     if (activeTab === 'terminal' && isPlaying) {
@@ -189,29 +156,18 @@ export default function AgentSidePanel({
     setLoadingFile(false);
   };
 
-  const handleTabChange = (tab: PanelTab) => {
-    setActiveTab(tab);
-    if (tab === 'browser' || tab === 'terminal') {
-      onSetBrowserTab?.(tab === 'browser' ? 'browser' : 'terminal');
-    }
-  };
-
   const isActive = ['planning', 'running'].includes(state.status);
   const lastTask = state.liveTasks?.slice(-1)[0];
   const totalTasks = state.liveTasks?.length ?? 0;
   const doneTasks = state.liveTasks?.filter(t => t.status === 'done').length ?? 0;
   const progressPct = totalTasks > 0 ? (doneTasks / totalTasks) * 100 : (isActive ? 60 : 100);
 
+  // Last tool call for the status bar
   const lastToolCall = [...state.logs].reverse().find(l => l.type === 'tool_call' || l.type === 'file_change');
   const lastFileChange = [...state.logs].reverse().find(l => l.type === 'file_change');
+
+  // File extension for syntax highlighting
   const selectedExt = selectedFile?.split('.').pop()?.toLowerCase() ?? '';
-
-  const prevCount = prevLogCountRef.current;
-  if (state.logs.length !== prevCount) {
-    prevLogCountRef.current = state.logs.length;
-  }
-
-  const hasBrowser = !!state.browserScreenshot;
 
   return (
     <div className="computer-panel">
@@ -219,36 +175,21 @@ export default function AgentSidePanel({
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="computer-panel-header">
         <div className="computer-panel-title">
-          <Monitor size={14} style={{ color: 'rgba(255,255,255,0.55)' }} />
+          <Monitor size={14} style={{ color: '#9A9A9A' }} />
           <span>Sine's Computer</span>
         </div>
 
         <div className="computer-panel-tabs">
           <button
             className={`computer-tab${activeTab === 'terminal' ? ' active' : ''}`}
-            onClick={() => handleTabChange('terminal')}
+            onClick={() => setActiveTab('terminal')}
           >
             <Terminal size={11} />
             Terminal
           </button>
           <button
-              className={`computer-tab${activeTab === 'browser' ? ' active' : ''}${state.needsTakeover ? ' needs-takeover' : ''}`}
-              onClick={() => handleTabChange('browser')}
-              style={state.needsTakeover ? { color: '#FBBF24' } : undefined}
-            >
-              <Globe size={11} />
-              Nettleser
-              {state.needsTakeover && (
-                <span style={{
-                  width: 6, height: 6, borderRadius: '50%',
-                  background: '#FBBF24', display: 'inline-block', marginLeft: 2,
-                  animation: 'blink 1s step-end infinite',
-                }} />
-              )}
-            </button>
-          <button
             className={`computer-tab${activeTab === 'files' ? ' active' : ''}`}
-            onClick={() => handleTabChange('files')}
+            onClick={() => setActiveTab('files')}
           >
             <FileText size={11} />
             Filer {state.files.length > 0 && `(${state.files.length})`}
@@ -261,11 +202,11 @@ export default function AgentSidePanel({
       </div>
 
       {/* ── Active file/command breadcrumb bar ─────────────── */}
-      {lastToolCall && activeTab !== 'browser' && (
+      {lastToolCall && (
         <div className="computer-panel-status-bar">
           {lastFileChange ? (
             <>
-              <Edit3 size={11} style={{ color: 'rgba(255,255,255,0.4)', flexShrink: 0 }} />
+              <Edit3 size={11} style={{ color: '#9CA3AF', flexShrink: 0 }} />
               <span className="computer-panel-status-text">
                 {isActive ? 'Redigerer' : 'Redigerte'}
               </span>
@@ -277,7 +218,7 @@ export default function AgentSidePanel({
             </>
           ) : (
             <>
-              <Terminal size={11} style={{ color: 'rgba(255,255,255,0.4)', flexShrink: 0 }} />
+              <Terminal size={11} style={{ color: '#9CA3AF', flexShrink: 0 }} />
               <span className="computer-panel-status-text">
                 {isActive ? 'Kjører' : 'Kjørte'}
               </span>
@@ -291,23 +232,6 @@ export default function AgentSidePanel({
         </div>
       )}
 
-      {/* ── Browser URL bar ─────────────────────────────────── */}
-      {activeTab === 'browser' && state.browserUrl && (
-        <div className="computer-panel-status-bar">
-          <Globe size={11} style={{ color: 'rgba(255,255,255,0.4)', flexShrink: 0 }} />
-          <span className="computer-panel-status-cmd" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {state.browserUrl}
-          </span>
-          {isActive && (
-            <span style={{
-              width: 6, height: 6, borderRadius: '50%',
-              background: '#60A5FA', display: 'inline-block', flexShrink: 0,
-              animation: 'blink 1s step-end infinite',
-            }} />
-          )}
-        </div>
-      )}
-
       {/* ── Body ───────────────────────────────────────────── */}
       <div className="computer-panel-body">
 
@@ -315,7 +239,7 @@ export default function AgentSidePanel({
         {activeTab === 'terminal' && (
           <div className="computer-terminal">
             <div className="computer-terminal-title">
-              <Terminal size={11} />
+              <Terminal size={11} style={{ color: '#6B7280' }} />
               <span>{state.currentTask ? state.currentTask.slice(0, 35) : 'bash'}</span>
             </div>
 
@@ -329,22 +253,18 @@ export default function AgentSidePanel({
                 gap: 0,
               }}>
                 <span style={{ color: '#86EFAC' }}>ubuntu@sandbox</span>
-                <span style={{ color: 'rgba(255,255,255,0.3)' }}>:</span>
+                <span style={{ color: '#6B7280' }}>:</span>
                 <span style={{ color: '#93C5FD' }}>~/sine</span>
-                <span style={{ color: 'rgba(255,255,255,0.7)' }}> $</span>
+                <span style={{ color: '#D1D5DB' }}> $</span>
               </div>
 
               {state.logs.length === 0 ? (
-                <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12, fontFamily: 'monospace', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <div style={{ width: 8, height: 14, background: 'rgba(255,255,255,0.2)', animation: 'blink 1s step-end infinite' }} />
+                <div style={{ color: '#374151', fontSize: 12, fontFamily: 'monospace', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ width: 8, height: 14, background: '#374151', animation: 'blink 1s step-end infinite' }} />
                   <span>Venter på agent-aktivitet...</span>
                 </div>
               ) : (
-                state.logs.map((entry, idx) => {
-                  const isNew = idx >= prevCount;
-                  const delay = isNew ? Math.min((idx - prevCount) * 30, 200) : 0;
-                  return <LogLine key={entry.id} entry={entry} animationDelay={delay} />;
-                })
+                state.logs.map(entry => <LogLine key={entry.id} entry={entry} />)
               )}
 
               {/* Blinking cursor */}
@@ -353,159 +273,14 @@ export default function AgentSidePanel({
                   display: 'inline-block',
                   width: 7,
                   height: 14,
-                  background: 'rgba(255,255,255,0.7)',
+                  background: '#D1D5DB',
+                  marginTop: 3,
                   animation: 'blink 1s step-end infinite',
                   verticalAlign: 'middle',
                 }} />
               )}
               <div ref={logsEndRef} />
             </div>
-          </div>
-        )}
-
-        {/* Browser tab */}
-        {activeTab === 'browser' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
-
-            {/* Takeover banner */}
-            {state.needsTakeover && (
-              <div style={{
-                background: 'rgba(251,191,36,0.12)',
-                border: '1px solid rgba(251,191,36,0.3)',
-                borderRadius: 8,
-                margin: '8px 10px',
-                padding: '10px 14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                flexShrink: 0,
-              }}>
-                <AlertTriangle size={16} style={{ color: '#FBBF24', flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, color: '#FBBF24', fontWeight: 600 }}>Agenten trenger hjelp</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
-                    Klikk "Ta over" for å logge inn eller hjelpe til i nettleseren
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                  <button
-                    onClick={onRequestTakeover}
-                    style={{
-                      background: '#FBBF24',
-                      color: '#1a1a1a',
-                      border: 'none',
-                      borderRadius: 6,
-                      padding: '5px 12px',
-                      fontSize: 12,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 5,
-                    }}
-                  >
-                    <MousePointer size={11} />
-                    Ta over
-                  </button>
-                  <button
-                    onClick={onResumeTakeover}
-                    style={{
-                      background: 'rgba(255,255,255,0.08)',
-                      color: 'rgba(255,255,255,0.6)',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      borderRadius: 6,
-                      padding: '5px 10px',
-                      fontSize: 12,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 5,
-                    }}
-                  >
-                    <RefreshCw size={11} />
-                    Fortsett
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Screenshot viewer */}
-            {state.browserScreenshot ? (
-              <div style={{
-                flex: 1,
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-                position: 'relative',
-              }}>
-                <img
-                  src={`data:image/jpeg;base64,${state.browserScreenshot}`}
-                  alt="Nettleser-skjermbilde"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                    objectPosition: 'top center',
-                    display: 'block',
-                  }}
-                />
-
-                {/* Action overlay */}
-                {state.browserAction && (
-                  <div style={{
-                    position: 'absolute',
-                    bottom: 8,
-                    left: 8,
-                    right: 8,
-                    background: 'rgba(0,0,0,0.75)',
-                    backdropFilter: 'blur(6px)',
-                    borderRadius: 6,
-                    padding: '6px 10px',
-                    fontSize: 11,
-                    color: '#93C5FD',
-                    fontFamily: '"SF Mono", Menlo, monospace',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    border: '1px solid rgba(255,255,255,0.08)',
-                  }}>
-                    <MousePointer size={10} style={{ flexShrink: 0 }} />
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {state.browserAction}
-                    </span>
-                    {isActive && (
-                      <div style={{
-                        width: 6, height: 6, borderRadius: '50%',
-                        background: '#60A5FA', flexShrink: 0,
-                        animation: 'blink 1s step-end infinite',
-                      }} />
-                    )}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 12,
-                color: 'rgba(255,255,255,0.2)',
-              }}>
-                <Globe size={32} style={{ opacity: 0.3 }} />
-                <div style={{ fontSize: 12, fontFamily: 'monospace', textAlign: 'center' }}>
-                  {isActive ? 'Venter på nettleser-aktivitet...' : 'Ingen nettleser-aktivitet ennå'}
-                </div>
-                {isActive && (
-                  <div style={{
-                    width: 8, height: 14,
-                    background: 'rgba(255,255,255,0.2)',
-                    animation: 'blink 1s step-end infinite',
-                  }} />
-                )}
-              </div>
-            )}
           </div>
         )}
 
@@ -517,12 +292,12 @@ export default function AgentSidePanel({
             <div style={{
               width: selectedFile ? '160px' : '100%',
               minWidth: '160px',
-              borderRight: selectedFile ? '1px solid rgba(255,255,255,0.07)' : 'none',
+              borderRight: selectedFile ? '1px solid #1E1E1E' : 'none',
               overflowY: 'auto',
               padding: '6px 4px',
             }}>
               {state.files.length === 0 ? (
-                <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12, padding: '8px 12px', fontFamily: 'monospace' }}>
+                <div style={{ color: '#374151', fontSize: 12, padding: '8px 12px', fontFamily: 'monospace' }}>
                   Ingen filer ennå...
                 </div>
               ) : (
@@ -541,18 +316,18 @@ export default function AgentSidePanel({
                         padding: '5px 8px',
                         borderRadius: 5,
                         cursor: 'pointer',
-                        background: isSelected ? 'rgba(255,255,255,0.1)' : 'transparent',
+                        background: isSelected ? '#1E1E1E' : 'transparent',
                         marginBottom: 1,
                         transition: 'background 0.1s',
                       }}
-                      onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+                      onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#161616' }}
                       onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
                     >
                       {getFileIcon(file.path)}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{
                           fontSize: 12,
-                          color: isSelected ? '#F3F4F6' : 'rgba(255,255,255,0.7)',
+                          color: isSelected ? '#F3F4F6' : '#D1D5DB',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -561,7 +336,7 @@ export default function AgentSidePanel({
                           {fname}
                         </div>
                         {fdir && (
-                          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontSize: 10, color: '#4B5563', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {fdir}
                           </div>
                         )}
@@ -570,7 +345,7 @@ export default function AgentSidePanel({
                         fontSize: 9,
                         padding: '1px 4px',
                         borderRadius: 3,
-                        background: file.action === 'created' ? 'rgba(74,222,128,0.15)' : 'rgba(167,139,250,0.15)',
+                        background: file.action === 'created' ? 'rgba(74,222,128,0.12)' : 'rgba(167,139,250,0.12)',
                         color: file.action === 'created' ? '#4ADE80' : '#A78BFA',
                         flexShrink: 0,
                         fontWeight: 600,
@@ -586,19 +361,20 @@ export default function AgentSidePanel({
 
             {/* File content viewer */}
             {selectedFile && (
-              <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'rgba(0,0,0,0.3)' }}>
+              <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: '#0D0D0D' }}>
+                {/* File title bar */}
                 <div style={{
                   padding: '7px 12px',
-                  borderBottom: '1px solid rgba(255,255,255,0.07)',
+                  borderBottom: '1px solid #1E1E1E',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  background: 'rgba(0,0,0,0.15)',
+                  background: '#111',
                 }}>
                   {getFileIcon(selectedFile)}
                   <span style={{
                     fontSize: 12,
-                    color: 'rgba(255,255,255,0.7)',
+                    color: '#D1D5DB',
                     fontFamily: '"SF Mono", Menlo, monospace',
                     flex: 1,
                     overflow: 'hidden',
@@ -610,7 +386,7 @@ export default function AgentSidePanel({
                   <button
                     onClick={() => setSelectedFile(null)}
                     style={{
-                      background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)',
+                      background: 'transparent', border: 'none', color: '#4B5563',
                       cursor: 'pointer', fontSize: 14, padding: '0 2px',
                       lineHeight: 1, display: 'flex', alignItems: 'center',
                     }}
@@ -619,10 +395,11 @@ export default function AgentSidePanel({
                   </button>
                 </div>
 
+                {/* Code content */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
                   {loadingFile ? (
-                    <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12, fontFamily: 'monospace', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <div style={{ width: 8, height: 14, background: 'rgba(255,255,255,0.2)', animation: 'blink 1s step-end infinite' }} />
+                    <div style={{ color: '#4B5563', fontSize: 12, fontFamily: 'monospace', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ width: 8, height: 14, background: '#4B5563', animation: 'blink 1s step-end infinite' }} />
                       <span>Laster fil...</span>
                     </div>
                   ) : (
@@ -643,7 +420,11 @@ export default function AgentSidePanel({
 
       {/* ── Playback bar ───────────────────────────────────── */}
       <div className="computer-playback-bar">
-        <button className="computer-playback-btn" title="Tilbake" onClick={() => {}}>
+        <button
+          className="computer-playback-btn"
+          title="Tilbake"
+          onClick={() => {}}
+        >
           <SkipBack size={12} />
         </button>
         <button
@@ -653,20 +434,30 @@ export default function AgentSidePanel({
         >
           {isPlaying ? <Pause size={12} /> : <Play size={12} />}
         </button>
-        <button className="computer-playback-btn" title="Frem" onClick={() => {}}>
+        <button
+          className="computer-playback-btn"
+          title="Frem"
+          onClick={() => {}}
+        >
           <SkipForward size={12} />
         </button>
 
         {/* Progress track */}
         <div className="computer-playback-track">
-          <div className="computer-playback-fill" style={{ width: `${progressPct}%` }} />
-          <div className="computer-playback-dot" style={{ left: `calc(${progressPct}% - 5px)` }} />
+          <div
+            className="computer-playback-fill"
+            style={{ width: `${progressPct}%` }}
+          />
+          <div
+            className="computer-playback-dot"
+            style={{ left: `calc(${progressPct}% - 5px)` }}
+          />
         </div>
 
         {/* Live / done indicator */}
         <div className="computer-live-badge">
           {isActive && <span className="computer-live-dot" />}
-          <span style={{ fontSize: 11, color: isActive ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.3)' }}>
+          <span style={{ fontSize: 11, color: isActive ? '#E5E5E5' : '#6B7280' }}>
             {isActive ? 'live' : 'ferdig'}
           </span>
         </div>
@@ -685,8 +476,8 @@ export default function AgentSidePanel({
           {doneTasks}/{totalTasks}
         </span>
         {taskExpanded
-          ? <ChevronUp size={12} style={{ color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
-          : <ChevronDown size={12} style={{ color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+          ? <ChevronUp size={12} style={{ color: '#6B7280', flexShrink: 0 }} />
+          : <ChevronDown size={12} style={{ color: '#6B7280', flexShrink: 0 }} />
         }
       </div>
     </div>

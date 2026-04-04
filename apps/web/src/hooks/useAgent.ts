@@ -33,12 +33,6 @@ export interface AgentState {
   liveFiles: AgentFile[];
   agentMessageId: string | null;
   suggestions: string[];
-  // Browser-use integration
-  browserScreenshot: string | null;  // base64 PNG
-  browserUrl: string | null;
-  browserAction: string | null;
-  needsTakeover: boolean;
-  browserTab: 'terminal' | 'browser';
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://sineapi-production-8db6.up.railway.app';
@@ -97,11 +91,6 @@ export function useAgent() {
     liveFiles: [],
     agentMessageId: null,
     suggestions: [],
-    browserScreenshot: null,
-    browserUrl: null,
-    browserAction: null,
-    needsTakeover: false,
-    browserTab: 'terminal',
   });
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -377,37 +366,6 @@ export function useAgent() {
         setState(prev => ({ ...prev, status: 'failed' }));
         addLog({ type: 'error', message: data.message as string });
         break;
-
-      // ── Browser-use events ──────────────────────────────────
-      case 'browser_screenshot':
-        setState(prev => ({
-          ...prev,
-          browserScreenshot: data.screenshot as string,
-          browserUrl: (data.url as string) || prev.browserUrl,
-          browserAction: (data.action as string) || null,
-          browserTab: 'browser',
-        }));
-        addLog({ type: 'tool_call', message: `🌐 Nettleser: ${data.action ?? data.url ?? 'navigerer...'}` });
-        break;
-
-      case 'browser_action':
-        setState(prev => ({
-          ...prev,
-          browserUrl: (data.url as string) || prev.browserUrl,
-          browserAction: data.action as string,
-        }));
-        addLog({ type: 'tool_call', message: `💻 ${data.action ?? 'nettleserhandling'}` });
-        break;
-
-      case 'browser_takeover_needed':
-        setState(prev => ({ ...prev, needsTakeover: true, browserTab: 'browser' }));
-        addLog({ type: 'log', message: '⚠️ Agenten trenger hjelp — klikk "Ta over" for å hjelpe til i nettleseren' });
-        break;
-
-      case 'browser_takeover_done':
-        setState(prev => ({ ...prev, needsTakeover: false }));
-        addLog({ type: 'log', message: '✅ Overleverer tilbake til agenten...' });
-        break;
     }
   }, [addLog]);
 
@@ -427,22 +385,6 @@ export function useAgent() {
     setState(prev => ({ ...prev, status: 'stopped' }));
   }, []);
 
-  const requestBrowserTakeover = useCallback(async () => {
-    if (!runIdRef.current) return;
-    await fetch(`${API_BASE}/api/agent/${runIdRef.current}/browser/takeover`, { method: 'POST' });
-    setState(prev => ({ ...prev, needsTakeover: true }));
-  }, []);
-
-  const resumeFromTakeover = useCallback(async () => {
-    if (!runIdRef.current) return;
-    await fetch(`${API_BASE}/api/agent/${runIdRef.current}/browser/resume`, { method: 'POST' });
-    setState(prev => ({ ...prev, needsTakeover: false }));
-  }, []);
-
-  const setBrowserTab = useCallback((tab: 'terminal' | 'browser') => {
-    setState(prev => ({ ...prev, browserTab: tab }));
-  }, []);
-
   const fetchFileContent = useCallback(async (filePath: string, runId?: string): Promise<string> => {
     const rid = runId ?? runIdRef.current;
     if (!rid) return '';
@@ -460,5 +402,5 @@ export function useAgent() {
     return () => { wsRef.current?.close(); };
   }, []);
 
-  return { state, startAgent, stopAgent, approveAction, fetchFileContent, requestBrowserTakeover, resumeFromTakeover, setBrowserTab };
+  return { state, startAgent, stopAgent, approveAction, fetchFileContent };
 }

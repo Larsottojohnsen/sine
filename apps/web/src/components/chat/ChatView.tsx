@@ -196,7 +196,7 @@ function WelcomeLayout({
 export function ChatView() {
   const { activeConversation, settings, updateSettings, updateAgentMessage } = useApp()
   const { sendMessage, stopStreaming, isStreaming } = useChat()
-  const { state: agentState, startAgent, stopAgent, approveAction, fetchFileContent, requestBrowserTakeover, resumeFromTakeover, setBrowserTab } = useAgent()
+  const { state: agentState, startAgent, stopAgent, approveAction, fetchFileContent } = useAgent()
   const { user } = useAuth()
   const { memory, addMemory, removeMemory, clearMemory, extractFromMessage } = useUserMemory(user?.id)
 
@@ -214,8 +214,6 @@ export function ChatView() {
   const [openFile, setOpenFile] = useState<AgentFile | null>(null)
   const [openFileAllFiles, setOpenFileAllFiles] = useState<AgentFile[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
-  const messagesAreaRef = useRef<HTMLDivElement>(null)
-  const [showScrollBtn, setShowScrollBtn] = useState(false)
   const { pendingAgentTask, setPendingAgentTask } = useNav()
 
   // Blob fade state (brukes for å fade ut ved melding)
@@ -243,18 +241,6 @@ export function ChatView() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [activeConversation?.messages, agentState.liveTasks.length])
-
-  // Scroll-to-bottom button: show when user scrolls up
-  useEffect(() => {
-    const el = messagesAreaRef.current
-    if (!el) return
-    const handleScroll = () => {
-      const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
-      setShowScrollBtn(distFromBottom > 200)
-    }
-    el.addEventListener('scroll', handleScroll, { passive: true })
-    return () => el.removeEventListener('scroll', handleScroll)
-  }, [])
 
   // Når bruker klikker agent i sidebar, aktiver agent-modus
   useEffect(() => {
@@ -374,7 +360,7 @@ export function ChatView() {
 
   const chatInputProps = {
     onSend: handleSend,
-    onStop: isAgentActive ? stopAgent : stopStreaming,
+    onStop: stopStreaming,
     isStreaming,
     language: settings.language,
     agentMode,
@@ -432,9 +418,6 @@ export function ChatView() {
             state={agentState}
             onClose={() => setShowSidePanel(false)}
             onFetchFile={fetchFileContent}
-            onRequestTakeover={requestBrowserTakeover}
-            onResumeTakeover={resumeFromTakeover}
-            onSetBrowserTab={setBrowserTab}
           />
         )}
         {openFile && (
@@ -453,8 +436,17 @@ export function ChatView() {
   return (
     <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
       <div className="chat-view" style={{ flex: 1 }}>
-        {/* AgentTerminalPanel removed - status shown in AgentSidePanel only */}
-        <div className="chat-messages-area" ref={messagesAreaRef}>
+        {isAgentActive && (
+          <div style={{ padding: '12px 24px 0', maxWidth: 720, margin: '0 auto', width: '100%' }}>
+            <AgentTerminalPanel
+              state={agentState}
+              onExpand={() => setShowSidePanel(true)}
+              onStop={stopAgent}
+              onApprove={approveAction}
+            />
+          </div>
+        )}
+        <div className="chat-messages-area">
           <div className="chat-messages-inner">
             {activeConversation.messages.map((msg, i) => {
               const isLast = i === activeConversation.messages.length - 1
@@ -511,19 +503,6 @@ export function ChatView() {
           </div>
         </div>
 
-        {/* Scroll-to-bottom button */}
-        {showScrollBtn && (
-          <button
-            className="scroll-to-bottom-btn"
-            onClick={() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' })}
-            title="Scroll til bunnen"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 5v14M5 12l7 7 7-7" />
-            </svg>
-          </button>
-        )}
-
         {/* Godkjenning-banner */}
         {agentState.pendingApproval && (
           <div style={{
@@ -572,7 +551,7 @@ export function ChatView() {
 
         <ChatInput
           onSend={handleSend}
-          onStop={isAgentActive ? stopAgent : stopStreaming}
+          onStop={stopStreaming}
           isStreaming={isStreaming}
           language={settings.language}
           agentMode={agentMode}
@@ -592,9 +571,6 @@ export function ChatView() {
           state={agentState}
           onClose={() => setShowSidePanel(false)}
           onFetchFile={fetchFileContent}
-          onRequestTakeover={requestBrowserTakeover}
-          onResumeTakeover={resumeFromTakeover}
-          onSetBrowserTab={setBrowserTab}
         />
       )}
       {openFile && (
