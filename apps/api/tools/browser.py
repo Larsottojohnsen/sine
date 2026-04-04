@@ -4,13 +4,14 @@ BrowserTool — Gir Sine-agenten kontroll over en ekte nettleser via browser-use
 Funksjonalitet:
 - Kjører browser-use med Playwright/Chromium
 - Streamer skjermbilder og handlinger live til frontend via event-kø
+- Bruker BrowserStateSummary.screenshot direkte fra step-callback (ingen ekstra screenshot-kall)
 - Støtter "ta over"-modus der brukeren kan overta nettleseren
+- Persistent browser-sesjon for raskere oppstart på gjentatte oppgaver
 - Returnerer resultatet av nettleseroppgaven som tekst
 """
 from __future__ import annotations
 
 import asyncio
-import base64
 import os
 import time
 from typing import Any, Optional
@@ -34,12 +35,15 @@ class BrowserTool(BaseTool):
     )
     risk_level = RiskLevel.MEDIUM
 
+    # Class-level persistent browser session (shared across tasks for speed)
+    _shared_browser_session: Any = None
+    _shared_browser_lock: asyncio.Lock = asyncio.Lock()
+
     def __init__(self, event_queue: asyncio.Queue, run_id: str):
         self.event_queue = event_queue
         self.run_id = run_id
         self._takeover_requested = False
         self._takeover_event = asyncio.Event()
-        self._browser_instance = None
 
     def get_input_schema(self) -> dict:
         return {
@@ -70,18 +74,6 @@ class BrowserTool(BaseTool):
             )
         )
 
-    async def _take_screenshot_base64(self, page: Any) -> Optional[str]:
-        """Ta skjermbilde og returner som base64-streng."""
-        try:
-            screenshot_bytes = await page.screenshot(
-                type="jpeg",
-                quality=65,
-                full_page=False,
-            )
-            return base64.b64encode(screenshot_bytes).decode("utf-8")
-        except Exception:
-            return None
-
     def request_takeover(self) -> None:
         """Kalt av frontend når brukeren ønsker å ta over nettleseren."""
         self._takeover_requested = True
@@ -92,13 +84,61 @@ class BrowserTool(BaseTool):
         self._takeover_requested = False
         self._takeover_event.clear()
 
+    @classmethod
+    async def _get_or_create_browser_session(cls) -> Any:
+        """
+        Hent eller opprett en persistent browser-sesjon.
+        Gjenbruker eksisterende sesjon for raskere oppstart.
+        """
+        try:
+            from browser_use import BrowserSession, BrowserProfile
+        except ImportError:
+            return None
+
+        async with cls._shared_browser_lock:
+            # Sjekk om eksisterende sesjon er gyldig
+            if cls._shared_browser_session is not None:
+                try:
+                    # Test at sesjonen fortsatt fungerer via is_cdp_connected
+                    if hasattr(cls._shared_browser_session, 'is_cdp_connected'):
+                        if cls._shared_browser_session.is_cdp_connected:
+                            return cls._shared_browser_session
+                        else:
+                            cls._shared_browser_session = None
+                    else:
+                        return cls._shared_browser_session
+                except Exception:
+                    cls._shared_browser_session = None
+
+            # Opprett ny sesjon
+            try:
+                profile = BrowserProfile(
+                    headless=True,
+                    args=[
+                        "--no-sandbox",
+                        "--disable-setuid-sandbox",
+                        "--disable-dev-shm-usage",
+                        "--disable-gpu",
+                        "--no-first-run",
+                        "--no-zygote",
+                        "--single-process",
+                        "--disable-extensions",
+                    ],
+                )
+                session = BrowserSession(browser_profile=profile)
+                await session.start()
+                cls._shared_browser_session = session
+                return session
+            except Exception:
+                return None
+
     async def execute(self, task: str, start_url: Optional[str] = None, **kwargs) -> ToolResult:
         """
         Kjør browser-use med den gitte oppgaven.
         Streamer skjermbilder og handlinger live til frontend.
         """
         try:
-            from browser_use import Agent, Browser, BrowserConfig
+            from browser_use import Agent
             from langchain_anthropic import ChatAnthropic
         except ImportError as e:
             return ToolResult(
@@ -127,26 +167,36 @@ class BrowserTool(BaseTool):
 
         result_text = ""
         error_text = ""
+        browser_session = None
+        owns_session = False
 
         try:
-            # Konfigurer Playwright-nettleser (headless i produksjon)
-            browser_config = BrowserConfig(
-                headless=True,
-                disable_security=False,
-                extra_chromium_args=[
-                    "--no-sandbox",
-                    "--disable-setuid-sandbox",
-                    "--disable-dev-shm-usage",
-                    "--disable-gpu",
-                    "--no-first-run",
-                    "--no-zygote",
-                    "--single-process",
-                    "--disable-extensions",
-                ],
-            )
+            # Prøv å bruke persistent sesjon for raskere oppstart
+            browser_session = await self._get_or_create_browser_session()
 
-            browser = Browser(config=browser_config)
-            self._browser_instance = browser
+            if browser_session is None:
+                # Fallback: opprett ny sesjon per oppgave
+                try:
+                    from browser_use import BrowserSession, BrowserProfile
+                    profile = BrowserProfile(
+                        headless=True,
+                        args=[
+                            "--no-sandbox",
+                            "--disable-setuid-sandbox",
+                            "--disable-dev-shm-usage",
+                            "--disable-gpu",
+                            "--no-first-run",
+                            "--no-zygote",
+                            "--single-process",
+                            "--disable-extensions",
+                        ],
+                    )
+                    browser_session = BrowserSession(browser_profile=profile)
+                    await browser_session.start()
+                    owns_session = True
+                except Exception:
+                    # Siste fallback: bruk gammel Browser API
+                    browser_session = None
 
             # Claude som LLM via LangChain
             llm = ChatAnthropic(
@@ -156,79 +206,99 @@ class BrowserTool(BaseTool):
                 max_tokens=4096,
             )
 
-            # Bygg agent
-            agent = Agent(
-                task=task,
-                llm=llm,
-                browser=browser,
-                max_actions_per_step=5,
-                use_vision=True,
-            )
-
+            # ── Step-callback: bruker BrowserStateSummary.screenshot direkte ──
             step_count = [0]
+            takeover_self = self  # capture for closure
 
-            async def on_step_end(agent_state: Any, result: Any, step_info: Any) -> None:
-                step_count[0] += 1
-                step_num = step_count[0]
+            async def on_step_end(browser_state: Any, agent_output: Any, step_num: int) -> None:
+                """
+                Kalles etter hvert steg.
+                browser_state: BrowserStateSummary (har .screenshot, .url, .title)
+                agent_output:  AgentOutput (har .current_state.thought, .action)
+                step_num:      stegnummer (int)
+                """
+                step_count[0] = step_num
 
-                # Hent nåværende side for skjermbilde
+                # Bruk screenshot direkte fra BrowserStateSummary (allerede base64 JPEG)
+                screenshot_b64 = getattr(browser_state, 'screenshot', None)
+                current_url = getattr(browser_state, 'url', '')
+                page_title = getattr(browser_state, 'title', '')
+
+                if screenshot_b64:
+                    await takeover_self._emit("browser_screenshot", {
+                        "screenshot": screenshot_b64,
+                        "url": current_url,
+                        "title": page_title,
+                        "step": step_num,
+                        "message": f"Steg {step_num}: {page_title or current_url}",
+                    })
+
+                # Emit agent-tanke og handling
                 try:
-                    ctx = agent.browser_context
-                    if ctx:
-                        pages = ctx.pages if hasattr(ctx, "pages") else []
-                        if pages:
-                            page = pages[-1]
-                            screenshot_b64 = await self._take_screenshot_base64(page)
-                            current_url = page.url
-
-                            if screenshot_b64:
-                                await self._emit("browser_screenshot", {
-                                    "screenshot": screenshot_b64,
-                                    "url": current_url,
-                                    "step": step_num,
-                                    "message": f"Steg {step_num}: {current_url}",
-                                })
-
-                            # Emit handlingsbeskrivelse fra resultat
-                            if result:
-                                results_list = result if isinstance(result, list) else [result]
-                                for action_result in results_list:
-                                    content = None
-                                    if hasattr(action_result, "extracted_content"):
-                                        content = action_result.extracted_content
-                                    elif hasattr(action_result, "error") and action_result.error:
-                                        content = f"Feil: {action_result.error}"
-                                    if content:
-                                        await self._emit("browser_action", {
-                                            "step": step_num,
-                                            "action": str(content)[:300],
-                                            "url": current_url,
-                                            "message": f"🖱️ {str(content)[:200]}",
-                                        })
+                    current_state = getattr(agent_output, 'current_state', None)
+                    if current_state:
+                        thought = getattr(current_state, 'thought', None) or getattr(current_state, 'evaluation_previous_goal', None)
+                        if thought:
+                            await takeover_self._emit("browser_action", {
+                                "step": step_num,
+                                "action": str(thought)[:300],
+                                "url": current_url,
+                                "message": f"💭 {str(thought)[:200]}",
+                            })
                 except Exception:
                     pass
 
                 # Sjekk om brukeren har bedt om å ta over
-                if self._takeover_requested:
-                    await self._emit("browser_takeover_active", {
+                if takeover_self._takeover_requested:
+                    await takeover_self._emit("browser_takeover_active", {
                         "message": "⏸️ Agenten er satt på pause. Du har overtatt nettleseren.",
                     })
-                    # Vent til brukeren er ferdig (maks 10 min)
                     try:
                         await asyncio.wait_for(
-                            asyncio.shield(self._takeover_event.wait()),
+                            asyncio.shield(takeover_self._takeover_event.wait()),
                             timeout=600,
                         )
                     except asyncio.TimeoutError:
                         pass
-                    self._takeover_requested = False
-                    self._takeover_event.clear()
-                    await self._emit("browser_takeover_ended", {
+                    takeover_self._takeover_requested = False
+                    takeover_self._takeover_event.clear()
+                    await takeover_self._emit("browser_takeover_ended", {
                         "message": "▶️ Agenten fortsetter arbeidet.",
                     })
 
-            # Koble til step-callback
-            agent.register_new_step_callback = on_step_end
+            # ── Bygg og kjør agenten ──
+            agent_kwargs: dict[str, Any] = {
+                "task": task,
+                "llm": llm,
+                "max_actions_per_step": 5,
+                "use_vision": True,
+                "register_new_step_callback": on_step_end,
+            }
+
+            # Koble til browser-sesjon
+            if browser_session is not None:
+                agent_kwargs["browser_session"] = browser_session
+            else:
+                # Gammel Browser API som fallback
+                try:
+                    from browser_use import Browser, BrowserConfig
+                    browser_config = BrowserConfig(
+                        headless=True,
+                        disable_security=False,
+                        extra_chromium_args=[
+                            "--no-sandbox",
+                            "--disable-setuid-sandbox",
+                            "--disable-dev-shm-usage",
+                            "--disable-gpu",
+                            "--no-first-run",
+                            "--no-zygote",
+                            "--single-process",
+                            "--disable-extensions",
+                        ],
+                    )
+                    agent_kwargs["browser"] = Browser(config=browser_config)
+                except Exception:
+                    pass
 
             # Naviger til start-URL hvis angitt
             if start_url:
@@ -238,6 +308,8 @@ class BrowserTool(BaseTool):
                     "url": start_url,
                     "message": f"🔗 Navigerer til {start_url}",
                 })
+
+            agent = Agent(**agent_kwargs)
 
             # Kjør agenten
             history = await agent.run(max_steps=25)
@@ -250,25 +322,6 @@ class BrowserTool(BaseTool):
                 result_text = s[-2000:] if len(s) > 2000 else s
             else:
                 result_text = "Nettleseroppgaven er fullført."
-
-            # Ta sluttskjermbilde
-            try:
-                ctx = agent.browser_context
-                if ctx:
-                    pages = ctx.pages if hasattr(ctx, "pages") else []
-                    if pages:
-                        page = pages[-1]
-                        screenshot_b64 = await self._take_screenshot_base64(page)
-                        if screenshot_b64:
-                            await self._emit("browser_screenshot", {
-                                "screenshot": screenshot_b64,
-                                "url": page.url,
-                                "step": step_count[0] + 1,
-                                "message": f"✅ Ferdig: {page.url}",
-                                "is_final": True,
-                            })
-            except Exception:
-                pass
 
             await self._emit("browser_done", {
                 "message": f"✅ Nettleseroppgave fullført: {result_text[:200]}",
@@ -293,13 +346,17 @@ class BrowserTool(BaseTool):
                     "reason": "login_required",
                 })
 
+            # Tilbakestill delt sesjon ved feil slik at neste oppgave starter friskt
+            async with BrowserTool._shared_browser_lock:
+                BrowserTool._shared_browser_session = None
+
         finally:
-            try:
-                if self._browser_instance:
-                    await self._browser_instance.close()
-                    self._browser_instance = None
-            except Exception:
-                pass
+            # Lukk kun sesjonen hvis vi eier den (ikke delt)
+            if owns_session and browser_session is not None:
+                try:
+                    await browser_session.stop()
+                except Exception:
+                    pass
 
         if error_text and not result_text:
             return ToolResult(

@@ -374,7 +374,7 @@ export function ChatView() {
 
   const chatInputProps = {
     onSend: handleSend,
-    onStop: stopStreaming,
+    onStop: isAgentActive ? stopAgent : stopStreaming,
     isStreaming,
     language: settings.language,
     agentMode,
@@ -453,16 +453,7 @@ export function ChatView() {
   return (
     <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
       <div className="chat-view" style={{ flex: 1 }}>
-        {isAgentActive && (
-          <div style={{ padding: '12px 24px 0', maxWidth: 720, margin: '0 auto', width: '100%' }}>
-            <AgentTerminalPanel
-              state={agentState}
-              onExpand={() => setShowSidePanel(true)}
-              onStop={stopAgent}
-              onApprove={approveAction}
-            />
-          </div>
-        )}
+        {/* AgentTerminalPanel removed - status shown in AgentSidePanel only */}
         <div className="chat-messages-area" ref={messagesAreaRef}>
           <div className="chat-messages-inner">
             {activeConversation.messages.map((msg, i) => {
@@ -581,7 +572,7 @@ export function ChatView() {
 
         <ChatInput
           onSend={handleSend}
-          onStop={stopStreaming}
+          onStop={isAgentActive ? stopAgent : stopStreaming}
           isStreaming={isStreaming}
           language={settings.language}
           agentMode={agentMode}

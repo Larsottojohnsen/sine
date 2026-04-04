@@ -231,8 +231,7 @@ export default function AgentSidePanel({
             <Terminal size={11} />
             Terminal
           </button>
-          {hasBrowser && (
-            <button
+          <button
               className={`computer-tab${activeTab === 'browser' ? ' active' : ''}${state.needsTakeover ? ' needs-takeover' : ''}`}
               onClick={() => handleTabChange('browser')}
               style={state.needsTakeover ? { color: '#FBBF24' } : undefined}
@@ -247,7 +246,6 @@ export default function AgentSidePanel({
                 }} />
               )}
             </button>
-          )}
           <button
             className={`computer-tab${activeTab === 'files' ? ' active' : ''}`}
             onClick={() => handleTabChange('files')}
@@ -441,7 +439,7 @@ export default function AgentSidePanel({
                 position: 'relative',
               }}>
                 <img
-                  src={`data:image/png;base64,${state.browserScreenshot}`}
+                  src={`data:image/jpeg;base64,${state.browserScreenshot}`}
                   alt="Nettleser-skjermbilde"
                   style={{
                     width: '100%',

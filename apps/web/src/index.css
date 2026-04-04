@@ -659,6 +659,12 @@ button { font-family: inherit; }
 .send-btn:hover { background: #f0f0f0; }
 .send-btn:disabled { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.2); cursor: not-allowed; }
 .send-btn:active:not(:disabled) { transform: scale(0.92); }
+.send-btn-stop {
+  background: rgba(255,255,255,0.15) !important;
+  color: rgba(255,255,255,0.9) !important;
+  cursor: pointer !important;
+}
+.send-btn-stop:hover { background: rgba(255,255,255,0.22) !important; }
 .chat-disclaimer { text-align: center; font-size: 11px; color: #4A4A4A; margin-top: 8px; }
 
 /* ─── Settings modal ─────────────────────────────────────────── */
