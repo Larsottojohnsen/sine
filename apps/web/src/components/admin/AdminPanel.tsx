@@ -6,11 +6,11 @@ import {
   Bell, Settings, ChevronRight, Search, RefreshCw, Trash2,
   Shield, CheckCircle, XCircle, Edit2, Eye, EyeOff, Plus,
   TrendingUp, TrendingDown, ArrowLeft, AlertTriangle, Mail,
-  UserCheck, UserX, Download
+  UserCheck, UserX, Download, Link, GitBranch, Share2, Bolt, Database, Cloud
 } from 'lucide-react'
 import './admin.css'
 
-type AdminTab = 'dashboard' | 'users' | 'blog' | 'analytics' | 'revenue' | 'notifications' | 'settings'
+type AdminTab = 'dashboard' | 'users' | 'blog' | 'analytics' | 'revenue' | 'notifications' | 'connectors' | 'settings'
 
 interface BlogPost {
   id: string
@@ -48,6 +48,7 @@ const TABS: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
   { id: 'analytics',     label: 'Analyse',           icon: <BarChart2 size={15} /> },
   { id: 'revenue',       label: 'Inntekter',         icon: <CreditCard size={15} /> },
   { id: 'notifications', label: 'Varsler',           icon: <Bell size={15} /> },
+  { id: 'connectors',    label: 'Connectors',        icon: <Link size={15} /> },
   { id: 'settings',      label: 'Innstillinger',     icon: <Settings size={15} /> },
 ]
 
@@ -156,6 +157,22 @@ export function AdminPanel() {
   const [maintenanceMode, setMaintenanceMode] = useState(false)
   const [registrationOpen, setRegistrationOpen] = useState(true)
 
+  // Connector OAuth credentials state
+  const [githubClientId, setGithubClientId] = useState('')
+  const [githubClientSecret, setGithubClientSecret] = useState('')
+  const [githubAppId, setGithubAppId] = useState('')
+  const [githubPrivateKey, setGithubPrivateKey] = useState('')
+  const [gmailClientId, setGmailClientId] = useState('')
+  const [gmailClientSecret, setGmailClientSecret] = useState('')
+  const [metaAppId, setMetaAppId] = useState('')
+  const [metaAppSecret, setMetaAppSecret] = useState('')
+  const [slackClientId, setSlackClientId] = useState('')
+  const [slackClientSecret, setSlackClientSecret] = useState('')
+  const [notionClientId, setNotionClientId] = useState('')
+  const [notionClientSecret, setNotionClientSecret] = useState('')
+  const [anthropicKey, setAnthropicKey] = useState('')
+  const [openaiKey, setOpenaiKey] = useState('')
+
   // Integration settings state
   const [stripeKey, setStripeKey] = useState('')
   const [stripeWebhook, setStripeWebhook] = useState('')
@@ -172,7 +189,38 @@ export function AdminPanel() {
     if (tab === 'blog') loadPosts()
     if (tab === 'dashboard') loadDashboard()
     if (tab === 'notifications') loadNotifications()
+    if (tab === 'connectors') loadConnectorSettings()
   }, [tab])
+
+  async function loadConnectorSettings() {
+    const supabase = getSupabase()
+    const keys = [
+      'github_client_id', 'github_client_secret', 'github_app_id', 'github_private_key',
+      'gmail_client_id', 'gmail_client_secret',
+      'meta_app_id', 'meta_app_secret',
+      'slack_client_id', 'slack_client_secret',
+      'notion_client_id', 'notion_client_secret',
+      'anthropic_api_key', 'openai_api_key',
+    ]
+    const { data } = await supabase.from('app_settings').select('key, value').in('key', keys)
+    if (!data) return
+    const map: Record<string, string> = {}
+    data.forEach((r: { key: string; value: string }) => { map[r.key] = r.value })
+    if (map['github_client_id']) setGithubClientId(map['github_client_id'])
+    if (map['github_client_secret']) setGithubClientSecret(map['github_client_secret'])
+    if (map['github_app_id']) setGithubAppId(map['github_app_id'])
+    if (map['github_private_key']) setGithubPrivateKey(map['github_private_key'])
+    if (map['gmail_client_id']) setGmailClientId(map['gmail_client_id'])
+    if (map['gmail_client_secret']) setGmailClientSecret(map['gmail_client_secret'])
+    if (map['meta_app_id']) setMetaAppId(map['meta_app_id'])
+    if (map['meta_app_secret']) setMetaAppSecret(map['meta_app_secret'])
+    if (map['slack_client_id']) setSlackClientId(map['slack_client_id'])
+    if (map['slack_client_secret']) setSlackClientSecret(map['slack_client_secret'])
+    if (map['notion_client_id']) setNotionClientId(map['notion_client_id'])
+    if (map['notion_client_secret']) setNotionClientSecret(map['notion_client_secret'])
+    if (map['anthropic_api_key']) setAnthropicKey(map['anthropic_api_key'])
+    if (map['openai_api_key']) setOpenaiKey(map['openai_api_key'])
+  }
 
   // ─── Data loaders ─────────────────────────────────────────────
   async function loadDashboard() {
@@ -784,6 +832,172 @@ export function AdminPanel() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── CONNECTORS ─────────────────────────────────────── */}
+        {tab === 'connectors' && (
+          <div className="adm-content">
+            <div className="adm-page-header">
+              <h1 className="adm-page-title">Connectors — API-nøkler</h1>
+              <p className="adm-setting-desc" style={{ marginTop: 4 }}>Administrer OAuth-nøkler for alle tilkoblinger brukere kan aktivere. Nøklene lagres i databasen og brukes av backend-serveren.</p>
+            </div>
+
+            {/* GitHub */}
+            <div className="adm-settings-section">
+              <h2 className="adm-section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <GitBranch size={16} /> GitHub
+              </h2>
+              <div className="adm-setting-desc" style={{ marginBottom: 12 }}>
+                Opprett en GitHub App på <a href="https://github.com/settings/apps" target="_blank" rel="noreferrer" style={{ color: '#1A93FE' }}>github.com/settings/apps</a>. Callback URL: <code style={{ background: '#2a2a2a', padding: '2px 6px', borderRadius: 4, fontSize: 11 }}>https://sineapi-production-8db6.up.railway.app/api/github/callback</code>
+              </div>
+              {[
+                { label: 'App ID', val: githubAppId, set: setGithubAppId, key: 'github_app_id', ph: '123456', isTextarea: false },
+                { label: 'Client ID', val: githubClientId, set: setGithubClientId, key: 'github_client_id', ph: 'Iv1.xxxxxxxxxxxxxxxx', isTextarea: false },
+                { label: 'Client Secret', val: githubClientSecret, set: setGithubClientSecret, key: 'github_client_secret', ph: 'ghp_...', isTextarea: false },
+                { label: 'Private Key (.pem)', val: githubPrivateKey, set: setGithubPrivateKey, key: 'github_private_key', ph: '-----BEGIN RSA PRIVATE KEY-----\n...', isTextarea: true },
+              ].map(f => (
+                <div key={f.key} className="adm-form-group">
+                  <label className="adm-label">{f.label}</label>
+                  <div style={{ display: 'flex', gap: 8, alignItems: f.isTextarea ? 'flex-start' : 'center' }}>
+                    {f.isTextarea ? (
+                      <textarea className="adm-input" rows={4} style={{ fontFamily: 'monospace', fontSize: 11, resize: 'vertical' }} placeholder={f.ph} value={f.val} onChange={e => f.set(e.target.value)} />
+                    ) : (
+                      <input className="adm-input" type="password" placeholder={f.ph} value={f.val} onChange={e => f.set(e.target.value)} />
+                    )}
+                    <button className="adm-btn-primary" style={{ flexShrink: 0 }} onClick={() => saveIntegration(f.key, f.val, f.label)} disabled={savingIntegration === f.key}>
+                      {savingIntegration === f.key ? 'Lagrer...' : 'Lagre'}
+                    </button>
+                  </div>
+                  {integrationMsg[f.key] && <p className="adm-msg success">{integrationMsg[f.key]}</p>}
+                </div>
+              ))}
+            </div>
+
+            {/* Gmail / Google */}
+            <div className="adm-settings-section">
+              <h2 className="adm-section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Mail size={16} /> Gmail / Google OAuth
+              </h2>
+              <div className="adm-setting-desc" style={{ marginBottom: 12 }}>
+                Opprett OAuth-klient på <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer" style={{ color: '#1A93FE' }}>Google Cloud Console</a>. Callback URL: <code style={{ background: '#2a2a2a', padding: '2px 6px', borderRadius: 4, fontSize: 11 }}>https://sineapi-production-8db6.up.railway.app/api/gmail/callback</code>
+              </div>
+              {[
+                { label: 'Client ID', val: gmailClientId, set: setGmailClientId, key: 'gmail_client_id', ph: 'xxxxxxxx.apps.googleusercontent.com' },
+                { label: 'Client Secret', val: gmailClientSecret, set: setGmailClientSecret, key: 'gmail_client_secret', ph: 'GOCSPX-...' },
+              ].map(f => (
+                <div key={f.key} className="adm-form-group">
+                  <label className="adm-label">{f.label}</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input className="adm-input" type="password" placeholder={f.ph} value={f.val} onChange={e => f.set(e.target.value)} />
+                    <button className="adm-btn-primary" style={{ flexShrink: 0 }} onClick={() => saveIntegration(f.key, f.val, f.label)} disabled={savingIntegration === f.key}>
+                      {savingIntegration === f.key ? 'Lagrer...' : 'Lagre'}
+                    </button>
+                  </div>
+                  {integrationMsg[f.key] && <p className="adm-msg success">{integrationMsg[f.key]}</p>}
+                </div>
+              ))}
+            </div>
+
+            {/* Meta Ads */}
+            <div className="adm-settings-section">
+              <h2 className="adm-section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Share2 size={16} /> Meta Ads (Facebook / Instagram)
+              </h2>
+              <div className="adm-setting-desc" style={{ marginBottom: 12 }}>
+                Opprett en Meta App på <a href="https://developers.facebook.com/apps" target="_blank" rel="noreferrer" style={{ color: '#1A93FE' }}>developers.facebook.com</a>. Callback URL: <code style={{ background: '#2a2a2a', padding: '2px 6px', borderRadius: 4, fontSize: 11 }}>https://sineapi-production-8db6.up.railway.app/api/meta/callback</code>
+              </div>
+              {[
+                { label: 'App ID', val: metaAppId, set: setMetaAppId, key: 'meta_app_id', ph: '1234567890' },
+                { label: 'App Secret', val: metaAppSecret, set: setMetaAppSecret, key: 'meta_app_secret', ph: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' },
+              ].map(f => (
+                <div key={f.key} className="adm-form-group">
+                  <label className="adm-label">{f.label}</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input className="adm-input" type="password" placeholder={f.ph} value={f.val} onChange={e => f.set(e.target.value)} />
+                    <button className="adm-btn-primary" style={{ flexShrink: 0 }} onClick={() => saveIntegration(f.key, f.val, f.label)} disabled={savingIntegration === f.key}>
+                      {savingIntegration === f.key ? 'Lagrer...' : 'Lagre'}
+                    </button>
+                  </div>
+                  {integrationMsg[f.key] && <p className="adm-msg success">{integrationMsg[f.key]}</p>}
+                </div>
+              ))}
+            </div>
+
+            {/* Slack */}
+            <div className="adm-settings-section">
+              <h2 className="adm-section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Bolt size={16} /> Slack
+              </h2>
+              <div className="adm-setting-desc" style={{ marginBottom: 12 }}>
+                Opprett en Slack App på <a href="https://api.slack.com/apps" target="_blank" rel="noreferrer" style={{ color: '#1A93FE' }}>api.slack.com/apps</a>. Callback URL: <code style={{ background: '#2a2a2a', padding: '2px 6px', borderRadius: 4, fontSize: 11 }}>https://sineapi-production-8db6.up.railway.app/api/slack/callback</code>
+              </div>
+              {[
+                { label: 'Client ID', val: slackClientId, set: setSlackClientId, key: 'slack_client_id', ph: 'xxxxxxxxxxxx.xxxxxxxxxxxx' },
+                { label: 'Client Secret', val: slackClientSecret, set: setSlackClientSecret, key: 'slack_client_secret', ph: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' },
+              ].map(f => (
+                <div key={f.key} className="adm-form-group">
+                  <label className="adm-label">{f.label}</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input className="adm-input" type="password" placeholder={f.ph} value={f.val} onChange={e => f.set(e.target.value)} />
+                    <button className="adm-btn-primary" style={{ flexShrink: 0 }} onClick={() => saveIntegration(f.key, f.val, f.label)} disabled={savingIntegration === f.key}>
+                      {savingIntegration === f.key ? 'Lagrer...' : 'Lagre'}
+                    </button>
+                  </div>
+                  {integrationMsg[f.key] && <p className="adm-msg success">{integrationMsg[f.key]}</p>}
+                </div>
+              ))}
+            </div>
+
+            {/* Notion */}
+            <div className="adm-settings-section">
+              <h2 className="adm-section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Database size={16} /> Notion
+              </h2>
+              <div className="adm-setting-desc" style={{ marginBottom: 12 }}>
+                Opprett en Notion Integration på <a href="https://www.notion.so/my-integrations" target="_blank" rel="noreferrer" style={{ color: '#1A93FE' }}>notion.so/my-integrations</a>. Callback URL: <code style={{ background: '#2a2a2a', padding: '2px 6px', borderRadius: 4, fontSize: 11 }}>https://sineapi-production-8db6.up.railway.app/api/notion/callback</code>
+              </div>
+              {[
+                { label: 'OAuth Client ID', val: notionClientId, set: setNotionClientId, key: 'notion_client_id', ph: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' },
+                { label: 'OAuth Client Secret', val: notionClientSecret, set: setNotionClientSecret, key: 'notion_client_secret', ph: 'secret_...' },
+              ].map(f => (
+                <div key={f.key} className="adm-form-group">
+                  <label className="adm-label">{f.label}</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input className="adm-input" type="password" placeholder={f.ph} value={f.val} onChange={e => f.set(e.target.value)} />
+                    <button className="adm-btn-primary" style={{ flexShrink: 0 }} onClick={() => saveIntegration(f.key, f.val, f.label)} disabled={savingIntegration === f.key}>
+                      {savingIntegration === f.key ? 'Lagrer...' : 'Lagre'}
+                    </button>
+                  </div>
+                  {integrationMsg[f.key] && <p className="adm-msg success">{integrationMsg[f.key]}</p>}
+                </div>
+              ))}
+            </div>
+
+            {/* AI API Keys */}
+            <div className="adm-settings-section">
+              <h2 className="adm-section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Cloud size={16} /> AI API-nøkler
+              </h2>
+              <div className="adm-setting-desc" style={{ marginBottom: 12 }}>
+                Disse nøklene brukes av backend-agenten for AI-kall.
+              </div>
+              {[
+                { label: 'Anthropic API Key', val: anthropicKey, set: setAnthropicKey, key: 'anthropic_api_key', ph: 'sk-ant-api03-...' },
+                { label: 'OpenAI API Key', val: openaiKey, set: setOpenaiKey, key: 'openai_api_key', ph: 'sk-proj-...' },
+              ].map(f => (
+                <div key={f.key} className="adm-form-group">
+                  <label className="adm-label">{f.label}</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input className="adm-input" type="password" placeholder={f.ph} value={f.val} onChange={e => f.set(e.target.value)} />
+                    <button className="adm-btn-primary" style={{ flexShrink: 0 }} onClick={() => saveIntegration(f.key, f.val, f.label)} disabled={savingIntegration === f.key}>
+                      {savingIntegration === f.key ? 'Lagrer...' : 'Lagre'}
+                    </button>
+                  </div>
+                  {integrationMsg[f.key] && <p className="adm-msg success">{integrationMsg[f.key]}</p>}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
