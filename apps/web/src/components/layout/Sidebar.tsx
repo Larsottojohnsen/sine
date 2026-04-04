@@ -4,7 +4,7 @@ import {
   Bot, PanelLeftClose, PanelLeftOpen, CalendarDays,
   LayoutGrid, Monitor, Terminal, ChevronRight,
   X, Copy, Mail, Check, ShieldCheck,
-  Bell, User, Folder
+  Bell, User, Folder, MoreHorizontal
 } from 'lucide-react'
 import { VenterIcon } from '@/assets/icons/VenterIcon'
 import { FavorittIcon } from '@/assets/icons/FavorittIcon'
