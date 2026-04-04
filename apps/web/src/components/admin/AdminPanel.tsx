@@ -197,9 +197,18 @@ export function AdminPanel() {
   async function loadConnectorSettings() {
     const API_BASE = import.meta.env.VITE_API_URL || 'https://sineapi-production-8db6.up.railway.app'
     try {
-      const res = await fetch(`${API_BASE}/api/admin/settings`, { credentials: 'include' })
+      const res = await fetch(`${API_BASE}/api/admin/settings`, {
+        credentials: 'include',
+        headers: { 'x-user-id': user?.id ?? 'admin' },
+      })
       if (!res.ok) return
-      const map: Record<string, string> = await res.json()
+      const data = await res.json()
+      // Backend returns { settings: [{key, value, has_value}] }
+      const map: Record<string, string> = {}
+      const rows: Array<{key: string; value: string}> = Array.isArray(data)
+        ? data
+        : (data.settings ?? [])
+      rows.forEach((r: {key: string; value: string}) => { map[r.key] = r.value })
       if (map['github_client_id']) setGithubClientId(map['github_client_id'])
       if (map['github_client_secret']) setGithubClientSecret(map['github_client_secret'])
       if (map['github_app_id']) setGithubAppId(map['github_app_id'])
@@ -375,7 +384,10 @@ export function AdminPanel() {
       const res = await fetch(`${API_BASE}/api/admin/settings`, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': user?.id ?? 'admin',
+        },
         body: JSON.stringify({ key, value }),
       })
       if (!res.ok) throw new Error('HTTP ' + res.status)
